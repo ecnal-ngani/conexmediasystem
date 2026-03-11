@@ -1,0 +1,29 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-secure",
+      "description": "Abstract secure network representation",
+      "imageUrl": "https://picsum.photos/seed/conex1/1200/800",
+      "imageHint": "security network"
+    },
+    {
+      "id": "content-report",
+      "description": "Financial report document",
+      "imageUrl": "https://picsum.photos/seed/conex2/400/300",
+      "imageHint": "business report"
+    },
+    {
+      "id": "content-data",
+      "description": "Data visualization screen",
+      "imageUrl": "https://picsum.photos/seed/conex3/400/300",
+      "imageHint": "data analytics"
+    },
+    {
+      "id": "avatar-user",
+      "description": "User profile avatar",
+      "imageUrl": "https://picsum.photos/seed/conex-user/200/200",
+      "imageHint": "professional portrait"
+    }
+  ]
+}
