@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -9,16 +8,20 @@ import { DashboardSidebar } from '@/components/dashboard-sidebar';
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isWfh, isVerified } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login');
+    if (!isLoading) {
+      if (!user) {
+        router.push('/login');
+      } else if (isWfh && !isVerified) {
+        router.push('/verify');
+      }
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, isWfh, isVerified, router]);
 
-  if (isLoading || !user) {
+  if (isLoading || !user || (isWfh && !isVerified)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

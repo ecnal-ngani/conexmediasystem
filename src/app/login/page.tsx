@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -7,22 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ShieldAlert, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { ShieldAlert, Lock, ArrowRight, Loader2, Home, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isWfh, setIsWfh] = useState(false);
   const { login, isLoading } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login(email);
+      await login(email, isWfh);
       toast({
-        title: "Access Granted",
-        description: "Welcome back to the CONEX secure perimeter.",
+        title: "Initial Check Passed",
+        description: isWfh ? "Please proceed to biometric verification." : "Welcome back to the CONEX secure perimeter.",
       });
     } catch (err: any) {
       toast({
@@ -59,7 +60,7 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email">Work Email</Label>
                 <Input 
@@ -87,6 +88,23 @@ export default function LoginPage() {
                   className="bg-muted/30"
                 />
               </div>
+
+              <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/5 border border-primary/10">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${isWfh ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                    {isWfh ? <Home className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                  </div>
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-bold">Work From Home?</Label>
+                    <p className="text-xs text-muted-foreground">Requires biometric check</p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={isWfh} 
+                  onCheckedChange={setIsWfh} 
+                  disabled={isLoading}
+                />
+              </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full text-lg h-12 font-semibold group" disabled={isLoading}>
@@ -100,7 +118,7 @@ export default function LoginPage() {
                 )}
               </Button>
               <p className="text-xs text-center text-muted-foreground px-6">
-                By signing in, you agree to the <span className="underline cursor-pointer">Classified Data Usage Policy</span> and <span className="underline cursor-pointer">Confidentiality Agreement</span>.
+                By signing in, you agree to the <span className="underline cursor-pointer">Classified Data Usage Policy</span>.
               </p>
             </CardFooter>
           </form>
