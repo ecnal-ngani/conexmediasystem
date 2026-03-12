@@ -27,62 +27,66 @@ export default function ProfilePage() {
 
       {/* Main Profile Header Card */}
       <Card className="border shadow-none rounded-xl overflow-hidden bg-white">
-        <div className="h-32 bg-[#FF5A5F]" /> {/* Signature Red Banner */}
-        <CardContent className="relative px-8 pb-10">
-          <div className="absolute -top-12 left-8">
-            <Avatar className="w-24 h-24 border-4 border-white shadow-md text-2xl font-bold">
-              <AvatarImage src={user.avatarUrl} />
+        <div className="h-32 md:h-40 bg-[#E11D48]" /> {/* Signature Red Banner */}
+        <CardContent className="relative px-6 md:px-8 pb-10">
+          <div className="flex flex-col md:flex-row items-center md:items-end gap-6 -mt-12 md:-mt-16">
+            <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-white shadow-lg text-2xl font-bold shrink-0">
+              <AvatarImage src={user.avatarUrl} alt={user.name} />
               <AvatarFallback className="bg-[#1E293B] text-white">
                 {user.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
+            
+            <div className="text-center md:text-left space-y-1 pb-2">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{user.name}</h2>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                <p className="text-slate-500 font-medium text-sm">{user.role}</p>
+                <span className="text-slate-300 hidden md:block">•</span>
+                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-none font-mono text-[10px] px-2 py-0">
+                  {user.systemId}
+                </Badge>
+              </div>
+            </div>
           </div>
-          
-          <div className="mt-16 space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">{user.name}</h2>
-              <p className="text-slate-400 font-medium text-sm mt-0.5">{user.role}</p>
+
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 border-t pt-10">
+            <div className="flex items-start gap-4">
+              <div className="p-2.5 bg-red-50 rounded-xl text-red-500 shrink-0">
+                <User className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">System Identifier</p>
+                <p className="text-sm font-bold text-slate-800">{user.systemId}</p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-red-50 rounded-lg text-red-500">
-                  <User className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Employee ID</p>
-                  <p className="text-sm font-bold text-slate-800">{user.systemId}</p>
-                </div>
+            <div className="flex items-start gap-4">
+              <div className="p-2.5 bg-red-50 rounded-xl text-red-500 shrink-0">
+                <Mail className="w-5 h-5" />
               </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-red-50 rounded-lg text-red-500">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Email</p>
-                  <p className="text-sm font-bold text-slate-800">kyle.jarque@conex.ph</p>
-                </div>
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">Corporate Email</p>
+                <p className="text-sm font-bold text-slate-800">{user.email}</p>
               </div>
+            </div>
 
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-red-50 rounded-lg text-red-500">
-                  <CalendarIcon className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Join Date</p>
-                  <p className="text-sm font-bold text-slate-800">January 15, 2024</p>
-                </div>
+            <div className="flex items-start gap-4">
+              <div className="p-2.5 bg-red-50 rounded-xl text-red-500 shrink-0">
+                <CalendarIcon className="w-5 h-5" />
               </div>
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">Join Date</p>
+                <p className="text-sm font-bold text-slate-800">January 15, 2024</p>
+              </div>
+            </div>
 
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-red-50 rounded-lg text-red-500">
-                  <MapPin className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Location</p>
-                  <p className="text-sm font-bold text-slate-800">Manila, Philippines</p>
-                </div>
+            <div className="flex items-start gap-4">
+              <div className="p-2.5 bg-red-50 rounded-xl text-red-500 shrink-0">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">Deployment Hub</p>
+                <p className="text-sm font-bold text-slate-800">Manila, Philippines</p>
               </div>
             </div>
           </div>
@@ -91,36 +95,45 @@ export default function ProfilePage() {
 
       {/* Attendance Card */}
       <Card className="border shadow-none rounded-xl bg-white">
-        <CardHeader className="py-4">
-          <CardTitle className="text-sm font-bold text-slate-800">Today's Attendance</CardTitle>
+        <CardHeader className="py-4 border-b">
+          <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Security Clearance Status</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center gap-4">
-          <Badge className="bg-[#E6F4EA] text-[#1E8E3E] border-none font-bold py-1 px-3">
-            <Clock className="w-3.5 h-3.5 mr-2" />
-            In Office
+        <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-6">
+          <div className="flex items-center gap-4">
+            <Badge className="bg-green-100 text-green-700 border-none font-bold py-1.5 px-4 rounded-lg flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Status: ACTIVE
+            </Badge>
+            <div className="h-8 w-px bg-slate-100 hidden sm:block" />
+            <p className="text-xs text-slate-500 font-medium">
+              Last synchronized: {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+            </p>
+          </div>
+          <Badge variant="outline" className="border-slate-200 text-slate-600 font-bold px-3 py-1">
+            NODE: CONEX-INTERNAL-HQ
           </Badge>
-          <p className="text-xs text-slate-400">
-            Clocked in at 3/12/2026, 3:19:57 PM
-          </p>
         </CardContent>
       </Card>
 
       {/* Achievements Section */}
-      <div className="space-y-4">
+      <div className="space-y-4 pt-4">
         <div className="flex items-center gap-2 px-1">
-          <Award className="w-4 h-4 text-red-500" />
-          <h3 className="text-sm font-bold text-slate-800">Achievements</h3>
+          <Award className="w-5 h-5 text-red-500" />
+          <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Service Achievements</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { icon: Zap, color: 'text-orange-500', bg: 'bg-orange-50' },
-            { icon: Palette, color: 'text-pink-500', bg: 'bg-pink-50' },
-            { icon: Dumbbell, color: 'text-yellow-500', bg: 'bg-yellow-50' },
+            { label: 'Strategic Lead', icon: Zap, color: 'text-orange-500', bg: 'bg-orange-50' },
+            { label: 'Creative Vision', icon: Palette, color: 'text-pink-500', bg: 'bg-pink-50' },
+            { label: 'Performance Max', icon: Dumbbell, color: 'text-blue-500', bg: 'bg-blue-50' },
           ].map((item, i) => (
-            <Card key={i} className="border shadow-none rounded-xl flex items-center justify-center py-10">
-              <div className={`p-4 rounded-full ${item.bg}`}>
-                <item.icon className={`w-8 h-8 ${item.color}`} />
-              </div>
+            <Card key={i} className="border shadow-none rounded-xl group hover:border-red-100 transition-colors">
+              <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
+                <div className={`p-5 rounded-2xl ${item.bg} group-hover:scale-110 transition-transform duration-300`}>
+                  <item.icon className={`w-8 h-8 ${item.color}`} />
+                </div>
+                <p className="text-xs font-bold text-slate-700 tracking-wide">{item.label}</p>
+              </CardContent>
             </Card>
           ))}
         </div>

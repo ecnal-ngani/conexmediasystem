@@ -53,7 +53,7 @@ export function DashboardSidebar() {
     <Sidebar collapsible="icon" className="border-r bg-white">
       <SidebarHeader className={cn(
         "h-20 flex flex-row items-center border-b transition-all duration-300",
-        isCollapsed ? "px-2 justify-center" : "px-4 justify-between"
+        isCollapsed ? "px-0 justify-center" : "px-4 justify-between"
       )}>
         <div className="flex items-center gap-2 overflow-hidden">
           <div className="bg-[#722F37] min-w-[32px] w-8 h-8 rounded flex items-center justify-center shrink-0 shadow-sm">
@@ -83,7 +83,7 @@ export function DashboardSidebar() {
         )}
       </SidebarHeader>
       
-      <SidebarContent className="px-0 py-6">
+      <SidebarContent className="px-0 py-6 overflow-x-hidden">
         {/* Centralized Profile Section */}
         <div 
           onClick={() => router.push('/dashboard/profile')}
@@ -92,8 +92,8 @@ export function DashboardSidebar() {
             isCollapsed ? "flex justify-center" : ""
           )}
         >
-          <div className="flex items-center gap-3">
-            <div className="relative shrink-0">
+          <div className="flex items-center gap-3 w-full">
+            <div className="relative shrink-0 flex items-center justify-center">
               <Avatar className={cn(
                 "border-2 border-white shadow-md transition-all duration-300",
                 isCollapsed ? "w-8 h-8" : "w-10 h-10"
@@ -109,15 +109,17 @@ export function DashboardSidebar() {
               )}></span>
             </div>
             {!isCollapsed && (
-              <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-500">
+              <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-500 flex-1">
                 <p className="text-xs font-bold leading-none mb-1 truncate group-hover:text-[#E11D48] transition-colors">{user.name}</p>
-                <p className="text-[10px] text-blue-600 font-mono font-bold bg-blue-50 px-1 rounded inline-block mb-1 truncate max-w-full">
-                  {user.systemId}
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded leading-none">
-                    In Office
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-blue-600 font-mono font-bold bg-blue-50 px-1 rounded inline-block truncate w-fit max-w-full">
+                    {user.systemId}
                   </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded leading-none w-fit">
+                      In Office
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
