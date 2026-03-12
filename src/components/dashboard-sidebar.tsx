@@ -9,8 +9,7 @@ import {
   Users, 
   ChevronLeft,
   Command,
-  LogOut,
-  Sparkles
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
 import { usePathname } from 'next/navigation';
@@ -31,7 +30,6 @@ import { Button } from '@/components/ui/button';
 
 const navItems = [
   { title: 'Home', url: '/dashboard', icon: Home },
-  { title: 'AI Curator', url: '/dashboard/curator', icon: Sparkles },
   { title: 'Production', url: '/dashboard/production', icon: Layers },
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
   { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3 },
