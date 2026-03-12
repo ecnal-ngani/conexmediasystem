@@ -23,6 +23,20 @@ export interface ContentItem {
   thumbnail?: string;
 }
 
+export interface ProductionItem {
+  fileCode: string;
+  brand: string;
+  contentIdea: string;
+  status: 'In Production' | 'For QA' | 'Approved' | 'Client Revision';
+  priority: 'RUSH' | 'REGULAR';
+  artist: string;
+  type: string;
+  platform: string;
+  dueDate: string;
+  bm: string;
+  canvasLink: string;
+}
+
 export const MOCK_USERS: User[] = [
   {
     id: 'u1',
@@ -43,6 +57,16 @@ export const MOCK_USERS: User[] = [
     preferences: 'I focus on financial trends, data visualization, and market analysis.',
     avatarUrl: 'https://picsum.photos/seed/marcus/200/200',
     status: 'WFH'
+  },
+  {
+    id: 'u3',
+    systemId: 'CX-CEO-01',
+    name: 'Kyle Jarque',
+    email: 's.jenkins@conex.private',
+    role: 'CEO',
+    preferences: 'Executive overview and production matrix control.',
+    avatarUrl: 'https://picsum.photos/seed/kyle/200/200',
+    status: 'Office'
   }
 ];
 
@@ -77,5 +101,73 @@ export const AUTHORIZED_CONTENT: ContentItem[] = [
     requiredRole: 'CEO',
     content: 'Quarterly growth exceeded expectations in the EMEA region by 12%...',
     thumbnail: 'https://picsum.photos/seed/media2/800/400'
+  }
+];
+
+export const PRODUCTION_DATA: ProductionItem[] = [
+  {
+    fileCode: 'VLM-260120-01',
+    brand: 'CJC Eco Bag',
+    contentIdea: 'Product showcase reel',
+    status: 'In Production',
+    priority: 'RUSH',
+    artist: 'Jhon Lester Nolial',
+    type: 'Video',
+    platform: 'Instagram',
+    dueDate: 'Feb 5',
+    bm: 'Clark',
+    canvasLink: '#'
+  },
+  {
+    fileCode: 'VLM-260120-02',
+    brand: 'Shimmer & Shield',
+    contentIdea: 'Tutorial reel',
+    status: 'For QA',
+    priority: 'RUSH',
+    artist: 'John Loyde Dalope',
+    type: 'Video',
+    platform: 'TikTok',
+    dueDate: 'Feb 6',
+    bm: 'Clark',
+    canvasLink: '#'
+  },
+  {
+    fileCode: 'VLM-260122-03',
+    brand: 'Dentasmile',
+    contentIdea: 'Before/After carousel',
+    status: 'In Production',
+    priority: 'REGULAR',
+    artist: 'John Loyde Dalope',
+    type: 'Graphic Design',
+    platform: 'Instagram',
+    dueDate: 'Feb 8',
+    bm: 'Clark',
+    canvasLink: '#'
+  },
+  {
+    fileCode: 'VLM-260119-15',
+    brand: 'Solarmaxx',
+    contentIdea: 'Testimonial video',
+    status: 'Approved',
+    priority: 'REGULAR',
+    artist: 'Daisy Atilano',
+    type: 'Video',
+    platform: 'Facebook',
+    dueDate: 'Jan 31',
+    bm: 'CA',
+    canvasLink: '#'
+  },
+  {
+    fileCode: 'VLM-260118-08',
+    brand: 'Keto Lifestyle',
+    contentIdea: 'Recipe animation',
+    status: 'Client Revision',
+    priority: 'REGULAR',
+    artist: 'Andrei Capili',
+    type: 'Motion Graphics',
+    platform: 'Instagram',
+    dueDate: 'Feb 4',
+    bm: 'Janella',
+    canvasLink: '#'
   }
 ];

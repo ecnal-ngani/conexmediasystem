@@ -10,7 +10,8 @@ import {
   Users, 
   User,
   ChevronLeft,
-  Command
+  Command,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
 import { usePathname } from 'next/navigation';
@@ -26,7 +27,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { title: 'Home', url: '/dashboard', icon: Home },
@@ -52,7 +53,7 @@ export function DashboardSidebar() {
           </div>
           <span className="font-bold text-sm tracking-tight">conex</span>
         </div>
-        <button className="text-destructive">
+        <button className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors">
           <ChevronLeft className="w-4 h-4" />
         </button>
       </SidebarHeader>
@@ -61,16 +62,20 @@ export function DashboardSidebar() {
         {/* Profile Card Section */}
         <div className="px-6 mb-8">
           <div className="flex items-center gap-3">
-            <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
-              <AvatarImage src={user.avatarUrl} alt={user.name} />
-              <AvatarFallback className="bg-primary text-white font-bold">{user.name.substring(0, 1)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-xs font-bold leading-none mb-1">{user.name}</p>
+            <div className="relative">
+              <Avatar className="w-12 h-12 border-2 border-white shadow-md">
+                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                <AvatarFallback className="bg-primary text-white font-bold">{user.name.substring(0, 1)}</AvatarFallback>
+              </Avatar>
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-xs font-bold leading-none mb-1 truncate">{user.name}</p>
               <p className="text-[10px] text-blue-600 font-mono font-bold bg-blue-50 px-1 rounded inline-block mb-1">{user.systemId}</p>
               <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                <span className="text-[10px] text-green-600 font-bold bg-green-50 px-1.5 rounded">In Office</span>
+                <span className="text-[10px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded leading-none">
+                  In Office
+                </span>
               </div>
             </div>
           </div>
@@ -82,7 +87,7 @@ export function DashboardSidebar() {
               <SidebarMenuButton 
                 asChild 
                 isActive={pathname === item.url}
-                className={`h-11 rounded-lg transition-all mb-1 px-4 ${pathname === item.url ? 'bg-[#E11D48] text-white font-medium hover:bg-[#E11D48]/90' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`h-11 rounded-lg transition-all mb-1 px-4 ${pathname === item.url ? 'bg-[#E11D48] text-white font-medium hover:bg-[#E11D48]/90 shadow-md shadow-red-100' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 <Link href={item.url} className="flex items-center gap-3">
                   <item.icon className={`w-5 h-5 ${pathname === item.url ? 'text-white' : 'text-slate-400'}`} />
@@ -94,13 +99,15 @@ export function DashboardSidebar() {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 mt-auto">
-        <SidebarMenuButton 
+      <SidebarFooter className="p-4 border-t bg-slate-50/30">
+        <Button 
+          variant="default"
           onClick={logout}
-          className="text-slate-400 hover:bg-slate-100 h-10 rounded-lg transition-colors text-xs"
+          className="w-full bg-[#E11D48] hover:bg-[#E11D48]/90 text-white font-bold h-11 rounded-xl shadow-lg shadow-red-100 transition-all active:scale-[0.98] flex items-center justify-start gap-3 px-4"
         >
-          <span>Terminate Session</span>
-        </SidebarMenuButton>
+          <LogOut className="w-5 h-5" />
+          <span className="text-sm">Log Out</span>
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );
