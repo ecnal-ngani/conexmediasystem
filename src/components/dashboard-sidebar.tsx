@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Command,
-  LogOut
+  LogOut,
+  UserCircle
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
@@ -36,6 +37,7 @@ const navItems = [
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
   { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3 },
   { title: 'Admin & HR', url: '/dashboard/admin', icon: Users },
+  { title: 'Profile', url: '/dashboard/profile', icon: UserCircle },
 ];
 
 export function DashboardSidebar() {
@@ -50,7 +52,7 @@ export function DashboardSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r bg-white">
       <SidebarHeader className={cn(
-        "h-20 flex flex-row items-center border-b transition-all duration-300",
+        "h-20 flex flex-row items-center border-b transition-all duration-300 relative",
         isCollapsed ? "px-0 justify-center" : "px-4 justify-between"
       )}>
         <div className="flex items-center gap-2 overflow-hidden">
@@ -82,7 +84,7 @@ export function DashboardSidebar() {
       </SidebarHeader>
       
       <SidebarContent className="px-0 py-6 overflow-x-hidden">
-        {/* Centralized Profile Section - Handles Profile Navigation */}
+        {/* Centralized Profile Section */}
         <div 
           onClick={() => router.push('/dashboard/profile')}
           className={cn(
@@ -134,7 +136,7 @@ export function DashboardSidebar() {
                 className={cn(
                   "h-11 rounded-lg transition-all mb-1",
                   pathname === item.url 
-                    ? 'bg-[#E11D48] text-white font-medium hover:bg-[#E11D48]/90 shadow-md shadow-red-100' 
+                    ? 'bg-primary text-white font-medium hover:bg-primary/90 shadow-md shadow-red-100' 
                     : 'text-slate-600 hover:bg-slate-100',
                   isCollapsed ? "px-0 justify-center" : "px-3"
                 )}
@@ -157,7 +159,7 @@ export function DashboardSidebar() {
           variant="default"
           onClick={logout}
           className={cn(
-            "w-full bg-[#E11D48] hover:bg-[#E11D48]/90 text-white font-bold h-11 rounded-xl shadow-lg shadow-red-100 transition-all active:scale-[0.98] flex items-center gap-3 px-3",
+            "w-full bg-primary hover:bg-primary/90 text-white font-bold h-11 rounded-xl shadow-lg shadow-red-100 transition-all active:scale-[0.98] flex items-center gap-3 px-3",
             isCollapsed ? "justify-center p-0" : "justify-start"
           )}
         >
