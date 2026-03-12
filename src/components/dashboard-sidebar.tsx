@@ -5,13 +5,11 @@ import {
   Home, 
   Layers, 
   Calendar, 
-  BarChart3, 
   Users, 
   ChevronLeft,
   ChevronRight,
   Command,
-  LogOut,
-  UserCircle
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
@@ -35,9 +33,7 @@ const navItems = [
   { title: 'Home', url: '/dashboard', icon: Home },
   { title: 'Production', url: '/dashboard/production', icon: Layers },
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
-  { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3 },
   { title: 'Admin & HR', url: '/dashboard/admin', icon: Users },
-  { title: 'Profile', url: '/dashboard/profile', icon: UserCircle },
 ];
 
 export function DashboardSidebar() {
