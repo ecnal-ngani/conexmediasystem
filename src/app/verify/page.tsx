@@ -167,41 +167,41 @@ export default function VerifyPage() {
               <div className="p-2 bg-green-500/10 text-green-600 rounded-lg">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <div className="text-xs">
+              <div className="text-xs text-left">
                 <p className="font-bold uppercase tracking-wider">Secure Node</p>
                 <p className="text-muted-foreground">Encrypted P2P Connection</p>
               </div>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {capturedImage ? (
                 <Button 
                   variant="outline" 
                   onClick={() => setCapturedImage(null)} 
                   disabled={isVerifying}
-                  className="flex-1 sm:flex-none"
+                  className="w-full sm:w-auto h-12"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Retake
+                  Retake Photo
                 </Button>
               ) : (
                 <Button 
                   onClick={handleCapture} 
                   disabled={!hasCameraPermission || isVerifying}
-                  className="flex-1 sm:flex-none bg-primary font-bold h-12 px-8"
+                  className="w-full sm:w-auto bg-primary font-bold h-12 px-8"
                 >
                   {isVerifying ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <Camera className="w-4 h-4 mr-2" />
                   )}
-                  Capture Photo
+                  Capture and Verify
                 </Button>
               )}
             </div>
           </CardFooter>
         </Card>
 
-        <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-start gap-3">
+        <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-start gap-3 text-left">
           <ShieldAlert className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <div className="text-xs text-muted-foreground space-y-1">
             <p className="font-bold text-primary uppercase">Security Notice</p>

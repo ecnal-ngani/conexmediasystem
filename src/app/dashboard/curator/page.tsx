@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -36,7 +35,7 @@ export default function CuratorPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-primary p-8 rounded-3xl text-white shadow-2xl overflow-hidden relative">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-primary p-8 rounded-3xl text-white shadow-2xl overflow-hidden relative">
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md">
             <BrainCircuit className="w-3 h-3" />
@@ -47,12 +46,12 @@ export default function CuratorPage() {
             Analyzing your clearance level and professional preferences to suggest the most relevant high-security assets.
           </p>
         </div>
-        <div className="relative z-10 shrink-0">
+        <div className="relative z-10 shrink-0 w-full lg:w-auto">
           <Button 
             size="lg" 
             onClick={fetchRecommendations} 
             disabled={isLoading}
-            className="bg-white text-primary hover:bg-white/90 font-bold h-14 px-8 rounded-2xl shadow-xl shadow-black/20"
+            className="w-full lg:w-auto bg-white text-primary hover:bg-white/90 font-bold h-14 px-8 rounded-2xl shadow-xl shadow-black/20"
           >
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2" />}
             Generate New Briefing
@@ -67,9 +66,9 @@ export default function CuratorPage() {
       <div className="space-y-6">
         {recommendations.length > 0 ? (
           <>
-            <div className="flex items-center justify-between px-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
               <h2 className="text-2xl font-bold">Suggested for You</h2>
-              <Button variant="ghost" onClick={fetchRecommendations} disabled={isLoading} size="sm" className="text-primary hover:bg-primary/10">
+              <Button variant="ghost" onClick={fetchRecommendations} disabled={isLoading} size="sm" className="w-full sm:w-auto text-primary hover:bg-primary/10">
                 <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh Suggestions
               </Button>
@@ -105,7 +104,7 @@ export default function CuratorPage() {
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-secondary/5 rounded-3xl border-2 border-dashed">
+          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-secondary/5 rounded-3xl border-2 border-dashed px-6">
             <div className="p-4 rounded-full bg-secondary/20 text-primary">
               <Sparkles className="w-10 h-10" />
             </div>

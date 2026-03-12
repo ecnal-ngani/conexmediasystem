@@ -73,15 +73,15 @@ export default function AdminPage() {
             placeholder="Search by name, ID, or role..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-11 bg-white border-slate-200 shadow-sm focus-visible:ring-primary"
+            className="pl-10 h-11 bg-white border-slate-200 shadow-sm focus-visible:ring-primary w-full"
           />
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <Button variant="outline" className="flex-1 md:flex-none h-11 border-primary/20 text-primary hover:bg-primary/5 font-bold">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto h-11 border-primary/20 text-primary hover:bg-primary/5 font-bold">
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button className="flex-1 md:flex-none h-11 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100">
+          <Button className="w-full sm:w-auto h-11 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100">
             <UserPlus className="w-4 h-4 mr-2" />
             Generate New ID
           </Button>

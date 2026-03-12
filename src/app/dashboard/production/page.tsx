@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -63,12 +62,12 @@ export default function ProductionPage() {
 
       {/* Action Bar */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2 md:gap-3">
-          <div className="w-10 h-10 border rounded-lg flex items-center justify-center bg-white shadow-sm text-slate-400 shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3">
+          <div className="hidden sm:flex w-10 h-10 border rounded-lg items-center justify-center bg-white shadow-sm text-slate-400 shrink-0">
             <Filter className="w-4 h-4" />
           </div>
           <Select defaultValue="all">
-            <SelectTrigger className="w-[140px] md:w-[180px] h-10 shadow-sm border-slate-200 text-xs">
+            <SelectTrigger className="w-full sm:w-[140px] md:w-[180px] h-10 shadow-sm border-slate-200 text-xs">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -79,7 +78,7 @@ export default function ProductionPage() {
               <SelectItem value="revision">Client Revision</SelectItem>
             </SelectContent>
           </Select>
-          <div className="relative group flex-1 min-w-[200px]">
+          <div className="relative group flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input 
               placeholder="Search projects..." 
@@ -88,14 +87,14 @@ export default function ProductionPage() {
           </div>
         </div>
         
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" className="flex-1 sm:flex-none h-10 border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 shadow-sm text-xs">
+        <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+          <Button variant="outline" className="w-full sm:w-auto h-10 border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 shadow-sm text-xs">
             <Download className="w-4 h-4 mr-2" />
-            Export
+            Export Matrix
           </Button>
-          <Button className="flex-1 sm:flex-none h-10 bg-[#E11D48] hover:bg-[#E11D48]/90 font-bold shadow-lg shadow-red-200 text-xs">
+          <Button className="w-full sm:w-auto h-10 bg-[#E11D48] hover:bg-[#E11D48]/90 font-bold shadow-lg shadow-red-200 text-xs">
             <Plus className="w-4 h-4 mr-2" />
-            New Project
+            Create New Project
           </Button>
         </div>
       </div>
