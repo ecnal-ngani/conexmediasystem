@@ -1,18 +1,15 @@
+
 'use client';
 
 import * as React from 'react';
 import { 
-  LayoutDashboard, 
-  UserCircle, 
-  BrainCircuit, 
-  ShieldCheck, 
-  LogOut, 
-  Search,
-  Video,
-  FileText,
-  LineChart,
-  Settings,
-  Bell,
+  Home, 
+  Layers, 
+  Calendar, 
+  BarChart3, 
+  Users, 
+  User,
+  ChevronLeft,
   Command
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
@@ -27,21 +24,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
 const navItems = [
-  { title: 'Command Center', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'AI Curator', url: '/dashboard/curator', icon: BrainCircuit, badge: 'Smart' },
-  { title: 'Media Assets', url: '/dashboard/resources', icon: Video },
-  { title: 'Strategic Reports', url: '/dashboard/analytics', icon: LineChart },
-];
-
-const accountItems = [
-  { title: 'Executive Profile', url: '/dashboard/profile', icon: UserCircle },
-  { title: 'System Config', url: '/dashboard/settings', icon: Settings },
+  { title: 'Home', url: '/dashboard', icon: Home },
+  { title: 'Production', url: '/dashboard/production', icon: Layers },
+  { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
+  { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3 },
+  { title: 'Admin & HR', url: '/dashboard/admin', icon: Users },
+  { title: 'Profile', url: '/dashboard/profile', icon: User },
 ];
 
 export function DashboardSidebar() {
@@ -51,94 +44,63 @@ export function DashboardSidebar() {
   if (!user) return null;
 
   return (
-    <Sidebar collapsible="icon" className="border-r-2 border-border/50 bg-white">
-      <SidebarHeader className="h-24 flex items-center px-4 justify-between">
-        <div className="flex items-center gap-3 w-full">
-          <div className="bg-primary w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
-            <Command className="w-7 h-7 text-white" />
+    <Sidebar collapsible="none" className="border-r bg-white w-64">
+      <SidebarHeader className="h-20 flex flex-row items-center px-6 justify-between border-b">
+        <div className="flex items-center gap-2">
+          <div className="bg-[#722F37] w-8 h-8 rounded flex items-center justify-center">
+            <Command className="w-5 h-5 text-white" />
           </div>
-          <div className="group-data-[collapsible=icon]:hidden">
-            <h2 className="font-black text-xl leading-none tracking-tighter uppercase">CONEX</h2>
-            <p className="text-[10px] text-primary font-bold uppercase tracking-widest mt-1">MEDIA PRO</p>
-          </div>
+          <span className="font-bold text-sm tracking-tight">conex</span>
         </div>
+        <button className="text-destructive">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
       </SidebarHeader>
       
-      <SidebarSeparator />
-      
-      <SidebarContent className="px-3 py-6">
-        <SidebarMenu>
-          <div className="px-3 mb-4 text-[10px] uppercase font-black text-muted-foreground/40 tracking-[0.2em] group-data-[collapsible=icon]:hidden">
-            Main Intelligence
+      <SidebarContent className="px-0 py-6">
+        {/* Profile Card Section */}
+        <div className="px-6 mb-8">
+          <div className="flex items-center gap-3">
+            <Avatar className="w-12 h-12 border-2 border-white shadow-sm">
+              <AvatarImage src={user.avatarUrl} alt={user.name} />
+              <AvatarFallback className="bg-primary text-white font-bold">{user.name.substring(0, 1)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-xs font-bold leading-none mb-1">{user.name}</p>
+              <p className="text-[10px] text-blue-600 font-mono font-bold bg-blue-50 px-1 rounded inline-block mb-1">{user.systemId}</p>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                <span className="text-[10px] text-green-600 font-bold bg-green-50 px-1.5 rounded">In Office</span>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <SidebarMenu className="px-2">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton 
                 asChild 
                 isActive={pathname === item.url}
-                tooltip={item.title}
-                className={`h-12 rounded-xl transition-all mb-1 ${pathname === item.url ? 'bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary/90' : 'hover:bg-secondary/20'}`}
+                className={`h-11 rounded-lg transition-all mb-1 px-4 ${pathname === item.url ? 'bg-[#E11D48] text-white font-medium hover:bg-[#E11D48]/90' : 'text-slate-600 hover:bg-slate-100'}`}
               >
-                <Link href={item.url}>
-                  <item.icon className={pathname === item.url ? 'text-white' : 'text-muted-foreground'} />
-                  <span>{item.title}</span>
-                  {item.badge && pathname !== item.url && (
-                    <Badge variant="outline" className="ml-auto bg-primary/10 text-primary border-primary/20 text-[10px] h-4 group-data-[collapsible=icon]:hidden">
-                      {item.badge}
-                    </Badge>
-                  )}
+                <Link href={item.url} className="flex items-center gap-3">
+                  <item.icon className={`w-5 h-5 ${pathname === item.url ? 'text-white' : 'text-slate-400'}`} />
+                  <span className="text-sm">{item.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
-
-        <div className="mt-10">
-          <SidebarMenu>
-            <div className="px-3 mb-4 text-[10px] uppercase font-black text-muted-foreground/40 tracking-[0.2em] group-data-[collapsible=icon]:hidden">
-              Account Control
-            </div>
-            {accountItems.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={pathname === item.url}
-                  tooltip={item.title}
-                  className={`h-12 rounded-xl transition-all mb-1 ${pathname === item.url ? 'bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:bg-primary/90' : 'hover:bg-secondary/20'}`}
-                >
-                  <Link href={item.url}>
-                    <item.icon className={pathname === item.url ? 'text-white' : 'text-muted-foreground'} />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </div>
       </SidebarContent>
 
-      <SidebarFooter className="p-6 bg-muted/20 border-t">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
-            <Avatar className="w-11 h-11 border-2 border-primary shadow-sm">
-              <AvatarImage src={user.avatarUrl} alt={user.name} />
-              <AvatarFallback className="font-bold">{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="group-data-[collapsible=icon]:hidden overflow-hidden">
-              <p className="text-sm font-black truncate leading-none mb-1">{user.name}</p>
-              <Badge className="text-[9px] h-4 px-1.5 leading-none bg-primary font-bold rounded-sm uppercase">
-                {user.role}
-              </Badge>
-            </div>
-          </div>
-          <SidebarMenuButton 
-            onClick={logout}
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive h-11 rounded-xl transition-colors font-bold"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Terminate Session</span>
-          </SidebarMenuButton>
-        </div>
+      <SidebarFooter className="p-4 mt-auto">
+        <SidebarMenuButton 
+          onClick={logout}
+          className="text-slate-400 hover:bg-slate-100 h-10 rounded-lg transition-colors text-xs"
+        >
+          <span>Terminate Session</span>
+        </SidebarMenuButton>
       </SidebarFooter>
     </Sidebar>
   );

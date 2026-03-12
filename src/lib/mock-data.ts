@@ -3,11 +3,13 @@ export type Role = 'CEO' | 'ADMIN' | 'ANALYST' | 'OPERATOR';
 
 export interface User {
   id: string;
+  systemId: string;
   name: string;
   email: string;
   role: Role;
   preferences: string;
   avatarUrl: string;
+  status: 'Office' | 'WFH' | 'Offline';
 }
 
 export interface ContentItem {
@@ -24,20 +26,35 @@ export interface ContentItem {
 export const MOCK_USERS: User[] = [
   {
     id: 'u1',
-    name: 'Sarah Jenkins',
-    email: 's.jenkins@conex.private',
+    systemId: 'CX-CEO-01',
+    name: 'Kyle Jarque',
+    email: 'k.jarque@conex.private',
     role: 'CEO',
-    preferences: 'I need high-level strategic summaries and global market impact analysis.',
-    avatarUrl: 'https://picsum.photos/seed/sarah/200/200',
+    preferences: 'High-level strategic summaries and agency-wide performance metrics.',
+    avatarUrl: 'https://picsum.photos/seed/kyle/200/200',
+    status: 'Office'
   },
   {
     id: 'u2',
+    systemId: 'CX-AN-05',
     name: 'Marcus Chen',
     email: 'm.chen@conex.private',
     role: 'ANALYST',
     preferences: 'I focus on financial trends, data visualization, and market analysis.',
     avatarUrl: 'https://picsum.photos/seed/marcus/200/200',
+    status: 'WFH'
   }
+];
+
+export const EMPLOYEES = [
+  { name: 'Jhon', status: 'Office', icon: '⭐' },
+  { name: 'Clark', status: 'WFH', icon: '🛡️' },
+  { name: 'Louise', status: 'Offline', icon: '' },
+  { name: 'Matthew', status: 'Office', icon: '⚡' },
+  { name: 'Prince', status: 'WFH', icon: '' },
+  { name: 'Trish', status: 'Office', icon: '⭐' },
+  { name: 'Janella', status: 'Office', icon: '🛡️' },
+  { name: 'Hanna', status: 'WFH', icon: '' },
 ];
 
 export const AUTHORIZED_CONTENT: ContentItem[] = [
@@ -60,24 +77,5 @@ export const AUTHORIZED_CONTENT: ContentItem[] = [
     requiredRole: 'CEO',
     content: 'Quarterly growth exceeded expectations in the EMEA region by 12%...',
     thumbnail: 'https://picsum.photos/seed/media2/800/400'
-  },
-  {
-    id: 'c3',
-    title: 'Security Infrastructure 2025',
-    description: 'A deep dive into the next-gen encryption protocols defending the gateway.',
-    category: 'document',
-    tags: ['security', 'tech', 'future'],
-    requiredRole: 'ADMIN',
-    content: 'Standardizing on quantum-resistant algorithms across all edge nodes...',
-    thumbnail: 'https://picsum.photos/seed/media3/800/400'
-  },
-  {
-    id: 'c4',
-    title: 'Market Volatility Analysis',
-    description: 'Video analysis of real-time market shifts and potential risk mitigation.',
-    category: 'video',
-    tags: ['market', 'risk', 'video'],
-    content: 'The video outlines three core scenarios for market stabilization...',
-    thumbnail: 'https://picsum.photos/seed/media4/800/400'
   }
 ];
