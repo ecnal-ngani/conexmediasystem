@@ -80,47 +80,52 @@ export function DashboardSidebar() {
       </SidebarHeader>
       
       <SidebarContent className="px-0 py-6 overflow-x-hidden">
-        {/* Centralized Profile Section */}
-        <div 
-          onClick={() => router.push('/dashboard/profile')}
-          className={cn(
-            "mb-8 transition-all duration-300 cursor-pointer group hover:bg-slate-50 rounded-lg mx-2 p-2",
-            isCollapsed ? "flex justify-center" : ""
-          )}
-        >
-          <div className="flex items-center gap-3 w-full">
-            <div className="relative shrink-0 flex items-center justify-center">
-              <Avatar className={cn(
-                "border-2 border-white shadow-md transition-all duration-300",
-                isCollapsed ? "w-8 h-8" : "w-10 h-10"
-              )}>
-                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                <AvatarFallback className="bg-primary text-white font-bold text-xs">
-                  {user.name.substring(0, 1)}
-                </AvatarFallback>
-              </Avatar>
-              <span className={cn(
-                "absolute bottom-0 right-0 bg-green-500 border-2 border-white rounded-full transition-all duration-300",
-                isCollapsed ? "w-2 h-2" : "w-2.5 h-2.5"
-              )}></span>
-            </div>
-            {!isCollapsed && (
-              <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-500 flex-1">
-                <p className="text-xs font-bold leading-none mb-1 truncate group-hover:text-[#E11D48] transition-colors">{user.name}</p>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] text-blue-600 font-mono font-bold bg-blue-50 px-1 rounded inline-block truncate w-fit max-w-full">
-                    {user.systemId}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded leading-none w-fit">
-                      In Office
-                    </span>
-                  </div>
+        {/* Centralized Profile Section - Now using SidebarMenu for perfect alignment */}
+        <SidebarMenu className="px-2 mb-8">
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              onClick={() => router.push('/dashboard/profile')}
+              className={cn(
+                "h-auto py-2 transition-all duration-300 group hover:bg-slate-50",
+                isCollapsed ? "justify-center px-0" : "px-2"
+              )}
+            >
+              <div className="flex items-center gap-3 w-full">
+                <div className="relative shrink-0 flex items-center justify-center">
+                  <Avatar className={cn(
+                    "border-2 border-white shadow-md transition-all duration-300",
+                    isCollapsed ? "w-8 h-8" : "w-10 h-10"
+                  )}>
+                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    <AvatarFallback className="bg-primary text-white font-bold text-xs">
+                      {user.name.substring(0, 1)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className={cn(
+                    "absolute bottom-0 right-0 bg-green-500 border-2 border-white rounded-full transition-all duration-300",
+                    isCollapsed ? "w-2 h-2" : "w-2.5 h-2.5"
+                  )}></span>
                 </div>
+                {!isCollapsed && (
+                  <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-500 flex-1">
+                    <p className="text-xs font-bold leading-none mb-1 truncate group-hover:text-[#E11D48] transition-colors">{user.name}</p>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] text-blue-600 font-mono font-bold bg-blue-50 px-1 rounded inline-block truncate w-fit max-w-full">
+                        {user.systemId}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded leading-none w-fit">
+                          In Office
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
 
         <SidebarMenu className="px-2">
           {navItems.map((item) => (
