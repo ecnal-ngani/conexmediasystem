@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -105,8 +106,8 @@ export default function ProductionPage() {
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow className="hover:bg-transparent border-0">
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-4 whitespace-nowrap">File Code</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Action</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-4 whitespace-nowrap">Action</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">File Code</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Brand</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Status</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Priority</TableHead>
@@ -117,12 +118,12 @@ export default function ProductionPage() {
             <TableBody>
               {data.map((item, i) => (
                 <TableRow key={i} className="hover:bg-slate-50/50 transition-colors border-0">
-                  <TableCell className="font-mono text-[10px] font-bold text-slate-700 py-4 pl-4 whitespace-nowrap">{item.fileCode}</TableCell>
-                  <TableCell className="py-4 whitespace-nowrap">
+                  <TableCell className="py-4 pl-4 whitespace-nowrap">
                     <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2">
                       <ExternalLink className="w-3 h-3" />
                     </Button>
                   </TableCell>
+                  <TableCell className="font-mono text-[10px] font-bold text-slate-700 py-4 whitespace-nowrap">{item.fileCode}</TableCell>
                   <TableCell className="text-xs font-bold text-slate-800 whitespace-nowrap">{item.brand}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     <Select defaultValue={item.status}>
