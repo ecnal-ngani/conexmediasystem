@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -59,8 +58,8 @@ export function DashboardSidebar() {
             <Command className="w-7 h-7 text-white" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
-            <h2 className="font-black text-xl leading-none tracking-tighter">CONEX</h2>
-            <p className="text-[10px] text-primary font-bold uppercase tracking-widest mt-1">Gateway Pro</p>
+            <h2 className="font-black text-xl leading-none tracking-tighter uppercase">CONEX</h2>
+            <p className="text-[10px] text-primary font-bold uppercase tracking-widest mt-1">MEDIA PRO</p>
           </div>
         </div>
       </SidebarHeader>

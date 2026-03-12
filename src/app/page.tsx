@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -21,7 +20,7 @@ export default function Home() {
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-pulse text-primary font-semibold">Initializing CONEX Gateway...</div>
+      <div className="animate-pulse text-primary font-semibold tracking-widest uppercase">Initializing CONEX MEDIA...</div>
     </div>
   );
 }

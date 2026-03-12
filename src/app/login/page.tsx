@@ -24,7 +24,7 @@ export default function LoginPage() {
       await login(email, isWfh);
       toast({
         title: "Initial Check Passed",
-        description: isWfh ? "Please proceed to biometric verification." : "Welcome back to the CONEX secure perimeter.",
+        description: isWfh ? "Please proceed to biometric verification." : "Welcome back to the CONEX MEDIA secure perimeter.",
       });
     } catch (err: any) {
       toast({
@@ -43,7 +43,7 @@ export default function LoginPage() {
             <ShieldAlert className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            CONEX Gateway
+            CONEX MEDIA
           </h1>
           <p className="mt-2 text-muted-foreground">
             Authorized Personnel Only
@@ -113,7 +113,7 @@ export default function LoginPage() {
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
                   <>
-                    Initialize Gateway Access
+                    Initialize System Access
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </>
                 )}
@@ -129,7 +129,7 @@ export default function LoginPage() {
               </Alert>
 
               <p className="text-xs text-center text-muted-foreground px-6">
-                By signing in, you agree to the <span className="underline cursor-pointer">Classified Data Usage Policy</span>.
+                By signing in, you agree to the <span className="underline cursor-pointer">Classified Media Policy</span>.
               </p>
             </CardFooter>
           </form>

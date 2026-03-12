@@ -1,12 +1,11 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'CONEX Gateway | Secure Private Network',
-  description: 'AI-powered content gateway for authorized personnel.',
+  title: 'CONEX MEDIA | Secure Private Network',
+  description: 'AI-powered content media system for authorized personnel.',
 };
 
 export default function RootLayout({

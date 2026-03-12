@@ -34,7 +34,7 @@ const faceVerificationPrompt = ai.definePrompt({
   name: 'faceVerificationPrompt',
   input: {schema: FaceVerificationInputSchema},
   output: {schema: FaceVerificationOutputSchema},
-  prompt: `You are a high-security biometric analysis agent for CONEX Gateway. 
+  prompt: `You are a high-security biometric analysis agent for CONEX MEDIA. 
 Analyze the provided photo taken during a WFH (Work From Home) login attempt.
 
 Verify if the photo contains a clear, visible human face suitable for identification. 
@@ -42,7 +42,7 @@ Do not allow photos of screens, inanimate objects, or obscured faces.
 
 Photo: {{media url=photoDataUri}}
 
-Output the verification status, a confidence score, and a short status message.`,
+Output the verification status, a confidence score, and a short status message indicating access to the media system.`,
 });
 
 const faceVerificationFlow = ai.defineFlow(

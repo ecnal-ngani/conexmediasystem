@@ -43,7 +43,7 @@ export default function VerifyPage() {
         toast({
           variant: 'destructive',
           title: 'Camera Access Denied',
-          description: 'WFH policy requires camera access for identity verification.',
+          description: 'CONEX MEDIA policy requires camera access for identity verification.',
         });
       }
     };
@@ -114,7 +114,7 @@ export default function VerifyPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Biometric Verification</h1>
           <p className="text-muted-foreground">
-            Identity verification is mandatory for remote access sessions.
+            Identity verification is mandatory for remote access to CONEX MEDIA.
           </p>
         </div>
 
@@ -156,7 +156,7 @@ export default function VerifyPage() {
                   <ShieldAlert className="h-4 w-4" />
                   <AlertTitle>Camera Access Required</AlertTitle>
                   <AlertDescription>
-                    Please allow camera access in your browser settings to continue with WFH verification.
+                    Please allow camera access in your browser settings to continue with CONEX MEDIA verification.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -206,8 +206,8 @@ export default function VerifyPage() {
           <div className="text-xs text-muted-foreground space-y-1">
             <p className="font-bold text-primary uppercase">Security Notice</p>
             <p>
-              This biometric data is processed in real-time by CONEX AI and is not stored permanently.
-              Failure to provide a valid face match will result in an automated security lock on your account.
+              This biometric data is processed in real-time by CONEX MEDIA AI and is not stored permanently.
+              Failure to provide a valid face match will result in an automated security lock.
             </p>
           </div>
         </div>
