@@ -104,7 +104,7 @@ export default function ProductionPage() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-50/50">
-              <TableRow className="hover:bg-transparent border-b">
+              <TableRow className="hover:bg-transparent border-0">
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-4 whitespace-nowrap">File Code</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Brand</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Status</TableHead>
@@ -116,7 +116,7 @@ export default function ProductionPage() {
             </TableHeader>
             <TableBody>
               {data.map((item, i) => (
-                <TableRow key={i} className="hover:bg-slate-50/50 transition-colors border-b last:border-0">
+                <TableRow key={i} className="hover:bg-slate-50/50 transition-colors border-0">
                   <TableCell className="font-mono text-[10px] font-bold text-slate-700 py-4 pl-4 whitespace-nowrap">{item.fileCode}</TableCell>
                   <TableCell className="text-xs font-bold text-slate-800 whitespace-nowrap">{item.brand}</TableCell>
                   <TableCell className="whitespace-nowrap">
