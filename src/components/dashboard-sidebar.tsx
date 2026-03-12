@@ -7,7 +7,6 @@ import {
   Calendar, 
   BarChart3, 
   Users, 
-  User,
   ChevronLeft,
   Command,
   LogOut,
@@ -37,7 +36,6 @@ const navItems = [
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
   { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3 },
   { title: 'Admin & HR', url: '/dashboard/admin', icon: Users },
-  { title: 'Profile', url: '/dashboard/profile', icon: User },
 ];
 
 export function DashboardSidebar() {
@@ -55,7 +53,7 @@ export function DashboardSidebar() {
             <Command className="w-5 h-5 text-white" />
           </div>
           {state === 'expanded' && (
-            <span className="font-bold text-sm tracking-tight truncate">conex media</span>
+            <span className="font-bold text-sm tracking-tight truncate uppercase">conex media</span>
           )}
         </div>
         {state === 'expanded' && (
@@ -69,7 +67,7 @@ export function DashboardSidebar() {
       </SidebarHeader>
       
       <SidebarContent className="px-0 py-6">
-        {/* Profile Card Section */}
+        {/* Centralized Profile Section */}
         <div className="px-4 mb-8 overflow-hidden">
           <div className="flex items-center gap-3">
             <div className="relative shrink-0">
