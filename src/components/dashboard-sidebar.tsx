@@ -10,8 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Command,
-  LogOut,
-  UserCircle
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
@@ -37,7 +36,6 @@ const navItems = [
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
   { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3 },
   { title: 'Admin & HR', url: '/dashboard/admin', icon: Users },
-  { title: 'Profile', url: '/dashboard/profile', icon: UserCircle },
 ];
 
 export function DashboardSidebar() {
@@ -84,7 +82,7 @@ export function DashboardSidebar() {
       </SidebarHeader>
       
       <SidebarContent className="px-0 py-6 overflow-x-hidden">
-        {/* Centralized Profile Section */}
+        {/* Centralized Profile Section - Handles Profile Navigation */}
         <div 
           onClick={() => router.push('/dashboard/profile')}
           className={cn(
