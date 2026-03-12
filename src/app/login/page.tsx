@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ShieldAlert, Lock, ArrowRight, Loader2, Home, Building2 } from 'lucide-react';
+import { ShieldAlert, Lock, ArrowRight, Loader2, Home, Building2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -117,6 +118,16 @@ export default function LoginPage() {
                   </>
                 )}
               </Button>
+              
+              <Alert className="bg-muted/30 border-dashed">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-[10px] leading-tight text-muted-foreground">
+                  <strong>DEMO ACCESS:</strong><br />
+                  CEO: s.jenkins@conex.private<br />
+                  Analyst: m.chen@conex.private
+                </AlertDescription>
+              </Alert>
+
               <p className="text-xs text-center text-muted-foreground px-6">
                 By signing in, you agree to the <span className="underline cursor-pointer">Classified Data Usage Policy</span>.
               </p>
