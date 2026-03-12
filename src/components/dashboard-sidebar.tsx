@@ -10,10 +10,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Command,
-  LogOut
+  LogOut,
+  UserCircle
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import {
@@ -36,11 +37,13 @@ const navItems = [
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
   { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3 },
   { title: 'Admin & HR', url: '/dashboard/admin', icon: Users },
+  { title: 'Profile', url: '/dashboard/profile', icon: UserCircle },
 ];
 
 export function DashboardSidebar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const { toggleSidebar, state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
@@ -82,10 +85,13 @@ export function DashboardSidebar() {
       
       <SidebarContent className="px-0 py-6">
         {/* Centralized Profile Section */}
-        <div className={cn(
-          "mb-8 transition-all duration-300",
-          isCollapsed ? "px-2 flex justify-center" : "px-4"
-        )}>
+        <div 
+          onClick={() => router.push('/dashboard/profile')}
+          className={cn(
+            "mb-8 transition-all duration-300 cursor-pointer group hover:bg-slate-50 rounded-lg mx-2 p-2",
+            isCollapsed ? "flex justify-center" : ""
+          )}
+        >
           <div className="flex items-center gap-3">
             <div className="relative shrink-0">
               <Avatar className={cn(
@@ -104,7 +110,7 @@ export function DashboardSidebar() {
             </div>
             {!isCollapsed && (
               <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-500">
-                <p className="text-xs font-bold leading-none mb-1 truncate">{user.name}</p>
+                <p className="text-xs font-bold leading-none mb-1 truncate group-hover:text-[#E11D48] transition-colors">{user.name}</p>
                 <p className="text-[10px] text-blue-600 font-mono font-bold bg-blue-50 px-1 rounded inline-block mb-1 truncate max-w-full">
                   {user.systemId}
                 </p>

@@ -1,112 +1,129 @@
-
 'use client';
 
-import { useState } from 'react';
 import { useAuth } from '@/components/auth-context';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Save, UserCircle, ShieldCheck } from 'lucide-react';
+import { 
+  User, 
+  Mail, 
+  Calendar as CalendarIcon, 
+  MapPin, 
+  Clock, 
+  Award,
+  Zap,
+  Palette,
+  Dumbbell
+} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  const handleSave = () => {
-    setIsUpdating(true);
-    setTimeout(() => {
-      setIsUpdating(false);
-      toast({
-        title: "Profile Updated",
-        description: "Your system preferences have been synchronized.",
-      });
-    }, 1000);
-  };
 
   if (!user) return null;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
-      <div className="flex items-center gap-4 border-b pb-6">
-        <UserCircle className="w-10 h-10 text-primary" />
-        <h1 className="text-3xl font-bold tracking-tight">Profile Management</h1>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 px-1">My Profile</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <Card className="md:col-span-1 border-2">
-          <CardContent className="pt-8 flex flex-col items-center text-center space-y-4">
-            <div className="relative">
-              <Avatar className="w-32 h-32 border-4 border-primary/20 shadow-lg">
-                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                <AvatarFallback className="text-2xl">{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div className="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-full shadow-lg">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
+      {/* Main Profile Header Card */}
+      <Card className="border shadow-none rounded-xl overflow-hidden bg-white">
+        <div className="h-32 bg-[#FF5A5F]" /> {/* Signature Red Banner */}
+        <CardContent className="relative px-8 pb-10">
+          <div className="absolute -top-12 left-8">
+            <Avatar className="w-24 h-24 border-4 border-white shadow-md text-2xl font-bold">
+              <AvatarImage src={user.avatarUrl} />
+              <AvatarFallback className="bg-[#1E293B] text-white">
+                {user.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          
+          <div className="mt-16 space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">{user.name}</h2>
+              <p className="text-slate-400 font-medium text-sm mt-0.5">{user.role}</p>
             </div>
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold">{user.name}</h2>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-            </div>
-            <Badge className="bg-primary hover:bg-primary/90">
-              {user.role} ACCESS LEVEL
-            </Badge>
-            <div className="w-full pt-4 space-y-2 border-t text-left">
-              <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest">Clearance Status</p>
-              <div className="flex items-center gap-2 text-sm text-green-600 font-semibold">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                Active Perimeter
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card className="md:col-span-2 shadow-xl border-2">
-          <CardHeader>
-            <CardTitle>System Information</CardTitle>
-            <CardDescription>Update your public-facing profile and resource consumption preferences.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input id="fullName" defaultValue={user.name} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-red-50 rounded-lg text-red-500">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Employee ID</p>
+                  <p className="text-sm font-bold text-slate-800">{user.systemId}</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Encrypted Email</Label>
-                <Input id="email" defaultValue={user.email} disabled className="bg-muted/50" />
+
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-red-50 rounded-lg text-red-500">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Email</p>
+                  <p className="text-sm font-bold text-slate-800">kyle.jarque@conex.ph</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-red-50 rounded-lg text-red-500">
+                  <CalendarIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Join Date</p>
+                  <p className="text-sm font-bold text-slate-800">January 15, 2024</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-red-50 rounded-lg text-red-500">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Location</p>
+                  <p className="text-sm font-bold text-slate-800">Manila, Philippines</p>
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="preferences">AI Recommendation Preferences</Label>
-              <Textarea 
-                id="preferences" 
-                placeholder="What kind of content should the AI curate for you?"
-                defaultValue={user.preferences}
-                className="min-h-[120px] resize-none"
-              />
-              <p className="text-xs text-muted-foreground">
-                This information is used by the CONEX AI Curator to suggest relevant resources.
-              </p>
-            </div>
-          </CardContent>
-          <CardFooter className="bg-muted/30 border-t flex justify-end px-6 py-4">
-            <Button onClick={handleSave} disabled={isUpdating} className="gap-2 bg-primary h-11 px-8 font-semibold">
-              {isUpdating ? "Synchronizing..." : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Attendance Card */}
+      <Card className="border shadow-none rounded-xl bg-white">
+        <CardHeader className="py-4">
+          <CardTitle className="text-sm font-bold text-slate-800">Today's Attendance</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center gap-4">
+          <Badge className="bg-[#E6F4EA] text-[#1E8E3E] border-none font-bold py-1 px-3">
+            <Clock className="w-3.5 h-3.5 mr-2" />
+            In Office
+          </Badge>
+          <p className="text-xs text-slate-400">
+            Clocked in at 3/12/2026, 3:19:57 PM
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Achievements Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <Award className="w-4 h-4 text-red-500" />
+          <h3 className="text-sm font-bold text-slate-800">Achievements</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { icon: Zap, color: 'text-orange-500', bg: 'bg-orange-50' },
+            { icon: Palette, color: 'text-pink-500', bg: 'bg-pink-50' },
+            { icon: Dumbbell, color: 'text-yellow-500', bg: 'bg-yellow-50' },
+          ].map((item, i) => (
+            <Card key={i} className="border shadow-none rounded-xl flex items-center justify-center py-10">
+              <div className={`p-4 rounded-full ${item.bg}`}>
+                <item.icon className={`w-8 h-8 ${item.color}`} />
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );
