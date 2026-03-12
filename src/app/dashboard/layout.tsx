@@ -3,9 +3,10 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-context';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { DashboardSidebar } from '@/components/dashboard-sidebar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Command } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isWfh, isVerified } = useAuth();
@@ -34,12 +35,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full overflow-hidden">
         <DashboardSidebar />
-        <SidebarInset className="flex-1 overflow-auto">
-          <div className="w-full h-full p-6 lg:p-10">
+        <SidebarInset className="flex-1 flex flex-col min-w-0">
+          {/* Mobile Navigation Header */}
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 lg:hidden bg-white sticky top-0 z-20">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <div className="flex items-center gap-2">
+              <div className="bg-[#722F37] w-6 h-6 rounded flex items-center justify-center">
+                <Command className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-sm tracking-tight">conex media</span>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10">
             {children}
-          </div>
+          </main>
         </SidebarInset>
       </div>
     </SidebarProvider>
