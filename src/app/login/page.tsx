@@ -24,7 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginPage() {
-  const [view, setView] = useState<'role' | 'login'>('role');
+  const [view, setView] = useState<'welcome' | 'role' | 'login'>('welcome');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isWfh, setIsWfh] = useState(false);
@@ -54,9 +54,35 @@ export default function LoginPage() {
     { id: 'intern', title: 'Intern', icon: GraduationCap },
   ];
 
+  if (view === 'welcome') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 animate-in fade-in duration-1000">
+        <div className="flex flex-col items-center text-center space-y-2 mb-12">
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">CONEX Media</h1>
+          <p className="text-slate-500 font-medium">Private Network</p>
+        </div>
+
+        <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center shadow-xl shadow-red-100 mb-12">
+          <Lock className="w-10 h-10 text-white" />
+        </div>
+
+        <Button 
+          onClick={() => setView('role')}
+          className="w-full max-w-[320px] h-14 bg-primary hover:bg-primary/90 text-white font-medium text-lg rounded-none transition-all active:scale-[0.98]"
+        >
+          Log In
+        </Button>
+
+        <p className="mt-12 text-[10px] uppercase font-black tracking-[0.2em] text-slate-400">
+          Authorized Personnel Only
+        </p>
+      </div>
+    );
+  }
+
   if (view === 'role') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 animate-in fade-in duration-700">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="text-center mb-16 space-y-4">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900">Select Your Role</h1>
           <p className="text-slate-500 font-medium text-lg">Choose your access level to continue</p>
@@ -79,9 +105,10 @@ export default function LoginPage() {
 
         <button 
           className="mt-20 text-slate-400 text-sm font-medium flex items-center gap-2 hover:text-primary transition-colors"
-          onClick={() => window.location.reload()}
+          onClick={() => setView('welcome')}
         >
-          ← Back to Welcome
+          <ChevronLeft className="w-4 h-4" />
+          Back to Welcome
         </button>
       </div>
     );
