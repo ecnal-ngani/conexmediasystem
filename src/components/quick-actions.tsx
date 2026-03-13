@@ -7,10 +7,8 @@ import {
   Plus, 
   HelpCircle, 
   Calendar, 
-  FileText, 
   Users, 
   TrendingUp, 
-  X
 } from 'lucide-react';
 import {
   Dialog,
@@ -41,14 +39,6 @@ const QUICK_ACTIONS = [
     color: 'text-blue-500',
     bg: 'bg-blue-50',
     href: '/dashboard/calendar'
-  },
-  {
-    title: 'View Reports',
-    description: 'Access analytics and reports',
-    icon: FileText,
-    color: 'text-green-600',
-    bg: 'bg-green-50',
-    href: '/dashboard/curator'
   },
   {
     title: 'Team Management',
