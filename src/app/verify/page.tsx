@@ -127,7 +127,7 @@ export default function VerifyPage() {
             <CardDescription>
               Ensure your face is clearly visible and well-lit.
             </CardDescription>
-          </Header>
+          </CardHeader>
           <CardContent className="p-0 bg-black aspect-video relative flex items-center justify-center">
             <video 
               ref={videoRef} 
