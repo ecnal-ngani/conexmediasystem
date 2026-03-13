@@ -6,12 +6,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ShieldAlert, Lock, ArrowRight, Loader2, Home, Building2, Info } from 'lucide-react';
+import { 
+  ShieldAlert, 
+  Lock, 
+  ArrowRight, 
+  Loader2, 
+  Home, 
+  Building2, 
+  Info, 
+  ShieldCheck, 
+  User, 
+  GraduationCap, 
+  ChevronLeft 
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginPage() {
+  const [view, setView] = useState<'role' | 'login'>('role');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isWfh, setIsWfh] = useState(false);
@@ -35,8 +48,47 @@ export default function LoginPage() {
     }
   };
 
+  const roles = [
+    { id: 'admin', title: 'Administrator', icon: ShieldCheck },
+    { id: 'employee', title: 'Employee', icon: User },
+    { id: 'intern', title: 'Intern', icon: GraduationCap },
+  ];
+
+  if (view === 'role') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 animate-in fade-in duration-700">
+        <div className="text-center mb-16 space-y-4">
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Select Your Role</h1>
+          <p className="text-slate-500 font-medium text-lg">Choose your access level to continue</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl px-4">
+          {roles.map((role) => (
+            <button
+              key={role.id}
+              onClick={() => setView('login')}
+              className="flex flex-col items-center justify-center aspect-square bg-white border border-slate-100 rounded-none shadow-sm p-12 space-y-8 hover:border-primary/20 hover:shadow-2xl hover:shadow-slate-100 transition-all group relative overflow-hidden"
+            >
+              <div className="w-20 h-20 rounded-full border border-slate-100 flex items-center justify-center bg-slate-50 group-hover:bg-primary/5 group-hover:border-primary/20 transition-all duration-500">
+                <role.icon className="w-10 h-10 text-slate-600 group-hover:text-primary transition-colors" />
+              </div>
+              <span className="text-2xl font-bold text-slate-900 group-hover:text-primary transition-colors">{role.title}</span>
+            </button>
+          ))}
+        </div>
+
+        <button 
+          className="mt-20 text-slate-400 text-sm font-medium flex items-center gap-2 hover:text-primary transition-colors"
+          onClick={() => window.location.reload()}
+        >
+          ← Back to Welcome
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-6 shadow-xl shadow-primary/20">
@@ -50,12 +102,23 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <Card className="border-2 shadow-2xl">
+        <Card className="border shadow-2xl bg-white">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <Lock className="w-5 h-5 text-primary" />
-              Secure Login
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Lock className="w-5 h-5 text-primary" />
+                Secure Login
+              </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setView('role')} 
+                className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-primary/5 h-8 px-2"
+              >
+                <ChevronLeft className="w-3 h-3 mr-1" />
+                Switch Role
+              </Button>
+            </div>
             <CardDescription>
               Enter your credentials to access the private network.
             </CardDescription>
@@ -63,7 +126,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Work Email</Label>
+                <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-slate-500">Work Email</Label>
                 <Input 
                   id="email" 
                   type="email" 
@@ -72,12 +135,12 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
-                  className="bg-muted/30"
+                  className="bg-slate-50 border-slate-200 h-11 focus-visible:ring-primary"
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Security Token</Label>
+                  <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest text-slate-500">Security Token</Label>
                 </div>
                 <Input 
                   id="password" 
@@ -86,18 +149,18 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
-                  className="bg-muted/30"
+                  className="bg-slate-50 border-slate-200 h-11 focus-visible:ring-primary"
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/5 border border-primary/10">
+              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${isWfh ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                  <div className={`p-2 rounded-lg ${isWfh ? 'bg-primary/10 text-primary' : 'bg-white border text-slate-400'}`}>
                     {isWfh ? <Home className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                   </div>
                   <div className="space-y-0.5">
-                    <Label className="text-sm font-bold">Work From Home?</Label>
-                    <p className="text-xs text-muted-foreground">Requires biometric check</p>
+                    <Label className="text-xs font-bold">Work From Home?</Label>
+                    <p className="text-[9px] font-medium text-slate-400">Requires biometric check</p>
                   </div>
                 </div>
                 <Switch 
@@ -108,7 +171,7 @@ export default function LoginPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full text-lg h-12 font-semibold group" disabled={isLoading}>
+              <Button type="submit" className="w-full text-sm h-12 font-bold group bg-primary hover:bg-primary/90 shadow-lg shadow-red-100" disabled={isLoading}>
                 {isLoading ? (
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
@@ -119,33 +182,33 @@ export default function LoginPage() {
                 )}
               </Button>
               
-              <Alert className="bg-muted/30 border-dashed">
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-[10px] leading-tight text-muted-foreground">
+              <Alert className="bg-slate-50 border-dashed border-slate-200">
+                <Info className="h-4 w-4 text-slate-400" />
+                <AlertDescription className="text-[10px] leading-tight text-slate-500">
                   <strong>DEMO ACCESS:</strong><br />
                   CEO: s.jenkins@conex.private<br />
                   Analyst: m.chen@conex.private
                 </AlertDescription>
               </Alert>
 
-              <p className="text-xs text-center text-muted-foreground px-6">
-                By signing in, you agree to the <span className="underline cursor-pointer">Classified Media Policy</span>.
+              <p className="text-[10px] text-center text-slate-400 px-6 font-medium">
+                By signing in, you agree to the <span className="underline cursor-pointer hover:text-primary transition-colors">Classified Media Policy</span>.
               </p>
             </CardFooter>
           </form>
         </Card>
 
         <div className="grid grid-cols-2 gap-4 text-center">
-          <div className="p-3 bg-secondary/10 rounded-lg border border-secondary/20">
-            <div className="text-xs text-muted-foreground uppercase font-bold tracking-widest mb-1">Status</div>
-            <div className="text-sm font-semibold flex items-center justify-center gap-1.5 text-green-600">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+          <div className="p-3 bg-white border border-slate-100 rounded-xl">
+            <div className="text-[8px] text-slate-400 uppercase font-black tracking-[0.2em] mb-1">Status</div>
+            <div className="text-xs font-bold flex items-center justify-center gap-1.5 text-green-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
               All Systems Nominal
             </div>
           </div>
-          <div className="p-3 bg-secondary/10 rounded-lg border border-secondary/20">
-            <div className="text-xs text-muted-foreground uppercase font-bold tracking-widest mb-1">Encrypted</div>
-            <div className="text-sm font-semibold text-primary">AES-256 E2EE</div>
+          <div className="p-3 bg-white border border-slate-100 rounded-xl">
+            <div className="text-[8px] text-slate-400 uppercase font-black tracking-[0.2em] mb-1">Encrypted</div>
+            <div className="text-xs font-bold text-primary">AES-256 E2EE</div>
           </div>
         </div>
       </div>
