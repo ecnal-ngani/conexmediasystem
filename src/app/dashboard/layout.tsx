@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { DashboardSidebar } from '@/components/dashboard-sidebar';
 import { Loader2, Command } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { QuickActions } from '@/components/quick-actions';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isWfh, isVerified } = useAuth();
@@ -53,6 +54,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10">
             {children}
           </main>
+          
+          {/* Global Quick Actions */}
+          <QuickActions />
         </SidebarInset>
       </div>
     </SidebarProvider>

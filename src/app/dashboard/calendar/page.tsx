@@ -8,9 +8,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Calendar as CalendarIcon,
-  Clock,
-  AlertCircle,
-  Plus
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -176,17 +174,6 @@ export default function CalendarPage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-30 pointer-events-none">
-        <button className="pointer-events-auto relative w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform active:scale-95 group">
-          <AlertCircle className="w-5 h-5" />
-          <span className="absolute -top-1 -right-1 bg-red-800 border-2 border-white text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center">3</span>
-        </button>
-        <button className="pointer-events-auto w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform active:scale-95">
-          <Plus className="w-6 h-6" />
-        </button>
       </div>
     </div>
   );
