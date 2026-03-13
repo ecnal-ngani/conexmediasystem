@@ -206,7 +206,7 @@ export default function VerifyPage() {
           <div className="text-xs text-muted-foreground space-y-1">
             <p className="font-bold text-primary uppercase">Security Notice</p>
             <p>
-              This biometric data is processed in real-time by COEX MEDIA and is not stored permanently.
+              This biometric data is processed in real-time by CONEX MEDIA and is not stored permanently.
               Failure to provide a valid face match will result in an automated security lock.
             </p>
           </div>
