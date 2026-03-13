@@ -127,7 +127,7 @@ export default function VerifyPage() {
             <CardDescription>
               Ensure your face is clearly visible and well-lit.
             </CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent className="p-0 bg-black aspect-video relative flex items-center justify-center">
             <video 
               ref={videoRef} 
@@ -206,7 +206,7 @@ export default function VerifyPage() {
           <div className="text-xs text-muted-foreground space-y-1">
             <p className="font-bold text-primary uppercase">Security Notice</p>
             <p>
-              This biometric data is processed in real-time by CONEX MEDIA AI and is not stored permanently.
+              This biometric data is processed in real-time by COEX MEDIA and is not stored permanently.
               Failure to provide a valid face match will result in an automated security lock.
             </p>
           </div>
