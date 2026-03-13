@@ -1,16 +1,60 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/components/auth-context';
 import { EMPLOYEES } from '@/lib/mock-data';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Briefcase, 
   Users, 
   CheckCircle2, 
-  Award
+  Award,
+  Search,
+  Download,
+  UserPlus,
+  Trophy,
+  Zap,
+  Wallet
 } from 'lucide-react';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+
+interface Employee {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  status: 'Active' | 'Inactive';
+  points: number;
+  xp: number;
+  salary: string;
+  badges: string[];
+}
+
+const STAFF_DATA: Employee[] = [
+  { id: 'CX-CEO-01', name: 'Kyle Jarque', role: 'CEO', email: 'kyle@conexmedia.com', status: 'Active', points: 0, xp: 0, salary: 'N/A', badges: [] },
+  { id: 'CX-COO-01', name: 'Sophie', role: 'COO', email: 'sophie@conexmedia.com', status: 'Active', points: 0, xp: 0, salary: 'N/A', badges: [] },
+  { id: 'CX-MS-01', name: 'Ellaija Joy Parot', role: 'Marketing Strategist', email: 'ellaija@conexmedia.com', status: 'Active', points: 850, xp: 8500, salary: '₱33,200', badges: ['🏆'] },
+  { id: 'CX-CD-01', name: 'Trish Jarque', role: 'Creative Director', email: 'trish@conexmedia.com', status: 'Active', points: 0, xp: 0, salary: '₱38,000', badges: [] },
+  { id: 'CX-PD-01', name: 'Matthew Valenzona', role: 'Production Director', email: 'matthew@conexmedia.com', status: 'Active', points: 0, xp: 0, salary: '₱38,000', badges: [] },
+  { id: 'CX-BM-01', name: 'Clark Tadeo', role: 'Brand Manager', email: 'clark@conexmedia.com', status: 'Active', points: 1250, xp: 12500, salary: '₱37,400', badges: ['🏆', '⚡'] },
+  { id: 'CX-BM-02', name: 'CA Guazon', role: 'Brand Manager', email: 'ca@conexmedia.com', status: 'Active', points: 1180, xp: 11800, salary: '₱36,800', badges: ['🏆'] },
+  { id: 'CX-BM-03', name: 'Janella Toribio', role: 'Brand Manager', email: 'janella@conexmedia.com', status: 'Active', points: 980, xp: 9000, salary: '₱36,500', badges: ['🏆'] },
+  { id: 'CX-BM-04', name: 'Hanna Pestaño', role: 'Brand Manager', email: 'hanna@conexmedia.com', status: 'Active', points: 920, xp: 9200, salary: '₱36,400', badges: [] },
+  { id: 'CX-BM-05', name: 'Khael Rodriguez', role: 'Brand Manager', email: 'khael@conexmedia.com', status: 'Active', points: 780, xp: 7800, salary: '₱36,100', badges: [] },
+  { id: 'CX-VG-01', name: 'Chloe Javier', role: 'Videographer', email: 'chloe@conexmedia.com', status: 'Active', points: 587, xp: 5870, salary: '₱28,200', badges: ['🏆'] },
+];
 
 const performanceData = [
   { month: "Jan", efficiency: 82, projects: 40 },
@@ -23,7 +67,131 @@ const performanceData = [
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
 
+  const filteredStaff = STAFF_DATA.filter(emp => 
+    emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    emp.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    emp.role.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // ADMIN-ONLY DASHBOARD VIEW
+  if (user?.role === 'ADMIN') {
+    return (
+      <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
+        <div className="flex items-center justify-between px-1">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Admin Personnel Dashboard</h1>
+        </div>
+
+        {/* Action Bar */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="relative w-full md:max-w-md group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+            <Input 
+              placeholder="Search by name, ID, or role..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11 bg-white border-slate-200 shadow-sm focus-visible:ring-primary w-full"
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto h-11 border-primary/20 text-primary hover:bg-primary/5 font-bold">
+              <Download className="w-4 h-4 mr-2" />
+              Export Personnel
+            </Button>
+            <Button className="w-full sm:w-auto h-11 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Generate Staff ID
+            </Button>
+          </div>
+        </div>
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {[
+            { label: 'Total Staff', value: '20', icon: Users, color: 'text-slate-900' },
+            { label: 'Active Personnel', value: '20', icon: CheckCircle2, color: 'text-green-600' },
+            { label: 'Personnel XP', value: '98,350', icon: Trophy, color: 'text-primary' },
+            { label: 'Monthly Payroll', value: '₱533K', icon: Wallet, color: 'text-slate-900' },
+          ].map((kpi, i) => (
+            <Card key={i} className="border shadow-none rounded-xl bg-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{kpi.label}</span>
+                  <kpi.icon className={`w-4 h-4 ${kpi.color} opacity-40`} />
+                </div>
+                <h3 className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</h3>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Employee Table */}
+        <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-50/50">
+                <TableRow className="hover:bg-transparent border-0">
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 pl-6 whitespace-nowrap">Employee ID</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Name</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Role</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Email</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">Status</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">Total Pts</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">XP Level</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Salary</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Badges</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredStaff.map((emp) => (
+                  <TableRow key={emp.id} className="hover:bg-slate-50/50 transition-colors border-0">
+                    <TableCell className="py-4 pl-6 font-mono text-[10px] font-bold text-slate-500 whitespace-nowrap">
+                      {emp.id}
+                    </TableCell>
+                    <TableCell className="py-4 font-bold text-slate-900 whitespace-nowrap">
+                      {emp.name}
+                    </TableCell>
+                    <TableCell className="py-4 text-xs text-slate-500 whitespace-nowrap">
+                      {emp.role}
+                    </TableCell>
+                    <TableCell className="py-4 text-xs text-slate-400 whitespace-nowrap">
+                      {emp.email}
+                    </TableCell>
+                    <TableCell className="py-4 text-center whitespace-nowrap">
+                      <Badge className="bg-green-50 text-green-600 border-green-100 hover:bg-green-100 text-[9px] font-bold px-2 py-0.5">
+                        {emp.status.toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-4 text-center font-bold text-primary text-xs whitespace-nowrap">
+                      {emp.points.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="py-4 text-center font-bold text-blue-600 text-xs whitespace-nowrap">
+                      {emp.xp.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="py-4 text-xs font-medium text-slate-700 whitespace-nowrap">
+                      {emp.salary}
+                    </TableCell>
+                    <TableCell className="py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        {emp.badges.map((badge, idx) => (
+                          <div key={idx} className="w-6 h-6 rounded bg-orange-50 border border-orange-100 flex items-center justify-center text-[10px] shadow-sm">
+                            {badge === '🏆' ? <Trophy className="w-3 h-3 text-orange-500" /> : <Zap className="w-3 h-3 text-orange-500" />}
+                          </div>
+                        ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // STANDARD DASHBOARD VIEW
   return (
     <div className="space-y-6 md:space-y-8 max-w-[1600px] mx-auto pb-10 relative">
       <div className="flex items-center justify-between">
