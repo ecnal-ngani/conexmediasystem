@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -129,18 +128,8 @@ export default function ProductionPage() {
       createdAt: serverTimestamp()
     };
 
+    // Optimistic write: Do not await.
     addDoc(projectsRef, projectData)
-      .then(() => {
-        toast({
-          title: "Project Added",
-          description: `${fileCode} has been added to the Production Matrix.`
-        });
-        setIsAddProjectOpen(false);
-        // Reset form
-        setFileCode('');
-        setBrand('');
-        setContentIdea('');
-      })
       .catch(async (err) => {
         const permissionError = new FirestorePermissionError({
           path: projectsRef.path,
@@ -149,6 +138,21 @@ export default function ProductionPage() {
         });
         errorEmitter.emit('permission-error', permissionError);
       });
+
+    // Immediate UI response
+    toast({
+      title: "Project Initialized",
+      description: `${fileCode} is being added to the Production Matrix.`
+    });
+    
+    setIsAddProjectOpen(false);
+    // Reset form
+    setFileCode('');
+    setBrand('');
+    setContentIdea('');
+    setArtist('');
+    setDueDate('');
+    setCanvasLink('');
   };
 
   return (

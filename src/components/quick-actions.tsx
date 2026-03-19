@@ -141,7 +141,6 @@ const STAFF_LIST = [
 export function QuickActions() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   
   // Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
@@ -191,7 +190,6 @@ export function QuickActions() {
       return;
     }
 
-    setIsSaving(true);
     const schedulesRef = collection(firestore, 'schedules');
     const scheduleData = {
       title: `${eventType}: ${client}`,
@@ -206,20 +204,8 @@ export function QuickActions() {
       createdAt: serverTimestamp()
     };
 
-    // Non-blocking write
+    // Optimistic Mutation: Do not await.
     addDoc(schedulesRef, scheduleData)
-      .then(() => {
-        toast({
-          title: "Schedule Confirmed",
-          description: `New ${eventType} has been added to the operations matrix.`
-        });
-        setIsScheduleOpen(false);
-        // Reset form
-        setClient('');
-        setDate('');
-        setSelectedStaff([]);
-        setNotes('');
-      })
       .catch(async (err) => {
         const permissionError = new FirestorePermissionError({
           path: schedulesRef.path,
@@ -227,10 +213,20 @@ export function QuickActions() {
           requestResourceData: scheduleData
         });
         errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsSaving(false);
       });
+
+    // Immediate UI response
+    toast({
+      title: "Schedule Initiated",
+      description: `New ${eventType} is being synchronized with the operations matrix.`
+    });
+    
+    setIsScheduleOpen(false);
+    // Reset form
+    setClient('');
+    setDate('');
+    setSelectedStaff([]);
+    setNotes('');
   };
 
   const isCalendarPage = pathname === '/dashboard/calendar';
@@ -503,10 +499,8 @@ export function QuickActions() {
                     </DialogClose>
                     <Button 
                       onClick={handleConfirmSchedule} 
-                      disabled={isSaving}
                       className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100"
                     >
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                       Confirm Schedule
                     </Button>
                   </div>
