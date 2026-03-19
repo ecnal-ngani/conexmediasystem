@@ -99,8 +99,8 @@ export default function CalendarPage() {
           )}
         >
           <span className={cn(
-            "text-xs font-medium",
-            isToday ? "text-primary font-bold" : "text-slate-400"
+            "text-xs font-semibold",
+            isToday ? "text-primary font-black" : "text-slate-500"
           )}>{i}</span>
           
           <div className="w-full space-y-1 overflow-y-auto mt-1 flex-1">
@@ -111,7 +111,7 @@ export default function CalendarPage() {
                   e.stopPropagation();
                   setSelectedEvent(event);
                 }}
-                className="bg-primary hover:bg-primary/90 transition-colors text-white text-[8px] font-bold py-1 px-1.5 rounded truncate w-full text-center block"
+                className="bg-primary hover:bg-primary/90 transition-colors text-white text-[10px] font-bold py-1.5 px-2 rounded-md truncate w-full text-left block shadow-sm border border-primary-foreground/10"
                 title={event.title}
               >
                 {event.title}
