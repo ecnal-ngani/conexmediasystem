@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -46,11 +45,19 @@ export default function CalendarPage() {
     }
     
     for (let i = 1; i <= daysInMonth; i++) {
-      // Find events for this day
-      // Date in Firestore is stored as YYYY-MM-DD
+      // Find events for this day using timezone-safe string comparison
       const dayEvents = schedules?.filter(s => {
-        const d = new Date(s.date);
-        return d.getDate() === i && d.getMonth() === 1; // February
+        if (!s.date) return false;
+        // Date format from input is YYYY-MM-DD
+        const parts = s.date.split('-');
+        if (parts.length !== 3) return false;
+        
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]);
+        const day = parseInt(parts[2]);
+        
+        // Filter for February (month 2) 2025
+        return day === i && month === 2 && year === 2025;
       }) || [];
       
       const isToday = i === currentDay;

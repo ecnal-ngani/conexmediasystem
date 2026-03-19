@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -142,6 +141,7 @@ const STAFF_LIST = [
 export function QuickActions() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
@@ -191,6 +191,7 @@ export function QuickActions() {
       return;
     }
 
+    setIsSaving(true);
     const schedulesRef = collection(firestore, 'schedules');
     const scheduleData = {
       title: `${eventType}: ${client}`,
@@ -226,6 +227,9 @@ export function QuickActions() {
           requestResourceData: scheduleData
         });
         errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsSaving(false);
       });
   };
 
@@ -499,8 +503,10 @@ export function QuickActions() {
                     </DialogClose>
                     <Button 
                       onClick={handleConfirmSchedule} 
+                      disabled={isSaving}
                       className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100"
                     >
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                       Confirm Schedule
                     </Button>
                   </div>
