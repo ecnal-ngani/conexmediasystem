@@ -70,13 +70,12 @@ const STAFF_DATA: Employee[] = [
 ];
 
 const ROLE_MAPPINGS: Record<string, string> = {
-  "CEO": "CEO",
-  "COO": "COO",
-  "Marketing Strategist": "MS",
-  "Creative Director": "CD",
-  "Production Director": "PD",
   "Brand Manager": "BM",
-  "Videographer": "VG"
+  "Video Editor": "VE",
+  "Graphic Designer": "GD",
+  "Videographer": "VG",
+  "Media Buyer": "MB",
+  "Intern": "IN"
 };
 
 export default function AdminPage() {
