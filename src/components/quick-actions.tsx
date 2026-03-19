@@ -14,7 +14,10 @@ import {
   Clock,
   ShieldAlert,
   X,
-  Trash2
+  Trash2,
+  Briefcase,
+  MapPin,
+  Check
 } from 'lucide-react';
 import {
   Dialog,
@@ -33,7 +36,18 @@ import {
   SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -124,8 +138,20 @@ const NOTIFICATIONS = [
   },
 ];
 
+const STAFF_LIST = [
+  { name: 'Chloe Javier', role: 'Videographer' },
+  { name: 'Clark Tadeo', role: 'Brand Manager' },
+  { name: 'Jhon Lester Nolial', role: 'Video Editor' },
+  { name: 'Louise Dela Cruz', role: 'Graphic Designer' },
+  { name: 'Matthew Valenzona', role: 'Production Director' },
+];
+
 export function QuickActions() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
+  const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
+  
   const pathname = usePathname();
 
   const getNotificationStyles = (type: string) => {
@@ -152,6 +178,12 @@ export function QuickActions() {
       default:
         return 'text-blue-500 bg-white';
     }
+  };
+
+  const toggleStaff = (name: string) => {
+    setSelectedStaff(prev => 
+      prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]
+    );
   };
 
   const isCalendarPage = pathname === '/dashboard/calendar';
@@ -280,9 +312,151 @@ export function QuickActions() {
         </Dialog>
         
         {isCalendarPage && (
-          <button className="pointer-events-auto w-10 h-10 md:w-12 md:h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform active:scale-95">
-            <Plus className="w-5 h-5 md:w-6 md:h-6" />
-          </button>
+          <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
+            <DialogTrigger asChild>
+              <button className="pointer-events-auto w-10 h-10 md:w-12 md:h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform active:scale-95">
+                <Plus className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[440px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+              <div className="p-6 md:p-8 space-y-6">
+                <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
+                    <Calendar className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Schedule</DialogTitle>
+                    <DialogDescription className="text-slate-400 font-medium">Add a new event to your calendar.</DialogDescription>
+                  </div>
+                </DialogHeader>
+
+                <div className="space-y-6">
+                  {/* Event Type */}
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Event Type</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['Shoot', 'Meeting', 'Deadline'] as const).map((type) => (
+                        <Button
+                          key={type}
+                          variant="outline"
+                          onClick={() => setEventType(type)}
+                          className={cn(
+                            "h-11 font-bold transition-all border-slate-100 text-slate-600 rounded-xl",
+                            eventType === type ? "border-primary text-primary bg-primary/5 ring-1 ring-primary" : "hover:bg-slate-50"
+                          )}
+                        >
+                          {type}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Client / Project */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Briefcase className="w-3 h-3 text-primary" />
+                      Client / Project
+                    </Label>
+                    <Select>
+                      <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
+                        <SelectValue placeholder="Select a client..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cjc">CJC Eco Bag</SelectItem>
+                        <SelectItem value="shimmer">Shimmer & Shield</SelectItem>
+                        <SelectItem value="solarmaxx">Solarmaxx</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Date */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Calendar className="w-3 h-3 text-primary" />
+                      Date
+                    </Label>
+                    <Input type="date" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                  </div>
+
+                  {/* Call Time & Wrap Time */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                        <Clock className="w-3 h-3 text-primary" />
+                        Call Time
+                      </Label>
+                      <Input type="time" defaultValue="09:00" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                        <Clock className="w-3 h-3 text-primary" />
+                        Wrap Time
+                      </Label>
+                      <Input type="time" defaultValue="17:00" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <MapPin className="w-3 h-3 text-primary" />
+                      Location
+                    </Label>
+                    <Select>
+                      <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
+                        <SelectValue placeholder="Select location..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="studio-a">Studio A - HQ</SelectItem>
+                        <SelectItem value="on-site">On-Site Client</SelectItem>
+                        <SelectItem value="remote">Remote / Digital</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Assign Staff */}
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Users className="w-3 h-3 text-primary" />
+                      Assign Staff ({selectedStaff.length} selected)
+                    </Label>
+                    <ScrollArea className="h-40 border rounded-xl p-2 bg-slate-50/50">
+                      <div className="space-y-1.5">
+                        {STAFF_LIST.map((staff) => (
+                          <div 
+                            key={staff.name}
+                            onClick={() => toggleStaff(staff.name)}
+                            className={cn(
+                              "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer group",
+                              selectedStaff.includes(staff.name) ? "bg-white border-primary/20 shadow-sm" : "bg-transparent border-transparent hover:bg-white"
+                            )}
+                          >
+                            <div className={cn(
+                              "w-5 h-5 rounded border flex items-center justify-center transition-colors",
+                              selectedStaff.includes(staff.name) ? "bg-primary border-primary" : "border-slate-300 bg-white"
+                            )}>
+                              {selectedStaff.includes(staff.name) && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                              <p className="text-xs font-bold text-slate-900 truncate">{staff.name}</p>
+                              <p className="text-[9px] text-slate-400 font-medium">{staff.role}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <DialogClose asChild>
+                    <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
+                  </DialogClose>
+                  <Button className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100">Create Schedule</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
 
