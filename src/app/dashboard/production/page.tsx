@@ -25,12 +25,34 @@ import {
   Download, 
   Filter, 
   Search,
-  Plus
+  Plus,
+  FileText,
+  Briefcase,
+  User,
+  Zap,
+  Calendar,
+  Layers,
+  Share2,
+  Link as LinkIcon,
+  CheckCircle2,
+  Lightbulb
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 export default function ProductionPage() {
   const [data] = useState<ProductionItem[]>(PRODUCTION_DATA);
+  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
 
   const getStatusStyles = (status: ProductionItem['status']) => {
     switch (status) {
@@ -88,10 +110,176 @@ export default function ProductionPage() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-          <Button className="w-full sm:w-auto h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs">
-            <Plus className="w-4 h-4 mr-1.5" />
-            Add New Project
-          </Button>
+          <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full sm:w-auto h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs">
+                <Plus className="w-4 h-4 mr-1.5" />
+                Add New Project
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[540px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+              <ScrollArea className="max-h-[90vh]">
+                <div className="p-6 md:p-8 space-y-6">
+                  <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
+                      <Plus className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle>
+                      <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the matrix.</DialogDescription>
+                    </div>
+                  </DialogHeader>
+
+                  <div className="space-y-6">
+                    {/* Project Codes */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <FileText className="w-3 h-3 text-primary" />
+                          File Code
+                        </Label>
+                        <Input placeholder="VLM-260120-01" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <Briefcase className="w-3 h-3 text-primary" />
+                          Brand
+                        </Label>
+                        <Input placeholder="CJC Eco Bag" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                      </div>
+                    </div>
+
+                    {/* Content Idea */}
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                        <Lightbulb className="w-3 h-3 text-primary" />
+                        Content Idea
+                      </Label>
+                      <Input placeholder="Product showcase reel" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                    </div>
+
+                    {/* Status & Priority */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <CheckCircle2 className="w-3 h-3 text-primary" />
+                          Status
+                        </Label>
+                        <Select defaultValue="In Production">
+                          <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="In Production">In Production</SelectItem>
+                            <SelectItem value="For QA">For QA</SelectItem>
+                            <SelectItem value="Approved">Approved</SelectItem>
+                            <SelectItem value="Client Revision">Client Revision</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <Zap className="w-3 h-3 text-primary" />
+                          Priority
+                        </Label>
+                        <Select defaultValue="REGULAR">
+                          <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="REGULAR">REGULAR</SelectItem>
+                            <SelectItem value="RUSH">RUSH</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Artist & Type */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <User className="w-3 h-3 text-primary" />
+                          Artist
+                        </Label>
+                        <Input placeholder="Jhon Lester Nolial" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <Layers className="w-3 h-3 text-primary" />
+                          Type
+                        </Label>
+                        <Select defaultValue="Video">
+                          <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Video">Video</SelectItem>
+                            <SelectItem value="Graphic Design">Graphic Design</SelectItem>
+                            <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
+                            <SelectItem value="Photography">Photography</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Platform & Date */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <Share2 className="w-3 h-3 text-primary" />
+                          Platform
+                        </Label>
+                        <Select defaultValue="Instagram">
+                          <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Instagram">Instagram</SelectItem>
+                            <SelectItem value="TikTok">TikTok</SelectItem>
+                            <SelectItem value="Facebook">Facebook</SelectItem>
+                            <SelectItem value="YouTube">YouTube</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <Calendar className="w-3 h-3 text-primary" />
+                          Due Date
+                        </Label>
+                        <Input type="date" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                      </div>
+                    </div>
+
+                    {/* Links & Owners */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <User className="w-3 h-3 text-primary" />
+                          Brand Manager (BM)
+                        </Label>
+                        <Input placeholder="Clark" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                          <LinkIcon className="w-3 h-3 text-primary" />
+                          Canvas Link
+                        </Label>
+                        <Input placeholder="https://..." className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <DialogClose asChild>
+                      <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
+                    </DialogClose>
+                    <Button className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100">Add to Matrix</Button>
+                  </div>
+                </div>
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
+          
           <Button variant="outline" className="w-full sm:w-auto h-10 border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm text-xs font-bold">
             <Download className="w-4 h-4 mr-1.5" />
             Export Matrix
@@ -118,8 +306,8 @@ export default function ProductionPage() {
               {data.map((item, i) => (
                 <TableRow key={i} className="hover:bg-slate-50/50 transition-colors border-0">
                   <TableCell className="py-4 pl-6 whitespace-nowrap">
-                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2 font-bold">
-                      <ExternalLink className="w-3 h-3 mr-1" />
+                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2 font-bold group">
+                      <ExternalLink className="w-3 h-3 mr-1 transition-transform group-hover:scale-110" />
                       View
                     </Button>
                   </TableCell>
