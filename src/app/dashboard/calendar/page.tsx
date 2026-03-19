@@ -133,7 +133,7 @@ export default function CalendarPage() {
                 className={cn(
                   "transition-colors text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border",
                   event.priority === 'URGENT' ? "bg-red-600 border-red-400 hover:bg-red-700" :
-                  event.priority === 'HIGH' ? "bg-orange-500 border-orange-300 hover:bg-orange-600" :
+                  event.priority === 'HIGH' ? "bg-orange-50 border-orange-300 hover:bg-orange-600" :
                   "bg-primary border-primary-foreground/10 hover:bg-primary/90"
                 )}
                 title={event.title}
@@ -168,7 +168,7 @@ export default function CalendarPage() {
                 className={cn(
                   "text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border",
                   task.priority === 'URGENT' ? "bg-red-600 border-red-400 hover:bg-red-700" :
-                  task.priority === 'HIGH' ? "bg-orange-500 border-orange-300 hover:bg-orange-600" :
+                  task.priority === 'HIGH' ? "bg-orange-50 border-orange-300 hover:bg-orange-600" :
                   "bg-blue-500 border-blue-300 hover:bg-blue-600"
                 )}
                 title={`TASK: ${task.title}`}
@@ -324,226 +324,228 @@ export default function CalendarPage() {
       {/* Event Details Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
         <DialogContent className="max-w-[500px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
-          <div className="p-6 md:p-8 space-y-6">
-            <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
-              <div className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-lg",
-                selectedEvent?.source === 'production' ? "bg-blue-600 shadow-blue-100" : 
-                selectedEvent?.source === 'task' ? "bg-green-600 shadow-green-100" :
-                selectedEvent?.priority === 'URGENT' ? "bg-red-600 shadow-red-100" :
-                selectedEvent?.priority === 'HIGH' ? "bg-orange-600 shadow-orange-100" :
-                "bg-primary shadow-red-100"
-              )}>
-                {selectedEvent?.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : 
-                 selectedEvent?.source === 'task' ? <CheckCircle2 className="w-6 h-6 text-white" /> :
-                 <CalendarIcon className="w-6 h-6 text-white" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight truncate">
-                  {selectedEvent?.source === 'production' ? `Project: ${selectedEvent?.brand}` : 
-                   selectedEvent?.source === 'task' ? `Task: ${selectedEvent?.title}` :
-                   selectedEvent?.title}
-                </DialogTitle>
-                <DialogDescription className="text-slate-400 font-medium uppercase text-[10px] tracking-widest">
-                  {selectedEvent?.source === 'production' ? 'Production Asset' : 
-                   selectedEvent?.source === 'task' ? 'Internal Task' :
-                   selectedEvent?.type} Briefing
-                </DialogDescription>
-              </div>
-            </DialogHeader>
-
-            <div className="space-y-6">
-              {selectedEvent?.source === 'task' ? (
-                // Task Details
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</p>
-                      <Badge className={cn(
-                        "text-[10px] font-black px-2 py-1 rounded",
-                        selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
-                        selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
-                        "bg-blue-50 text-blue-500 border-blue-100"
-                      )} variant="outline">
-                        {selectedEvent.priority}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Due Date</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <CalendarIcon className="w-4 h-4 text-slate-400" />
-                        {selectedEvent?.dueDate}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
-                    <div className="flex items-center gap-2 text-slate-700 font-bold">
-                      <Briefcase className="w-4 h-4 text-slate-400" />
-                      {selectedEvent?.category}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</p>
-                    <Badge variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100">
-                      {selectedEvent?.status?.toUpperCase() || 'PENDING'}
-                    </Badge>
-                  </div>
-                </div>
-              ) : selectedEvent?.source === 'production' ? (
-                // Production Project Details
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">File Code</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold font-mono text-sm">
-                        <FileText className="w-4 h-4 text-blue-600" />
-                        {selectedEvent?.fileCode}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Due Date</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <CalendarIcon className="w-4 h-4 text-blue-600" />
-                        {selectedEvent?.dueDate}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Platform</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <Briefcase className="w-4 h-4 text-blue-600" />
-                        {selectedEvent?.platform}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Artist</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <Users className="w-4 h-4 text-blue-600" />
-                        {selectedEvent?.artist}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Idea</p>
-                    <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
-                      {selectedEvent?.contentIdea}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                // Schedule Details
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operation Priority</p>
-                      <Badge className={cn(
-                        "text-[10px] font-black px-2 py-1 rounded",
-                        selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
-                        selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
-                        "bg-blue-50 text-blue-500 border-blue-100"
-                      )} variant="outline">
-                        {selectedEvent.priority || 'NORMAL'}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <CalendarIcon className="w-4 h-4 text-primary" />
-                        {selectedEvent?.date}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Client / Project</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <Briefcase className="w-4 h-4 text-primary" />
-                        {selectedEvent?.client}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Type</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <AlertCircle className="w-4 h-4 text-primary" />
-                        {selectedEvent?.type}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Call Time</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <Clock className="w-4 h-4 text-primary" />
-                        {selectedEvent?.callTime}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Wrap Time</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <Clock className="w-4 h-4 text-primary" />
-                        {selectedEvent?.wrapTime}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Location</p>
-                    <div className="flex items-center gap-2 text-slate-700 font-bold">
-                      <MapPin className="w-4 h-4 text-primary" />
-                      {selectedEvent?.location || 'Not specified'}
-                    </div>
-                  </div>
-
-                  <Separator className="bg-slate-100" />
-
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Staff</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedEvent?.staff?.length > 0 ? (
-                        selectedEvent.staff.map((member: string) => (
-                          <Badge key={member} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 py-1 px-3">
-                            <Users className="w-3 h-3 mr-1.5 opacity-50" />
-                            {member}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-xs text-slate-400 italic">No staff assigned</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {selectedEvent?.notes && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notes</p>
-                      <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
-                        <FileText className="w-3 h-3 text-primary inline mr-2" />
-                        {selectedEvent.notes}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <DialogClose asChild>
-                <Button className={cn(
-                  "w-full h-12 font-bold rounded-xl shadow-lg text-white",
-                  selectedEvent?.source === 'production' ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100" : 
-                  selectedEvent?.source === 'task' ? "bg-green-600 hover:bg-green-700 shadow-green-100" :
-                  selectedEvent?.priority === 'URGENT' ? "bg-red-600 hover:bg-red-700 shadow-red-100" :
-                  selectedEvent?.priority === 'HIGH' ? "bg-orange-600 hover:bg-orange-700 shadow-orange-100" :
-                  "bg-primary hover:bg-primary/90 shadow-red-100"
+          {!selectedEvent ? null : (
+            <div className="p-6 md:p-8 space-y-6">
+              <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-lg",
+                  selectedEvent?.source === 'production' ? "bg-blue-600 shadow-blue-100" : 
+                  selectedEvent?.source === 'task' ? "bg-green-600 shadow-green-100" :
+                  selectedEvent?.priority === 'URGENT' ? "bg-red-600 shadow-red-100" :
+                  selectedEvent?.priority === 'HIGH' ? "bg-orange-600 shadow-orange-100" :
+                  "bg-primary shadow-red-100"
                 )}>
-                  Close Briefing
-                </Button>
-              </DialogClose>
+                  {selectedEvent?.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : 
+                  selectedEvent?.source === 'task' ? <CheckCircle2 className="w-6 h-6 text-white" /> :
+                  <CalendarIcon className="w-6 h-6 text-white" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight truncate">
+                    {selectedEvent?.source === 'production' ? `Project: ${selectedEvent?.brand}` : 
+                    selectedEvent?.source === 'task' ? `Task: ${selectedEvent?.title}` :
+                    selectedEvent?.title}
+                  </DialogTitle>
+                  <DialogDescription className="text-slate-400 font-medium uppercase text-[10px] tracking-widest">
+                    {selectedEvent?.source === 'production' ? 'Production Asset' : 
+                    selectedEvent?.source === 'task' ? 'Internal Task' :
+                    selectedEvent?.type} Briefing
+                  </DialogDescription>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                {selectedEvent?.source === 'task' ? (
+                  // Task Details
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</p>
+                        <Badge className={cn(
+                          "text-[10px] font-black px-2 py-1 rounded",
+                          selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
+                          selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
+                          "bg-blue-50 text-blue-500 border-blue-100"
+                        )} variant="outline">
+                          {selectedEvent.priority}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Due Date</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <CalendarIcon className="w-4 h-4 text-slate-400" />
+                          {selectedEvent?.dueDate}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <Briefcase className="w-4 h-4 text-slate-400" />
+                        {selectedEvent?.category}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</p>
+                      <Badge variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100">
+                        {selectedEvent?.status?.toUpperCase() || 'PENDING'}
+                      </Badge>
+                    </div>
+                  </div>
+                ) : selectedEvent?.source === 'production' ? (
+                  // Production Project Details
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">File Code</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold font-mono text-sm">
+                          <FileText className="w-4 h-4 text-blue-600" />
+                          {selectedEvent?.fileCode}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Due Date</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <CalendarIcon className="w-4 h-4 text-blue-600" />
+                          {selectedEvent?.dueDate}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Platform</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <Briefcase className="w-4 h-4 text-blue-600" />
+                          {selectedEvent?.platform}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Artist</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <Users className="w-4 h-4 text-blue-600" />
+                          {selectedEvent?.artist}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Idea</p>
+                      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
+                        {selectedEvent?.contentIdea}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // Schedule Details
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operation Priority</p>
+                        <Badge className={cn(
+                          "text-[10px] font-black px-2 py-1 rounded",
+                          selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
+                          selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
+                          "bg-blue-50 text-blue-500 border-blue-100"
+                        )} variant="outline">
+                          {selectedEvent.priority || 'NORMAL'}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <CalendarIcon className="w-4 h-4 text-primary" />
+                          {selectedEvent?.date}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Client / Project</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <Briefcase className="w-4 h-4 text-primary" />
+                          {selectedEvent?.client}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Type</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <AlertCircle className="w-4 h-4 text-primary" />
+                          {selectedEvent?.type}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Call Time</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <Clock className="w-4 h-4 text-primary" />
+                          {selectedEvent?.callTime}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Wrap Time</p>
+                        <div className="flex items-center gap-2 text-slate-700 font-bold">
+                          <Clock className="w-4 h-4 text-primary" />
+                          {selectedEvent?.wrapTime}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Location</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <MapPin className="w-4 h-4 text-primary" />
+                        {selectedEvent?.location || 'Not specified'}
+                      </div>
+                    </div>
+
+                    <Separator className="bg-slate-100" />
+
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Staff</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedEvent?.staff?.length > 0 ? (
+                          selectedEvent.staff.map((member: string) => (
+                            <Badge key={member} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 py-1 px-3">
+                              <Users className="w-3 h-3 mr-1.5 opacity-50" />
+                              {member}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">No staff assigned</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {selectedEvent?.notes && (
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notes</p>
+                        <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
+                          <FileText className="w-3 h-3 text-primary inline mr-2" />
+                          {selectedEvent.notes}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <DialogClose asChild>
+                  <Button className={cn(
+                    "w-full h-12 font-bold rounded-xl shadow-lg text-white",
+                    selectedEvent?.source === 'production' ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100" : 
+                    selectedEvent?.source === 'task' ? "bg-green-600 hover:bg-green-700 shadow-green-100" :
+                    selectedEvent?.priority === 'URGENT' ? "bg-red-600 hover:bg-red-700 shadow-red-100" :
+                    selectedEvent?.priority === 'HIGH' ? "bg-orange-600 hover:bg-orange-700 shadow-orange-100" :
+                    "bg-primary hover:bg-primary/90 shadow-red-100"
+                  )}>
+                    Close Briefing
+                  </Button>
+                </DialogClose>
+              </div>
             </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
