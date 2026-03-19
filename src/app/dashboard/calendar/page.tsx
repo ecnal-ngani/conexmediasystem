@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,64 +9,57 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Calendar as CalendarIcon,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Task {
-  id: string;
-  title: string;
-  category: string;
-  priority: 'URGENT' | 'HIGH' | 'NORMAL';
-  dueDate: string;
-}
-
-interface CalendarEvent {
-  day: number;
-  title: string;
-}
-
-const TASKS: Task[] = [
-  { id: '1', title: 'Approve Q1 Budget Report', category: 'Finance', priority: 'URGENT', dueDate: 'Feb 5, 2025' },
-  { id: '2', title: 'Review Production Matrix', category: 'Operations', priority: 'HIGH', dueDate: 'Feb 6, 2025' },
-  { id: '3', title: 'Client Meeting - Solarmaxx', category: 'Business Development', priority: 'NORMAL', dueDate: 'Feb 7, 2025' },
-  { id: '4', title: 'Staff Performance Review', category: 'HR', priority: 'NORMAL', dueDate: 'Feb 10, 2025' },
-  { id: '5', title: 'Equipment Procurement Approval', category: 'Production', priority: 'HIGH', dueDate: 'Feb 12, 2025' },
-];
-
-const EVENTS: CalendarEvent[] = [
-  { day: 5, title: 'CJC Eco Bag - Shoot' },
-  { day: 6, title: 'Shimmer & Shield' },
-  { day: 7, title: 'Dentasmile - Client C...' },
-  { day: 10, title: 'Solarmaxx - Deadline' },
-  { day: 12, title: 'Team Meeting' },
-  { day: 15, title: 'Client Presentation' },
-];
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 export default function CalendarPage() {
-  const [currentDay] = useState(4); // Today is Feb 4
+  const [currentDay] = useState(new Date().getDate());
+  const firestore = useFirestore();
 
-  const daysInMonth = 28;
+  // Real-time schedules
+  const schedulesQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'schedules'), orderBy('date', 'asc'));
+  }, [firestore]);
+  const { data: schedules, loading: schedulesLoading } = useCollection<any>(schedulesQuery);
+
+  // Real-time tasks
+  const tasksQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'tasks'), orderBy('dueDate', 'asc'));
+  }, [firestore]);
+  const { data: tasks, loading: tasksLoading } = useCollection<any>(tasksQuery);
+
+  const daysInMonth = 28; // Hardcoded for Feb 2025 as per design
   const startDayOffset = 6; // Feb 1, 2025 is a Saturday
 
   const renderCalendarDays = () => {
     const days = [];
-    // Blank days for start of month
     for (let i = 0; i < startDayOffset; i++) {
       days.push(
-        <div key={`blank-${i}`} className="aspect-square bg-red-500 rounded-lg border border-transparent shadow-sm" />
+        <div key={`blank-${i}`} className="aspect-square bg-slate-50/50 rounded-lg border border-transparent" />
       );
     }
-    // Actual days
+    
     for (let i = 1; i <= daysInMonth; i++) {
-      const dayEvents = EVENTS.filter(e => e.day === i);
+      // Find events for this day
+      // Date in Firestore is stored as YYYY-MM-DD
+      const dayEvents = schedules?.filter(s => {
+        const d = new Date(s.date);
+        return d.getDate() === i && d.getMonth() === 1; // February
+      }) || [];
+      
       const isToday = i === currentDay;
 
       days.push(
         <div 
           key={i} 
           className={cn(
-            "aspect-square p-2 bg-white border rounded-lg flex flex-col items-center justify-between transition-all group hover:border-primary/50 relative",
+            "aspect-square p-2 bg-white border rounded-lg flex flex-col items-center justify-between transition-all group hover:border-primary/50 relative overflow-hidden",
             isToday ? "border-primary border-2 shadow-md" : "border-slate-100 shadow-sm"
           )}
         >
@@ -74,11 +68,12 @@ export default function CalendarPage() {
             isToday ? "text-primary font-bold" : "text-slate-400"
           )}>{i}</span>
           
-          <div className="w-full space-y-1 overflow-hidden">
+          <div className="w-full space-y-1 overflow-hidden mt-1">
             {dayEvents.map((event, idx) => (
               <div 
                 key={idx} 
                 className="bg-primary text-white text-[8px] font-bold py-1 px-1.5 rounded truncate w-full text-center"
+                title={event.title}
               >
                 {event.title}
               </div>
@@ -89,6 +84,10 @@ export default function CalendarPage() {
     }
     return days;
   };
+
+  const urgentTasksCount = tasks?.filter(t => t.priority === 'URGENT').length || 0;
+  const highTasksCount = tasks?.filter(t => t.priority === 'HIGH').length || 0;
+  const normalTasksCount = tasks?.filter(t => t.priority === 'NORMAL').length || 0;
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
@@ -103,6 +102,7 @@ export default function CalendarPage() {
             <div className="flex items-center gap-3">
               <CalendarIcon className="w-5 h-5 text-primary" />
               <CardTitle className="text-lg font-bold">February 2025</CardTitle>
+              {schedulesLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="text-slate-400"><ChevronLeft className="w-4 h-4" /></Button>
@@ -130,22 +130,28 @@ export default function CalendarPage() {
             {/* Priority Summary */}
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-red-50 border border-red-100 p-3 rounded-lg text-center">
-                <p className="text-xl font-bold text-red-600">1</p>
+                <p className="text-xl font-bold text-red-600">{urgentTasksCount}</p>
                 <p className="text-[9px] font-medium text-red-400 uppercase tracking-wider">Urgent</p>
               </div>
               <div className="bg-orange-50 border border-orange-100 p-3 rounded-lg text-center">
-                <p className="text-xl font-bold text-orange-600">2</p>
+                <p className="text-xl font-bold text-orange-600">{highTasksCount}</p>
                 <p className="text-[9px] font-medium text-orange-400 uppercase tracking-wider">High</p>
               </div>
               <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg text-center">
-                <p className="text-xl font-bold text-blue-600">2</p>
+                <p className="text-xl font-bold text-blue-600">{normalTasksCount}</p>
                 <p className="text-[9px] font-medium text-blue-400 uppercase tracking-wider">Normal</p>
               </div>
             </div>
 
             {/* Task List */}
             <div className="space-y-3">
-              {TASKS.map((task) => (
+              {tasksLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : tasks?.length === 0 ? (
+                <p className="text-xs text-center text-slate-400 py-8">No pending tasks found.</p>
+              ) : tasks?.map((task: any) => (
                 <div key={task.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-primary/20 transition-colors cursor-pointer group">
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug max-w-[70%]">{task.title}</h4>

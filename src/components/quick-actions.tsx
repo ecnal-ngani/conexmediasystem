@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -18,7 +19,8 @@ import {
   Briefcase,
   MapPin,
   Check,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react';
 import {
   Dialog,
@@ -51,6 +53,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const QUICK_ACTIONS = [
   {
@@ -151,34 +156,37 @@ const STAFF_LIST = [
 export function QuickActions() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
+  const [client, setClient] = useState('');
+  const [date, setDate] = useState('');
+  const [callTime, setCallTime] = useState('09:00');
+  const [wrapTime, setWrapTime] = useState('17:00');
+  const [location, setLocation] = useState('');
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
+  const [notes, setNotes] = useState('');
   
   const pathname = usePathname();
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
   const getNotificationStyles = (type: string) => {
     switch (type) {
-      case 'rush':
-        return 'bg-red-50 border-red-500';
-      case 'approved':
-        return 'bg-green-50 border-green-500';
-      case 'revision':
-        return 'bg-orange-50 border-orange-500';
-      default:
-        return 'bg-white border-slate-100';
+      case 'rush': return 'bg-red-50 border-red-500';
+      case 'approved': return 'bg-green-50 border-green-500';
+      case 'revision': return 'bg-orange-50 border-orange-500';
+      default: return 'bg-white border-slate-100';
     }
   };
 
   const getIconStyles = (type: string) => {
     switch (type) {
-      case 'rush':
-        return 'text-red-500 bg-white';
-      case 'approved':
-        return 'text-green-500 bg-white';
-      case 'revision':
-        return 'text-orange-500 bg-white';
-      default:
-        return 'text-blue-500 bg-white';
+      case 'rush': return 'text-red-500 bg-white';
+      case 'approved': return 'text-green-500 bg-white';
+      case 'revision': return 'text-orange-500 bg-white';
+      default: return 'text-blue-500 bg-white';
     }
   };
 
@@ -186,6 +194,54 @@ export function QuickActions() {
     setSelectedStaff(prev => 
       prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]
     );
+  };
+
+  const handleConfirmSchedule = async () => {
+    if (!firestore || !date || !client) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please provide at least a date and client/project name."
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await addDoc(collection(firestore, 'schedules'), {
+        title: `${eventType}: ${client}`,
+        type: eventType,
+        client,
+        date,
+        callTime,
+        wrapTime,
+        location,
+        staff: selectedStaff,
+        notes,
+        createdAt: serverTimestamp()
+      });
+
+      toast({
+        title: "Schedule Confirmed",
+        description: `New ${eventType} has been added to the operations matrix.`
+      });
+      
+      setIsScheduleOpen(false);
+      // Reset form
+      setClient('');
+      setDate('');
+      setSelectedStaff([]);
+      setNotes('');
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save the new schedule. Please try again."
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isCalendarPage = pathname === '/dashboard/calendar';
@@ -207,7 +263,6 @@ export function QuickActions() {
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-200">
                     <Bell className="w-6 h-6 text-white" />
-                    <span className="absolute top-6 left-14 bg-red-800 border-2 border-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center text-white">3</span>
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold tracking-tight">Notifications</h2>
@@ -238,13 +293,8 @@ export function QuickActions() {
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center justify-between">
                           <h4 className="text-sm font-bold text-slate-900 leading-none">{notif.title}</h4>
-                          {notif.canDelete && (
-                            <Trash2 className="w-4 h-4 text-red-300 hover:text-red-500 cursor-pointer transition-colors" />
-                          )}
                         </div>
-                        <p className="text-xs text-slate-500 font-medium leading-tight pr-4">
-                          {notif.description}
-                        </p>
+                        <p className="text-xs text-slate-500 font-medium leading-tight pr-4">{notif.description}</p>
                         <div className="flex items-center justify-between pt-2">
                           <span className="text-[10px] text-slate-400 font-medium">{notif.time}</span>
                           <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 rounded-lg">
@@ -276,9 +326,6 @@ export function QuickActions() {
                   </div>
                   <DialogTitle className="text-2xl font-bold tracking-tight">Quick Actions</DialogTitle>
                 </div>
-                <DialogDescription className="text-sm font-medium text-slate-500">
-                  Shortcuts to frequently used features
-                </DialogDescription>
               </DialogHeader>
 
               <div className="grid grid-cols-2 gap-4">
@@ -294,9 +341,7 @@ export function QuickActions() {
                     </div>
                     <div className="space-y-1">
                       <h4 className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{action.title}</h4>
-                      <p className="text-[10px] font-medium text-slate-400 leading-tight">
-                        {action.description}
-                      </p>
+                      <p className="text-[10px] font-medium text-slate-400 leading-tight">{action.description}</p>
                     </div>
                   </Link>
                 ))}
@@ -304,9 +349,7 @@ export function QuickActions() {
 
               <div className="flex justify-end pt-2">
                 <DialogClose asChild>
-                  <Button className="bg-primary hover:bg-primary/90 font-bold px-8 h-11 rounded-xl shadow-lg shadow-red-100">
-                    Close
-                  </Button>
+                  <Button className="bg-primary hover:bg-primary/90 font-bold px-8 h-11 rounded-xl shadow-lg shadow-red-100">Close</Button>
                 </DialogClose>
               </div>
             </div>
@@ -334,7 +377,6 @@ export function QuickActions() {
                   </DialogHeader>
 
                   <div className="space-y-6">
-                    {/* Event Type */}
                     <div className="space-y-3">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Event Type</Label>
                       <div className="grid grid-cols-3 gap-2">
@@ -354,70 +396,72 @@ export function QuickActions() {
                       </div>
                     </div>
 
-                    {/* Client / Project */}
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                         <Briefcase className="w-3 h-3 text-primary" />
                         Client / Project
                       </Label>
-                      <Select>
-                        <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
-                          <SelectValue placeholder="Select a client..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cjc">CJC Eco Bag</SelectItem>
-                          <SelectItem value="shimmer">Shimmer & Shield</SelectItem>
-                          <SelectItem value="solarmaxx">Solarmaxx</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Input 
+                        placeholder="Project Name..." 
+                        value={client}
+                        onChange={(e) => setClient(e.target.value)}
+                        className="h-12 border-slate-200 rounded-xl text-slate-600" 
+                      />
                     </div>
 
-                    {/* Date */}
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                         <Calendar className="w-3 h-3 text-primary" />
                         Date
                       </Label>
-                      <Input type="date" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                      <Input 
+                        type="date" 
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                      />
                     </div>
 
-                    {/* Call Time & Wrap Time */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <Clock className="w-3 h-3 text-primary" />
                           Call Time
                         </Label>
-                        <Input type="time" defaultValue="09:00" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                        <Input 
+                          type="time" 
+                          value={callTime}
+                          onChange={(e) => setCallTime(e.target.value)}
+                          className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <Clock className="w-3 h-3 text-primary" />
                           Wrap Time
                         </Label>
-                        <Input type="time" defaultValue="17:00" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                        <Input 
+                          type="time" 
+                          value={wrapTime}
+                          onChange={(e) => setWrapTime(e.target.value)}
+                          className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                        />
                       </div>
                     </div>
 
-                    {/* Location */}
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                         <MapPin className="w-3 h-3 text-primary" />
                         Location
                       </Label>
-                      <Select>
-                        <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
-                          <SelectValue placeholder="Select location..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="studio-a">Studio A - HQ</SelectItem>
-                          <SelectItem value="on-site">On-Site Client</SelectItem>
-                          <SelectItem value="remote">Remote / Digital</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Input 
+                        placeholder="Location details..." 
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        className="h-12 border-slate-200 rounded-xl text-slate-600" 
+                      />
                     </div>
 
-                    {/* Assign Staff */}
                     <div className="space-y-3">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                         <Users className="w-3 h-3 text-primary" />
@@ -450,7 +494,6 @@ export function QuickActions() {
                       </div>
                     </div>
 
-                    {/* Notes (Optional) */}
                     <div className="space-y-2 pb-4">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                         <FileText className="w-3 h-3 text-primary" />
@@ -458,6 +501,8 @@ export function QuickActions() {
                       </Label>
                       <Textarea 
                         placeholder="Add any additional details..." 
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
                         className="min-h-[100px] border-slate-200 rounded-xl focus-visible:ring-primary resize-none"
                       />
                     </div>
@@ -467,7 +512,14 @@ export function QuickActions() {
                     <DialogClose asChild>
                       <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
                     </DialogClose>
-                    <Button className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100">Confirm Schedule</Button>
+                    <Button 
+                      onClick={handleConfirmSchedule} 
+                      disabled={isSaving}
+                      className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100"
+                    >
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Confirm Schedule
+                    </Button>
                   </div>
                 </div>
               </ScrollArea>

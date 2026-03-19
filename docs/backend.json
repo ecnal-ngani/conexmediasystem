@@ -1,0 +1,49 @@
+
+{
+  "entities": {
+    "Schedule": {
+      "title": "Schedule",
+      "description": "A scheduled event in the operations calendar.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["Shoot", "Meeting", "Deadline"] },
+        "client": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "callTime": { "type": "string" },
+        "wrapTime": { "type": "string" },
+        "location": { "type": "string" },
+        "staff": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "type", "date"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A pending task for the company.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "priority": { "type": "string", "enum": ["URGENT", "HIGH", "NORMAL"] },
+        "dueDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed"] }
+      },
+      "required": ["title", "category", "priority"]
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/schedules/{scheduleId}": {
+      "schema": "Schedule",
+      "description": "Collection of all company schedules."
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Collection of pending tasks."
+    }
+  }
+}
