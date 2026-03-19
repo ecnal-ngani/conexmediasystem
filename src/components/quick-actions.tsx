@@ -19,7 +19,9 @@ import {
   MapPin,
   Check,
   FileText,
-  Loader2
+  Loader2,
+  ListTodo,
+  AlertCircle
 } from 'lucide-react';
 import {
   Dialog,
@@ -43,6 +45,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useFirestore } from '@/firebase';
@@ -69,28 +78,20 @@ const QUICK_ACTIONS = [
     href: '/dashboard/calendar'
   },
   {
+    title: 'Internal Task',
+    description: 'Assign a new company task',
+    icon: ListTodo,
+    color: 'text-green-600',
+    bg: 'bg-green-50',
+    action: 'task'
+  },
+  {
     title: 'Team Management',
     description: 'Manage staff and roles',
     icon: Users,
     color: 'text-orange-600',
     bg: 'bg-orange-50',
     href: '/dashboard/admin'
-  },
-  {
-    title: 'Performance',
-    description: 'Check team performance',
-    icon: TrendingUp,
-    color: 'text-purple-600',
-    bg: 'bg-purple-50',
-    href: '/dashboard'
-  },
-  {
-    title: 'Production Matrix',
-    description: 'View all projects',
-    icon: Zap,
-    color: 'text-orange-500',
-    bg: 'bg-orange-50',
-    href: '/dashboard/production'
   }
 ];
 
@@ -118,14 +119,6 @@ const NOTIFICATIONS = [
     time: '3 hours ago',
     type: 'revision',
     icon: Clock,
-  },
-  {
-    id: '4',
-    title: 'New Shoot Scheduled',
-    description: 'Solarmaxx shoot assigned for Feb 12, 2026 at Studio A',
-    time: '5 hours ago',
-    type: 'info',
-    icon: Bell,
   }
 ];
 
@@ -141,8 +134,9 @@ const STAFF_LIST = [
 export function QuickActions() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isTaskOpen, setIsTaskOpen] = useState(false);
   
-  // Form State
+  // Schedule Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
   const [client, setClient] = useState('');
   const [date, setDate] = useState('');
@@ -151,6 +145,12 @@ export function QuickActions() {
   const [location, setLocation] = useState('');
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+
+  // Task Form State
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskCategory, setTaskCategory] = useState('Operations');
+  const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
+  const [taskDueDate, setTaskDueDate] = useState('');
   
   const pathname = usePathname();
   const firestore = useFirestore();
@@ -204,7 +204,6 @@ export function QuickActions() {
       createdAt: serverTimestamp()
     };
 
-    // Optimistic Mutation: Do not await.
     addDoc(schedulesRef, scheduleData)
       .catch(async (err) => {
         const permissionError = new FirestorePermissionError({
@@ -215,18 +214,56 @@ export function QuickActions() {
         errorEmitter.emit('permission-error', permissionError);
       });
 
-    // Immediate UI response
     toast({
       title: "Schedule Initiated",
       description: `New ${eventType} is being synchronized with the operations matrix.`
     });
     
     setIsScheduleOpen(false);
-    // Reset form
     setClient('');
     setDate('');
     setSelectedStaff([]);
     setNotes('');
+  };
+
+  const handleCreateTask = () => {
+    if (!firestore || !taskTitle || !taskDueDate) {
+      toast({
+        variant: "destructive",
+        title: "Missing Details",
+        description: "Task title and due date are required for compliance."
+      });
+      return;
+    }
+
+    const tasksRef = collection(firestore, 'tasks');
+    const taskData = {
+      title: taskTitle,
+      category: taskCategory,
+      priority: taskPriority,
+      dueDate: taskDueDate,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    };
+
+    addDoc(tasksRef, taskData)
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: tasksRef.path,
+          operation: 'create',
+          requestResourceData: taskData
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+
+    toast({
+      title: "Task Assigned",
+      description: `"${taskTitle}" has been added to the company-wide pending list.`
+    });
+
+    setIsTaskOpen(false);
+    setTaskTitle('');
+    setTaskDueDate('');
   };
 
   const isCalendarPage = pathname === '/dashboard/calendar';
@@ -315,11 +352,14 @@ export function QuickActions() {
 
               <div className="grid grid-cols-2 gap-4">
                 {QUICK_ACTIONS.map((action, i) => (
-                  <Link 
+                  <button 
                     key={i} 
-                    href={action.href}
-                    onClick={() => setIsActionsOpen(false)}
-                    className="flex flex-col p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-primary/20 hover:shadow-md transition-all group"
+                    onClick={() => {
+                      setIsActionsOpen(false);
+                      if (action.action === 'task') setIsTaskOpen(true);
+                      else if (action.href) window.location.href = action.href;
+                    }}
+                    className="flex flex-col p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-primary/20 hover:shadow-md transition-all group text-left"
                   >
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", action.bg)}>
                       <action.icon className={cn("w-5 h-5", action.color)} />
@@ -328,7 +368,7 @@ export function QuickActions() {
                       <h4 className="text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">{action.title}</h4>
                       <p className="text-[10px] font-medium text-slate-400 leading-tight">{action.description}</p>
                     </div>
-                  </Link>
+                  </button>
                 ))}
               </div>
 
@@ -341,6 +381,82 @@ export function QuickActions() {
           </DialogContent>
         </Dialog>
         
+        {/* NEW TASK DIALOG */}
+        <Dialog open={isTaskOpen} onOpenChange={setIsTaskOpen}>
+          <DialogContent className="max-w-[440px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+            <div className="p-6 md:p-8 space-y-6">
+              <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+                <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center shrink-0 shadow-lg shadow-green-100">
+                  <ListTodo className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Company Task</DialogTitle>
+                  <DialogDescription className="text-slate-400 font-medium">Assign a new task to the internal matrix.</DialogDescription>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Task Title</Label>
+                  <Input 
+                    placeholder="e.g., Update Brand Guidelines" 
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-green-500" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority</Label>
+                    <Select value={taskPriority} onValueChange={(val: any) => setTaskPriority(val)}>
+                      <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="URGENT">URGENT</SelectItem>
+                        <SelectItem value="HIGH">HIGH</SelectItem>
+                        <SelectItem value="NORMAL">NORMAL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Category</Label>
+                    <Input 
+                      placeholder="e.g., Operations" 
+                      value={taskCategory}
+                      onChange={(e) => setTaskCategory(e.target.value)}
+                      className="h-12 border-slate-200 rounded-xl text-slate-600" 
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Due Date</Label>
+                  <Input 
+                    type="date" 
+                    value={taskDueDate}
+                    onChange={(e) => setTaskDueDate(e.target.value)}
+                    className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-green-500" 
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <DialogClose asChild>
+                  <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
+                </DialogClose>
+                <Button 
+                  onClick={handleCreateTask} 
+                  className="flex-1 h-12 rounded-xl font-bold bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100 text-white"
+                >
+                  Create Task
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {isCalendarPage && (
           <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
             <DialogTrigger asChild>
