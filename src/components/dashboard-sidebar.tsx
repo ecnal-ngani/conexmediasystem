@@ -23,10 +23,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
   useSidebar
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -46,7 +48,7 @@ export function DashboardSidebar() {
   if (!user) return null;
 
   return (
-    <Sidebar collapsible="icon" className="border-r bg-white">
+    <Sidebar collapsible="icon" className="border-r bg-white transition-all duration-300 ease-in-out">
       <SidebarHeader className={cn(
         "h-20 flex flex-row items-center border-b transition-all duration-300 relative",
         isCollapsed ? "px-0 justify-center" : "px-4 justify-between"
@@ -56,7 +58,7 @@ export function DashboardSidebar() {
             <Command className="w-5 h-5 text-white" />
           </div>
           {!isCollapsed && (
-            <span className="font-black text-base tracking-tighter truncate uppercase animate-in fade-in duration-500 text-slate-900">
+            <span className="font-black text-base tracking-tighter truncate uppercase animate-in slide-in-from-left-2 duration-500 text-slate-900">
               conex media
             </span>
           )}
@@ -72,87 +74,93 @@ export function DashboardSidebar() {
         {isCollapsed && (
           <button 
             onClick={toggleSidebar}
-            className="hidden lg:flex absolute -right-3 top-8 bg-white border rounded-full p-1 shadow-md hover:text-red-500 z-50"
+            className="hidden lg:flex absolute -right-3 top-8 bg-white border rounded-full p-1 shadow-md hover:text-red-500 z-50 transition-transform hover:scale-110"
           >
             <ChevronRight className="w-3 h-3" />
           </button>
         )}
       </SidebarHeader>
       
-      <SidebarContent className="px-0 py-6 overflow-x-hidden">
-        {/* Centralized Profile Section */}
-        <SidebarMenu className="px-2 mb-8">
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              onClick={() => router.push('/dashboard/profile')}
-              className={cn(
-                "h-auto py-2 transition-all duration-300 group hover:bg-slate-50 rounded-xl",
-                isCollapsed ? "justify-center px-0" : "px-2"
-              )}
-            >
-              <div className="flex items-center gap-3 w-full">
-                <div className="relative shrink-0 flex items-center justify-center">
-                  <Avatar className={cn(
-                    "border-2 border-white shadow-md transition-all duration-300",
-                    isCollapsed ? "w-10 h-10" : "w-12 h-12"
-                  )}>
-                    <AvatarImage src={user.avatarUrl} alt={user.name} />
-                    <AvatarFallback className="bg-primary text-white font-black text-xs">
-                      {user.name.substring(0, 1)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className={cn(
-                    "absolute bottom-0 right-0 bg-green-500 border-2 border-white rounded-full transition-all duration-300",
-                    isCollapsed ? "w-2 h-2" : "w-3 h-3"
-                  )}></span>
-                </div>
-                {!isCollapsed && (
-                  <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-500 flex-1">
-                    <p className="text-sm font-black leading-none mb-1.5 truncate group-hover:text-[#E11D48] transition-colors">{user.name}</p>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] text-blue-600 font-mono font-bold bg-blue-50 px-1.5 py-0.5 rounded inline-block truncate w-fit max-w-full">
-                        {user.systemId}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded leading-none w-fit">
-                          In Office
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-
-        <SidebarMenu className="px-2">
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton 
-                asChild 
-                isActive={pathname === item.url}
-                tooltip={item.title}
+      <SidebarContent className="px-0 py-6 overflow-hidden">
+        <ScrollArea className="h-full px-2">
+          {/* Centralized Profile Section */}
+          <SidebarMenu className="mb-8">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                size="lg"
+                onClick={() => router.push('/dashboard/profile')}
                 className={cn(
-                  "h-12 rounded-xl transition-all mb-1.5",
-                  pathname === item.url 
-                    ? 'bg-primary text-white font-bold hover:bg-primary/90 shadow-lg shadow-red-100' 
-                    : 'text-slate-600 hover:bg-slate-100',
-                  isCollapsed ? "px-0 justify-center" : "px-3"
+                  "h-auto py-2 transition-all duration-300 group hover:bg-slate-50 rounded-xl",
+                  isCollapsed ? "justify-center px-0" : "px-2"
                 )}
               >
-                <Link href={item.url} className="flex items-center gap-3">
-                  <item.icon className={cn(
-                    "w-5 h-5 shrink-0",
-                    pathname === item.url ? 'text-white' : 'text-slate-400'
-                  )} />
-                  {!isCollapsed && <span className="text-sm font-bold truncate tracking-tight">{item.title}</span>}
-                </Link>
+                <div className="flex items-center gap-3 w-full">
+                  <div className="relative shrink-0 flex items-center justify-center">
+                    <Avatar className={cn(
+                      "border-2 border-white shadow-md transition-all duration-300",
+                      isCollapsed ? "w-10 h-10" : "w-12 h-12"
+                    )}>
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarFallback className="bg-primary text-white font-black text-xs">
+                        {user.name.substring(0, 1)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className={cn(
+                      "absolute bottom-0 right-0 bg-green-500 border-2 border-white rounded-full transition-all duration-300",
+                      isCollapsed ? "w-2 h-2" : "w-3 h-3"
+                    )}></span>
+                  </div>
+                  {!isCollapsed && (
+                    <div className="overflow-hidden animate-in slide-in-from-left-4 duration-500 flex-1">
+                      <p className="text-sm font-black leading-none mb-1.5 truncate group-hover:text-[#E11D48] transition-colors">{user.name}</p>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] text-blue-600 font-mono font-bold bg-blue-50 px-1.5 py-0.5 rounded inline-block truncate w-fit max-w-full">
+                          {user.systemId}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded leading-none w-fit">
+                            In Office
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+          </SidebarMenu>
+
+          <SidebarMenu>
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={pathname === item.url}
+                  tooltip={item.title}
+                  className={cn(
+                    "h-12 rounded-xl transition-all mb-1.5",
+                    pathname === item.url 
+                      ? 'bg-primary text-white font-bold hover:bg-primary/90 shadow-lg shadow-red-100' 
+                      : 'text-slate-600 hover:bg-slate-100',
+                    isCollapsed ? "px-0 justify-center" : "px-3"
+                  )}
+                >
+                  <Link href={item.url} className="flex items-center gap-3">
+                    <item.icon className={cn(
+                      "w-5 h-5 shrink-0 transition-colors",
+                      pathname === item.url ? 'text-white' : 'text-slate-400'
+                    )} />
+                    {!isCollapsed && (
+                      <span className="text-sm font-bold truncate tracking-tight animate-in slide-in-from-left-3 duration-500">
+                        {item.title}
+                      </span>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </ScrollArea>
       </SidebarContent>
 
       <SidebarFooter className="p-2 border-t bg-slate-50/30">
@@ -165,9 +173,10 @@ export function DashboardSidebar() {
           )}
         >
           <LogOut className="w-5 h-5 shrink-0" />
-          {!isCollapsed && <span className="text-xs uppercase tracking-wider font-bold">Log Out</span>}
+          {!isCollapsed && <span className="text-xs uppercase tracking-wider font-bold animate-in slide-in-from-left-2 duration-500">Log Out</span>}
         </Button>
       </SidebarFooter>
+      <SidebarRail className="hover:bg-primary/5 transition-colors" />
     </Sidebar>
   );
 }
