@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,9 @@ import {
   Zap,
   Users,
   CheckCircle2,
-  Wallet
+  Wallet,
+  Copy,
+  Check
 } from 'lucide-react';
 import { 
   Table, 
@@ -23,6 +25,23 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 interface Employee {
   id: string;
@@ -50,14 +69,43 @@ const STAFF_DATA: Employee[] = [
   { id: 'CX-VG-01', name: 'Chloe Javier', role: 'Videographer', email: 'chloe@conexmedia.com', status: 'Active', points: 587, xp: 5870, salary: '₱28,200', badges: ['🏆'] },
 ];
 
+const ROLE_MAPPINGS: Record<string, string> = {
+  "CEO": "CEO",
+  "COO": "COO",
+  "Marketing Strategist": "MS",
+  "Creative Director": "CD",
+  "Production Director": "PD",
+  "Brand Manager": "BM",
+  "Videographer": "VG"
+};
+
 export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState('Brand Manager');
+  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
+  const { toast } = useToast();
 
   const filteredStaff = STAFF_DATA.filter(emp => 
     emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     emp.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const generatedId = useMemo(() => {
+    const code = ROLE_MAPPINGS[selectedRole] || "STAFF";
+    const existingCount = STAFF_DATA.filter(emp => emp.role === selectedRole).length;
+    const nextNum = (existingCount + 1).toString().padStart(2, '0');
+    return `CX-${code}-${nextNum}`;
+  }, [selectedRole]);
+
+  const handleCopyAndGenerate = () => {
+    navigator.clipboard.writeText(generatedId);
+    toast({
+      title: "ID Copied to Clipboard",
+      description: `${generatedId} has been successfully generated for ${selectedRole}.`,
+    });
+    setIsGenerateOpen(false);
+  };
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
@@ -81,10 +129,54 @@ export default function AdminPage() {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button className="w-full sm:w-auto h-11 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Generate New ID
-          </Button>
+
+          <Dialog open={isGenerateOpen} onOpenChange={setIsGenerateOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full sm:w-auto h-11 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Generate New ID
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[400px] p-8 rounded-3xl border-none shadow-2xl">
+              <DialogHeader className="space-y-4 mb-6">
+                <DialogTitle className="text-xl font-bold text-slate-900">Generate New Employee ID</DialogTitle>
+                <div className="space-y-2">
+                  <Label className="text-xs text-slate-400 font-medium">Select Role</Label>
+                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger className="h-12 border-slate-200 text-slate-700">
+                      <SelectValue placeholder="Select Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(ROLE_MAPPINGS).map((role) => (
+                        <SelectItem key={role} value={role}>{role}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </DialogHeader>
+
+              <div className="bg-slate-50 rounded-2xl p-8 text-center space-y-3 border border-slate-100">
+                <p className="text-xs text-slate-400 font-medium">Generated ID:</p>
+                <h2 className="text-3xl font-black text-primary tracking-tight">
+                  {generatedId}
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-8">
+                <DialogClose asChild>
+                  <Button variant="outline" className="h-12 font-medium border-slate-200 text-slate-600 hover:bg-slate-50">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <Button 
+                  onClick={handleCopyAndGenerate}
+                  className="h-12 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100"
+                >
+                  Generate & Copy
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
