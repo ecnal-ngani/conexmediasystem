@@ -14,7 +14,8 @@ import {
   Users,
   FileText,
   Briefcase,
-  X
+  X,
+  Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore } from '@/firebase';
@@ -56,6 +57,13 @@ export default function CalendarPage() {
   }, [firestore]);
   const { data: schedules, loading: schedulesLoading } = useCollection<any>(schedulesQuery);
 
+  // Real-time projects (Production Matrix)
+  const projectsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'projects'), orderBy('dueDate', 'asc'));
+  }, [firestore]);
+  const { data: projects, loading: projectsLoading } = useCollection<any>(projectsQuery);
+
   // Real-time tasks
   const tasksQuery = useMemo(() => {
     if (!firestore) return null;
@@ -87,7 +95,12 @@ export default function CalendarPage() {
       const day = i.toString().padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
       
-      const dayEvents = schedules?.filter(s => s.date === dateStr) || [];
+      // Filter schedules
+      const daySchedules = schedules?.filter(s => s.date === dateStr) || [];
+      
+      // Filter production projects
+      const dayProjects = projects?.filter(p => p.dueDate === dateStr) || [];
+
       const isToday = isTodayFn(new Date(viewDate.getFullYear(), viewDate.getMonth(), i));
 
       days.push(
@@ -104,17 +117,33 @@ export default function CalendarPage() {
           )}>{i}</span>
           
           <div className="w-full space-y-1 overflow-y-auto mt-1 flex-1">
-            {dayEvents.map((event, idx) => (
+            {/* Render Schedules */}
+            {daySchedules.map((event, idx) => (
               <button 
-                key={idx} 
+                key={`sched-${idx}`} 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedEvent(event);
+                  setSelectedEvent({ ...event, source: 'schedule' });
                 }}
-                className="bg-primary hover:bg-primary/90 transition-colors text-white text-[10px] font-bold py-1.5 px-2 rounded-md truncate w-full text-left block shadow-sm border border-primary-foreground/10"
+                className="bg-primary hover:bg-primary/90 transition-colors text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border border-primary-foreground/10"
                 title={event.title}
               >
                 {event.title}
+              </button>
+            ))}
+
+            {/* Render Production Projects */}
+            {dayProjects.map((project, idx) => (
+              <button 
+                key={`prod-${idx}`} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedEvent({ ...project, source: 'production' });
+                }}
+                className="bg-blue-600 hover:bg-blue-700 transition-colors text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border border-blue-400"
+                title={`PROD: ${project.brand}`}
+              >
+                PROD: {project.brand}
               </button>
             ))}
           </div>
@@ -143,7 +172,7 @@ export default function CalendarPage() {
               <CardTitle className="text-lg font-bold">
                 {mounted ? format(viewDate, 'MMMM yyyy') : 'Loading...'}
               </CardTitle>
-              {schedulesLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+              {(schedulesLoading || projectsLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary" onClick={prevMonth}>
@@ -220,7 +249,7 @@ export default function CalendarPage() {
               ))}
             </div>
 
-            <Button className="w-full bg-primary hover:bg-primary/90 font-bold h-11 rounded-xl shadow-lg shadow-red-100 mt-2">
+            <Button className="w-full bg-primary hover:bg-primary/90 font-bold h-11 rounded-xl shadow-lg shadow-red-100 mt-2 text-white">
               View All Company Tasks
             </Button>
           </CardContent>
@@ -232,94 +261,147 @@ export default function CalendarPage() {
         <DialogContent className="max-w-[500px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
           <div className="p-6 md:p-8 space-y-6">
             <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
-                <CalendarIcon className="w-6 h-6 text-white" />
+              <div className={cn(
+                "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-lg",
+                selectedEvent?.source === 'production' ? "bg-blue-600 shadow-blue-100" : "bg-primary shadow-red-100"
+              )}>
+                {selectedEvent?.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : <CalendarIcon className="w-6 h-6 text-white" />}
               </div>
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight truncate">
-                  {selectedEvent?.title}
+                  {selectedEvent?.source === 'production' ? `Project: ${selectedEvent?.brand}` : selectedEvent?.title}
                 </DialogTitle>
-                <DialogDescription className="text-slate-400 font-medium">
-                  {selectedEvent?.type} Details
+                <DialogDescription className="text-slate-400 font-medium uppercase text-[10px] tracking-widest">
+                  {selectedEvent?.source === 'production' ? 'Production Asset' : selectedEvent?.type} Briefing
                 </DialogDescription>
               </div>
             </DialogHeader>
 
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Client / Project</p>
-                  <div className="flex items-center gap-2 text-slate-700 font-bold">
-                    <Briefcase className="w-4 h-4 text-primary" />
-                    {selectedEvent?.client}
+              {selectedEvent?.source === 'production' ? (
+                // Production Project Details
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">File Code</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold font-mono text-sm">
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        {selectedEvent?.fileCode}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Due Date</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <CalendarIcon className="w-4 h-4 text-blue-600" />
+                        {selectedEvent?.dueDate}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Platform</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <Briefcase className="w-4 h-4 text-blue-600" />
+                        {selectedEvent?.platform}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Artist</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <Users className="w-4 h-4 text-blue-600" />
+                        {selectedEvent?.artist}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Idea</p>
+                    <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
+                      {selectedEvent?.contentIdea}
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</p>
-                  <div className="flex items-center gap-2 text-slate-700 font-bold">
-                    <CalendarIcon className="w-4 h-4 text-primary" />
-                    {selectedEvent?.date}
+              ) : (
+                // Schedule Details
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Client / Project</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <Briefcase className="w-4 h-4 text-primary" />
+                        {selectedEvent?.client}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <CalendarIcon className="w-4 h-4 text-primary" />
+                        {selectedEvent?.date}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Call Time</p>
-                  <div className="flex items-center gap-2 text-slate-700 font-bold">
-                    <Clock className="w-4 h-4 text-primary" />
-                    {selectedEvent?.callTime}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Call Time</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <Clock className="w-4 h-4 text-primary" />
+                        {selectedEvent?.callTime}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Wrap Time</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <Clock className="w-4 h-4 text-primary" />
+                        {selectedEvent?.wrapTime}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Wrap Time</p>
-                  <div className="flex items-center gap-2 text-slate-700 font-bold">
-                    <Clock className="w-4 h-4 text-primary" />
-                    {selectedEvent?.wrapTime}
+
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Location</p>
+                    <div className="flex items-center gap-2 text-slate-700 font-bold">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      {selectedEvent?.location || 'Not specified'}
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Location</p>
-                <div className="flex items-center gap-2 text-slate-700 font-bold">
-                  <MapPin className="w-4 h-4 text-primary" />
-                  {selectedEvent?.location || 'Not specified'}
-                </div>
-              </div>
+                  <Separator className="bg-slate-100" />
 
-              <Separator className="bg-slate-100" />
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Staff</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedEvent?.staff?.length > 0 ? (
+                        selectedEvent.staff.map((member: string) => (
+                          <Badge key={member} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 py-1 px-3">
+                            <Users className="w-3 h-3 mr-1.5 opacity-50" />
+                            {member}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">No staff assigned</span>
+                      )}
+                    </div>
+                  </div>
 
-              <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Staff</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedEvent?.staff?.length > 0 ? (
-                    selectedEvent.staff.map((member: string) => (
-                      <Badge key={member} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 py-1 px-3">
-                        <Users className="w-3 h-3 mr-1.5 opacity-50" />
-                        {member}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-xs text-slate-400 italic">No staff assigned</span>
+                  {selectedEvent?.notes && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notes</p>
+                      <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
+                        <FileText className="w-3 h-3 text-primary inline mr-2" />
+                        {selectedEvent.notes}
+                      </div>
+                    </div>
                   )}
-                </div>
-              </div>
-
-              {selectedEvent?.notes && (
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notes</p>
-                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
-                    <FileText className="w-3 h-3 text-primary inline mr-2" />
-                    {selectedEvent.notes}
-                  </div>
                 </div>
               )}
             </div>
 
             <div className="flex gap-3 pt-4">
               <DialogClose asChild>
-                <Button className="w-full h-12 bg-primary hover:bg-primary/90 font-bold rounded-xl shadow-lg shadow-red-100 text-white">
+                <Button className={cn(
+                  "w-full h-12 font-bold rounded-xl shadow-lg text-white",
+                  selectedEvent?.source === 'production' ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100" : "bg-primary hover:bg-primary/90 shadow-red-100"
+                )}>
                   Close Briefing
                 </Button>
               </DialogClose>
