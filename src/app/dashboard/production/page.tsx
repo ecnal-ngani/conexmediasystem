@@ -143,7 +143,7 @@ export default function ProductionPage() {
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <Briefcase className="w-3 h-3 text-primary" />
-                          Brand
+                          Company Brand Name
                         </Label>
                         <Input placeholder="CJC Eco Bag" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
                       </div>
