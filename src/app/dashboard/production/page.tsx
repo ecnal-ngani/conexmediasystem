@@ -23,7 +23,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ExternalLink, 
   Download, 
-  Plus, 
   Filter, 
   Search 
 } from 'lucide-react';
@@ -91,10 +90,6 @@ export default function ProductionPage() {
           <Button variant="outline" className="w-full sm:w-auto h-10 border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 shadow-sm text-xs">
             <Download className="w-4 h-4 mr-2" />
             Export Matrix
-          </Button>
-          <Button className="w-full sm:w-auto h-10 bg-[#E11D48] hover:bg-[#E11D48]/90 font-bold shadow-lg shadow-red-200 text-xs">
-            <Plus className="w-4 h-4 mr-2" />
-            Create New Project
           </Button>
         </div>
       </div>
