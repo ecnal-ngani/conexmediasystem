@@ -15,7 +15,8 @@ import {
   FileText,
   Briefcase,
   X,
-  Layers
+  Layers,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore } from '@/firebase';
@@ -101,6 +102,9 @@ export default function CalendarPage() {
       // Filter production projects
       const dayProjects = projects?.filter(p => p.dueDate === dateStr) || [];
 
+      // Filter tasks
+      const dayTasks = tasks?.filter(t => t.dueDate === dateStr) || [];
+
       const isToday = isTodayFn(new Date(viewDate.getFullYear(), viewDate.getMonth(), i));
 
       days.push(
@@ -146,6 +150,26 @@ export default function CalendarPage() {
                 PROD: {project.brand}
               </button>
             ))}
+
+            {/* Render Tasks */}
+            {dayTasks.map((task, idx) => (
+              <button 
+                key={`task-${idx}`} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedEvent({ ...task, source: 'task' });
+                }}
+                className={cn(
+                  "text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border",
+                  task.priority === 'URGENT' ? "bg-red-600 border-red-400 hover:bg-red-700" :
+                  task.priority === 'HIGH' ? "bg-orange-500 border-orange-300 hover:bg-orange-600" :
+                  "bg-blue-500 border-blue-300 hover:bg-blue-600"
+                )}
+                title={`TASK: ${task.title}`}
+              >
+                TASK: {task.title}
+              </button>
+            ))}
           </div>
         </div>
       );
@@ -172,7 +196,7 @@ export default function CalendarPage() {
               <CardTitle className="text-lg font-bold">
                 {mounted ? format(viewDate, 'MMMM yyyy') : 'Loading...'}
               </CardTitle>
-              {(schedulesLoading || projectsLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+              {(schedulesLoading || projectsLoading || tasksLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary" onClick={prevMonth}>
@@ -263,22 +287,67 @@ export default function CalendarPage() {
             <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
               <div className={cn(
                 "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-lg",
-                selectedEvent?.source === 'production' ? "bg-blue-600 shadow-blue-100" : "bg-primary shadow-red-100"
+                selectedEvent?.source === 'production' ? "bg-blue-600 shadow-blue-100" : 
+                selectedEvent?.source === 'task' ? "bg-green-600 shadow-green-100" :
+                "bg-primary shadow-red-100"
               )}>
-                {selectedEvent?.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : <CalendarIcon className="w-6 h-6 text-white" />}
+                {selectedEvent?.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : 
+                 selectedEvent?.source === 'task' ? <CheckCircle2 className="w-6 h-6 text-white" /> :
+                 <CalendarIcon className="w-6 h-6 text-white" />}
               </div>
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight truncate">
-                  {selectedEvent?.source === 'production' ? `Project: ${selectedEvent?.brand}` : selectedEvent?.title}
+                  {selectedEvent?.source === 'production' ? `Project: ${selectedEvent?.brand}` : 
+                   selectedEvent?.source === 'task' ? `Task: ${selectedEvent?.title}` :
+                   selectedEvent?.title}
                 </DialogTitle>
                 <DialogDescription className="text-slate-400 font-medium uppercase text-[10px] tracking-widest">
-                  {selectedEvent?.source === 'production' ? 'Production Asset' : selectedEvent?.type} Briefing
+                  {selectedEvent?.source === 'production' ? 'Production Asset' : 
+                   selectedEvent?.source === 'task' ? 'Internal Task' :
+                   selectedEvent?.type} Briefing
                 </DialogDescription>
               </div>
             </DialogHeader>
 
             <div className="space-y-6">
-              {selectedEvent?.source === 'production' ? (
+              {selectedEvent?.source === 'task' ? (
+                // Task Details
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</p>
+                      <Badge className={cn(
+                        "text-[10px] font-black px-2 py-1 rounded",
+                        selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
+                        selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
+                        "bg-blue-50 text-blue-500 border-blue-100"
+                      )} variant="outline">
+                        {selectedEvent.priority}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Due Date</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <CalendarIcon className="w-4 h-4 text-slate-400" />
+                        {selectedEvent?.dueDate}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
+                    <div className="flex items-center gap-2 text-slate-700 font-bold">
+                      <Briefcase className="w-4 h-4 text-slate-400" />
+                      {selectedEvent?.category}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</p>
+                    <Badge variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100">
+                      {selectedEvent?.status?.toUpperCase() || 'PENDING'}
+                    </Badge>
+                  </div>
+                </div>
+              ) : selectedEvent?.source === 'production' ? (
                 // Production Project Details
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
@@ -400,7 +469,9 @@ export default function CalendarPage() {
               <DialogClose asChild>
                 <Button className={cn(
                   "w-full h-12 font-bold rounded-xl shadow-lg text-white",
-                  selectedEvent?.source === 'production' ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100" : "bg-primary hover:bg-primary/90 shadow-red-100"
+                  selectedEvent?.source === 'production' ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100" : 
+                  selectedEvent?.source === 'task' ? "bg-green-600 hover:bg-green-700 shadow-green-100" :
+                  "bg-primary hover:bg-primary/90 shadow-red-100"
                 )}>
                   Close Briefing
                 </Button>
