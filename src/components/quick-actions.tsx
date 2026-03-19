@@ -10,18 +10,18 @@ import {
   Calendar, 
   Users, 
   TrendingUp, 
-  CheckCircle2,
-  Clock,
-  ShieldAlert,
-  X,
-  Trash2,
-  Briefcase,
-  MapPin,
-  Check,
-  FileText,
-  Loader2,
-  ListTodo,
-  AlertCircle
+  CheckCircle2, 
+  Clock, 
+  ShieldAlert, 
+  X, 
+  Trash2, 
+  Briefcase, 
+  MapPin, 
+  Check, 
+  FileText, 
+  Loader2, 
+  ListTodo, 
+  AlertCircle 
 } from 'lucide-react';
 import {
   Dialog,
@@ -281,20 +281,22 @@ export function QuickActions() {
           </SheetTrigger>
           <SheetContent className="w-full sm:max-w-md p-0 border-none rounded-l-3xl overflow-hidden">
             <div className="flex flex-col h-full bg-white">
-              <div className="p-6 border-b flex items-center justify-between">
+              <SheetHeader className="p-6 border-b flex flex-row items-center justify-between space-y-0">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-200">
                     <Bell className="w-6 h-6 text-white" />
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Notifications</h2>
-                    <p className="text-sm text-slate-500 font-medium">3 unread notifications</p>
+                  <div className="text-left">
+                    <SheetTitle className="text-2xl font-bold tracking-tight">Notifications</SheetTitle>
+                    <SheetDescription className="text-sm text-slate-500 font-medium">
+                      3 unread notifications
+                    </SheetDescription>
                   </div>
                 </div>
                 <Button variant="outline" size="sm" className="bg-blue-50 text-blue-600 border-none font-bold text-xs hover:bg-blue-100">
                   Mark all as read
                 </Button>
-              </div>
+              </SheetHeader>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {NOTIFICATIONS.map((notif) => (
