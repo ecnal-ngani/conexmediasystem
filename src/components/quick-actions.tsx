@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,17 +10,13 @@ import {
   HelpCircle, 
   Calendar, 
   Users, 
-  TrendingUp, 
   CheckCircle2, 
   Clock, 
   ShieldAlert, 
-  X, 
-  Trash2, 
   Briefcase, 
   MapPin, 
   Check, 
   FileText, 
-  Loader2, 
   ListTodo, 
   AlertCircle 
 } from 'lucide-react';
@@ -53,7 +50,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -138,6 +134,7 @@ export function QuickActions() {
   
   // Schedule Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
+  const [schedulePriority, setSchedulePriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [client, setClient] = useState('');
   const [date, setDate] = useState('');
   const [callTime, setCallTime] = useState('09:00');
@@ -194,6 +191,7 @@ export function QuickActions() {
     const scheduleData = {
       title: `${eventType}: ${client}`,
       type: eventType,
+      priority: schedulePriority,
       client,
       date,
       callTime,
@@ -224,6 +222,7 @@ export function QuickActions() {
     setDate('');
     setSelectedStaff([]);
     setNotes('');
+    setSchedulePriority('NORMAL');
   };
 
   const handleCreateTask = () => {
@@ -499,6 +498,29 @@ export function QuickActions() {
                       </div>
                     </div>
 
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority Level</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['URGENT', 'HIGH', 'NORMAL'] as const).map((priority) => (
+                          <Button
+                            key={priority}
+                            variant="outline"
+                            onClick={() => setSchedulePriority(priority)}
+                            className={cn(
+                              "h-11 font-bold transition-all border-slate-100 text-slate-600 rounded-xl text-[10px]",
+                              schedulePriority === priority 
+                                ? priority === 'URGENT' ? "bg-red-50 border-red-500 text-red-600 ring-1 ring-red-500"
+                                : priority === 'HIGH' ? "bg-orange-50 border-orange-500 text-orange-600 ring-1 ring-orange-500"
+                                : "bg-blue-50 border-blue-500 text-blue-600 ring-1 ring-blue-500"
+                                : "hover:bg-slate-50"
+                            )}
+                          >
+                            {priority}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                         <Briefcase className="w-3 h-3 text-primary" />
@@ -617,7 +639,7 @@ export function QuickActions() {
                     </DialogClose>
                     <Button 
                       onClick={handleConfirmSchedule} 
-                      className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100"
+                      className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
                     >
                       Confirm Schedule
                     </Button>

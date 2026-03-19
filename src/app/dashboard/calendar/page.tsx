@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -14,9 +15,9 @@ import {
   Users,
   FileText,
   Briefcase,
-  X,
   Layers,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore } from '@/firebase';
@@ -129,7 +130,12 @@ export default function CalendarPage() {
                   e.stopPropagation();
                   setSelectedEvent({ ...event, source: 'schedule' });
                 }}
-                className="bg-primary hover:bg-primary/90 transition-colors text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border border-primary-foreground/10"
+                className={cn(
+                  "transition-colors text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border",
+                  event.priority === 'URGENT' ? "bg-red-600 border-red-400 hover:bg-red-700" :
+                  event.priority === 'HIGH' ? "bg-orange-500 border-orange-300 hover:bg-orange-600" :
+                  "bg-primary border-primary-foreground/10 hover:bg-primary/90"
+                )}
                 title={event.title}
               >
                 {event.title}
@@ -177,9 +183,12 @@ export default function CalendarPage() {
     return days;
   };
 
-  const urgentTasksCount = tasks?.filter(t => t.priority === 'URGENT').length || 0;
-  const highTasksCount = tasks?.filter(t => t.priority === 'HIGH').length || 0;
-  const normalTasksCount = tasks?.filter(t => t.priority === 'NORMAL').length || 0;
+  // Logic to merge prioritized schedules into "Pending Tasks"
+  const prioritizedSchedules = schedules?.filter(s => s.priority === 'URGENT' || s.priority === 'HIGH' || s.priority === 'NORMAL') || [];
+  
+  const urgentTasksCount = (tasks?.filter(t => t.priority === 'URGENT').length || 0) + (prioritizedSchedules.filter(s => s.priority === 'URGENT').length);
+  const highTasksCount = (tasks?.filter(t => t.priority === 'HIGH').length || 0) + (prioritizedSchedules.filter(s => s.priority === 'HIGH').length);
+  const normalTasksCount = (tasks?.filter(t => t.priority === 'NORMAL').length || 0) + (prioritizedSchedules.filter(s => s.priority === 'NORMAL').length);
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
@@ -222,7 +231,7 @@ export default function CalendarPage() {
         {/* Pending Tasks Sidebar */}
         <Card className="border shadow-none rounded-xl bg-white overflow-hidden flex flex-col h-fit">
           <CardHeader className="border-b bg-slate-50/30">
-            <CardTitle className="text-base font-bold text-slate-800">Company-Wide Pending Tasks</CardTitle>
+            <CardTitle className="text-base font-bold text-slate-800">Command-Wide Pending Matrix</CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-6">
             {/* Priority Summary */}
@@ -241,40 +250,72 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            {/* Task List */}
+            {/* Task & Prioritized Schedule List */}
             <div className="space-y-3">
               {tasksLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
-              ) : tasks?.length === 0 ? (
-                <p className="text-xs text-center text-slate-400 py-8">No pending tasks found.</p>
-              ) : tasks?.map((task: any) => (
-                <div key={task.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-primary/20 transition-colors cursor-pointer group">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug max-w-[70%]">{task.title}</h4>
-                    <Badge className={cn(
-                      "text-[8px] font-black px-1.5 py-0.5 rounded",
-                      task.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
-                      task.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
-                      "bg-blue-50 text-blue-500 border-blue-100"
-                    )} variant="outline">
-                      {task.priority}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-[10px] text-slate-400 font-medium">{task.category}</span>
-                    <div className="flex items-center gap-1.5 text-slate-400">
-                      <Clock className="w-3 h-3" />
-                      <span className="text-[10px] font-medium">{task.dueDate}</span>
+              ) : (tasks?.length === 0 && prioritizedSchedules.length === 0) ? (
+                <p className="text-xs text-center text-slate-400 py-8">No pending operations found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {/* Real Tasks */}
+                  {tasks?.map((task: any) => (
+                    <div key={task.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-primary/20 transition-colors cursor-pointer group">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug max-w-[70%]">{task.title}</h4>
+                        <Badge className={cn(
+                          "text-[8px] font-black px-1.5 py-0.5 rounded",
+                          task.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
+                          task.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
+                          "bg-blue-50 text-blue-500 border-blue-100"
+                        )} variant="outline">
+                          {task.priority}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between mt-4">
+                        <span className="text-[10px] text-slate-400 font-medium">{task.category}</span>
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <Clock className="w-3 h-3" />
+                          <span className="text-[10px] font-medium">{task.dueDate}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                  
+                  {/* Prioritized Schedules displayed as tasks */}
+                  {prioritizedSchedules.map((schedule: any) => (
+                    <div key={schedule.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-primary/20 transition-colors cursor-pointer group">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="w-3 h-3 text-primary" />
+                          <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug truncate max-w-[120px]">{schedule.title}</h4>
+                        </div>
+                        <Badge className={cn(
+                          "text-[8px] font-black px-1.5 py-0.5 rounded",
+                          schedule.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
+                          schedule.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
+                          "bg-blue-50 text-blue-500 border-blue-100"
+                        )} variant="outline">
+                          {schedule.priority}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between mt-4">
+                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">Operation: {schedule.type}</span>
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <Clock className="w-3 h-3" />
+                          <span className="text-[10px] font-medium">{schedule.date}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
 
             <Button className="w-full bg-primary hover:bg-primary/90 font-bold h-11 rounded-xl shadow-lg shadow-red-100 mt-2 text-white">
-              View All Company Tasks
+              Synchronize Matrix
             </Button>
           </CardContent>
         </Card>
@@ -289,6 +330,8 @@ export default function CalendarPage() {
                 "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-lg",
                 selectedEvent?.source === 'production' ? "bg-blue-600 shadow-blue-100" : 
                 selectedEvent?.source === 'task' ? "bg-green-600 shadow-green-100" :
+                selectedEvent?.priority === 'URGENT' ? "bg-red-600 shadow-red-100" :
+                selectedEvent?.priority === 'HIGH' ? "bg-orange-600 shadow-orange-100" :
                 "bg-primary shadow-red-100"
               )}>
                 {selectedEvent?.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : 
@@ -394,6 +437,27 @@ export default function CalendarPage() {
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operation Priority</p>
+                      <Badge className={cn(
+                        "text-[10px] font-black px-2 py-1 rounded",
+                        selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
+                        selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
+                        "bg-blue-50 text-blue-500 border-blue-100"
+                      )} variant="outline">
+                        {selectedEvent.priority || 'NORMAL'}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</p>
+                      <div className="flex items-center gap-2 text-slate-700 font-bold">
+                        <CalendarIcon className="w-4 h-4 text-primary" />
+                        {selectedEvent?.date}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-1">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Client / Project</p>
                       <div className="flex items-center gap-2 text-slate-700 font-bold">
                         <Briefcase className="w-4 h-4 text-primary" />
@@ -401,10 +465,10 @@ export default function CalendarPage() {
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Type</p>
                       <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <CalendarIcon className="w-4 h-4 text-primary" />
-                        {selectedEvent?.date}
+                        <AlertCircle className="w-4 h-4 text-primary" />
+                        {selectedEvent?.type}
                       </div>
                     </div>
                   </div>
@@ -471,6 +535,8 @@ export default function CalendarPage() {
                   "w-full h-12 font-bold rounded-xl shadow-lg text-white",
                   selectedEvent?.source === 'production' ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100" : 
                   selectedEvent?.source === 'task' ? "bg-green-600 hover:bg-green-700 shadow-green-100" :
+                  selectedEvent?.priority === 'URGENT' ? "bg-red-600 hover:bg-red-700 shadow-red-100" :
+                  selectedEvent?.priority === 'HIGH' ? "bg-orange-600 hover:bg-orange-700 shadow-orange-100" :
                   "bg-primary hover:bg-primary/90 shadow-red-100"
                 )}>
                   Close Briefing
