@@ -39,13 +39,6 @@ import {
   SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -56,6 +49,8 @@ import Link from 'next/link';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const QUICK_ACTIONS = [
   {
@@ -116,7 +111,6 @@ const NOTIFICATIONS = [
     time: '1 hour ago',
     type: 'approved',
     icon: CheckCircle2,
-    canDelete: true
   },
   {
     id: '3',
@@ -133,15 +127,7 @@ const NOTIFICATIONS = [
     time: '5 hours ago',
     type: 'info',
     icon: Bell,
-  },
-  {
-    id: '5',
-    title: 'Team Member Update',
-    description: 'Clark Tadeo marked as "In Office" for today',
-    time: '1 day ago',
-    type: 'info',
-    icon: Bell,
-  },
+  }
 ];
 
 const STAFF_LIST = [
@@ -156,7 +142,6 @@ const STAFF_LIST = [
 export function QuickActions() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   
   // Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
@@ -196,7 +181,7 @@ export function QuickActions() {
     );
   };
 
-  const handleConfirmSchedule = async () => {
+  const handleConfirmSchedule = () => {
     if (!firestore || !date || !client) {
       toast({
         variant: "destructive",
@@ -206,42 +191,42 @@ export function QuickActions() {
       return;
     }
 
-    setIsSaving(true);
-    try {
-      await addDoc(collection(firestore, 'schedules'), {
-        title: `${eventType}: ${client}`,
-        type: eventType,
-        client,
-        date,
-        callTime,
-        wrapTime,
-        location,
-        staff: selectedStaff,
-        notes,
-        createdAt: serverTimestamp()
-      });
+    const schedulesRef = collection(firestore, 'schedules');
+    const scheduleData = {
+      title: `${eventType}: ${client}`,
+      type: eventType,
+      client,
+      date,
+      callTime,
+      wrapTime,
+      location,
+      staff: selectedStaff,
+      notes,
+      createdAt: serverTimestamp()
+    };
 
-      toast({
-        title: "Schedule Confirmed",
-        description: `New ${eventType} has been added to the operations matrix.`
+    // Non-blocking write
+    addDoc(schedulesRef, scheduleData)
+      .then(() => {
+        toast({
+          title: "Schedule Confirmed",
+          description: `New ${eventType} has been added to the operations matrix.`
+        });
+        setIsScheduleOpen(false);
+        // Reset form
+        setClient('');
+        setDate('');
+        setSelectedStaff([]);
+        setNotes('');
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: schedulesRef.path,
+          operation: 'create',
+          requestResourceData: scheduleData
+        });
+        errorEmitter.emit('permission-error', permissionError);
       });
-      
-      setIsScheduleOpen(false);
-      // Reset form
-      setClient('');
-      setDate('');
-      setSelectedStaff([]);
-      setNotes('');
-    } catch (error) {
-      console.error('Error saving schedule:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save the new schedule. Please try again."
-      });
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const isCalendarPage = pathname === '/dashboard/calendar';
@@ -514,10 +499,8 @@ export function QuickActions() {
                     </DialogClose>
                     <Button 
                       onClick={handleConfirmSchedule} 
-                      disabled={isSaving}
                       className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100"
                     >
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                       Confirm Schedule
                     </Button>
                   </div>

@@ -31,6 +31,26 @@
         "status": { "type": "string", "enum": ["pending", "completed"] }
       },
       "required": ["title", "category", "priority"]
+    },
+    "ProductionProject": {
+      "title": "Production Project",
+      "description": "An active production item in the company matrix.",
+      "type": "object",
+      "properties": {
+        "fileCode": { "type": "string" },
+        "brand": { "type": "string" },
+        "contentIdea": { "type": "string" },
+        "status": { "type": "string", "enum": ["In Production", "For QA", "Approved", "Client Revision"] },
+        "priority": { "type": "string", "enum": ["RUSH", "REGULAR"] },
+        "artist": { "type": "string" },
+        "type": { "type": "string" },
+        "platform": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "bm": { "type": "string" },
+        "canvasLink": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fileCode", "brand", "status", "priority"]
     }
   },
   "auth": {
@@ -44,6 +64,10 @@
     "/tasks/{taskId}": {
       "schema": "Task",
       "description": "Collection of pending tasks."
+    },
+    "/projects/{projectId}": {
+      "schema": "ProductionProject",
+      "description": "Collection of production matrix projects."
     }
   }
 }

@@ -1,7 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
-import { PRODUCTION_DATA, ProductionItem } from '@/lib/mock-data';
+import { useState, useMemo } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -35,7 +35,8 @@ import {
   Share2,
   Link as LinkIcon,
   CheckCircle2,
-  Lightbulb
+  Lightbulb,
+  Loader2
 } from 'lucide-react';
 import {
   Dialog,
@@ -49,12 +50,38 @@ import {
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function ProductionPage() {
-  const [data] = useState<ProductionItem[]>(PRODUCTION_DATA);
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
-  const getStatusStyles = (status: ProductionItem['status']) => {
+  // Form State
+  const [fileCode, setFileCode] = useState('');
+  const [brand, setBrand] = useState('');
+  const [contentIdea, setContentIdea] = useState('');
+  const [status, setStatus] = useState('In Production');
+  const [priority, setPriority] = useState('REGULAR');
+  const [artist, setArtist] = useState('');
+  const [type, setType] = useState('Video');
+  const [platform, setPlatform] = useState('Instagram');
+  const [dueDate, setDueDate] = useState('');
+  const [bm, setBm] = useState('');
+  const [canvasLink, setCanvasLink] = useState('');
+
+  // Real-time listener
+  const projectsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
+  }, [firestore]);
+  const { data: projects, loading } = useCollection<any>(projectsQuery);
+
+  const getStatusStyles = (status: string) => {
     switch (status) {
       case 'In Production':
         return 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100';
@@ -69,11 +96,59 @@ export default function ProductionPage() {
     }
   };
 
-  const getPriorityStyles = (priority: ProductionItem['priority']) => {
+  const getPriorityStyles = (priority: string) => {
     if (priority === 'RUSH') {
       return 'text-red-500 bg-red-50 border-red-100 font-bold';
     }
     return 'text-slate-400 bg-slate-50 border-slate-100 font-medium';
+  };
+
+  const handleAddProject = () => {
+    if (!firestore || !fileCode || !brand) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "File Code and Company Brand Name are required."
+      });
+      return;
+    }
+
+    const projectsRef = collection(firestore, 'projects');
+    const projectData = {
+      fileCode,
+      brand,
+      contentIdea,
+      status,
+      priority,
+      artist,
+      type,
+      platform,
+      dueDate,
+      bm,
+      canvasLink,
+      createdAt: serverTimestamp()
+    };
+
+    addDoc(projectsRef, projectData)
+      .then(() => {
+        toast({
+          title: "Project Added",
+          description: `${fileCode} has been added to the Production Matrix.`
+        });
+        setIsAddProjectOpen(false);
+        // Reset form
+        setFileCode('');
+        setBrand('');
+        setContentIdea('');
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: projectsRef.path,
+          operation: 'create',
+          requestResourceData: projectData
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   return (
@@ -94,10 +169,10 @@ export default function ProductionPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="in-production">In Production</SelectItem>
-              <SelectItem value="qa">For QA</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="revision">Client Revision</SelectItem>
+              <SelectItem value="In Production">In Production</SelectItem>
+              <SelectItem value="For QA">For QA</SelectItem>
+              <SelectItem value="Approved">Approved</SelectItem>
+              <SelectItem value="Client Revision">Client Revision</SelectItem>
             </SelectContent>
           </Select>
           <div className="relative group flex-1">
@@ -112,7 +187,7 @@ export default function ProductionPage() {
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
           <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs">
+              <Button className="w-full sm:w-auto h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs text-white">
                 <Plus className="w-4 h-4 mr-1.5" />
                 Add New Project
               </Button>
@@ -131,41 +206,53 @@ export default function ProductionPage() {
                   </DialogHeader>
 
                   <div className="space-y-6">
-                    {/* Project Codes */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <FileText className="w-3 h-3 text-primary" />
                           File Code
                         </Label>
-                        <Input placeholder="VLM-260120-01" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                        <Input 
+                          placeholder="VLM-260120-01" 
+                          value={fileCode}
+                          onChange={(e) => setFileCode(e.target.value)}
+                          className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <Briefcase className="w-3 h-3 text-primary" />
                           Company Brand Name
                         </Label>
-                        <Input placeholder="CJC Eco Bag" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                        <Input 
+                          placeholder="CJC Eco Bag" 
+                          value={brand}
+                          onChange={(e) => setBrand(e.target.value)}
+                          className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                        />
                       </div>
                     </div>
 
-                    {/* Content Idea */}
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                         <Lightbulb className="w-3 h-3 text-primary" />
                         Content Idea
                       </Label>
-                      <Input placeholder="Product showcase reel" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                      <Input 
+                        placeholder="Product showcase reel" 
+                        value={contentIdea}
+                        onChange={(e) => setContentIdea(e.target.value)}
+                        className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                      />
                     </div>
 
-                    {/* Status & Priority */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <CheckCircle2 className="w-3 h-3 text-primary" />
                           Status
                         </Label>
-                        <Select defaultValue="In Production">
+                        <Select value={status} onValueChange={setStatus}>
                           <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
                             <SelectValue />
                           </SelectTrigger>
@@ -182,7 +269,7 @@ export default function ProductionPage() {
                           <Zap className="w-3 h-3 text-primary" />
                           Priority
                         </Label>
-                        <Select defaultValue="REGULAR">
+                        <Select value={priority} onValueChange={setPriority}>
                           <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
                             <SelectValue />
                           </SelectTrigger>
@@ -194,21 +281,25 @@ export default function ProductionPage() {
                       </div>
                     </div>
 
-                    {/* Artist & Type */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <User className="w-3 h-3 text-primary" />
                           Artist
                         </Label>
-                        <Input placeholder="Jhon Lester Nolial" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                        <Input 
+                          placeholder="Jhon Lester Nolial" 
+                          value={artist}
+                          onChange={(e) => setArtist(e.target.value)}
+                          className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <Layers className="w-3 h-3 text-primary" />
                           Type
                         </Label>
-                        <Select defaultValue="Video">
+                        <Select value={type} onValueChange={setType}>
                           <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
                             <SelectValue />
                           </SelectTrigger>
@@ -222,14 +313,13 @@ export default function ProductionPage() {
                       </div>
                     </div>
 
-                    {/* Platform & Date */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <Share2 className="w-3 h-3 text-primary" />
                           Platform
                         </Label>
-                        <Select defaultValue="Instagram">
+                        <Select value={platform} onValueChange={setPlatform}>
                           <SelectTrigger className="h-12 border-slate-200 rounded-xl text-slate-600">
                             <SelectValue />
                           </SelectTrigger>
@@ -246,25 +336,39 @@ export default function ProductionPage() {
                           <Calendar className="w-3 h-3 text-primary" />
                           Due Date
                         </Label>
-                        <Input type="date" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                        <Input 
+                          type="date" 
+                          value={dueDate}
+                          onChange={(e) => setDueDate(e.target.value)}
+                          className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                        />
                       </div>
                     </div>
 
-                    {/* Links & Owners */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <User className="w-3 h-3 text-primary" />
                           Brand Manager (BM)
                         </Label>
-                        <Input placeholder="Clark" className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                        <Input 
+                          placeholder="Clark" 
+                          value={bm}
+                          onChange={(e) => setBm(e.target.value)}
+                          className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                           <LinkIcon className="w-3 h-3 text-primary" />
                           Canvas Link
                         </Label>
-                        <Input placeholder="https://..." className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" />
+                        <Input 
+                          placeholder="https://..." 
+                          value={canvasLink}
+                          onChange={(e) => setCanvasLink(e.target.value)}
+                          className="h-12 border-slate-200 rounded-xl text-slate-600 focus-visible:ring-primary" 
+                        />
                       </div>
                     </div>
                   </div>
@@ -273,7 +377,12 @@ export default function ProductionPage() {
                     <DialogClose asChild>
                       <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
                     </DialogClose>
-                    <Button className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100">Add to Matrix</Button>
+                    <Button 
+                      onClick={handleAddProject}
+                      className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
+                    >
+                      Add to Matrix
+                    </Button>
                   </div>
                 </div>
               </ScrollArea>
@@ -303,8 +412,20 @@ export default function ProductionPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((item, i) => (
-                <TableRow key={i} className="hover:bg-slate-50/50 transition-colors border-0">
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-32 text-center">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
+                  </TableCell>
+                </TableRow>
+              ) : projects?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-32 text-center text-slate-400">
+                    No production items found.
+                  </TableCell>
+                </TableRow>
+              ) : projects?.map((item: any) => (
+                <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors border-0">
                   <TableCell className="py-4 pl-6 whitespace-nowrap">
                     <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2 font-bold group">
                       <ExternalLink className="w-3 h-3 mr-1 transition-transform group-hover:scale-110" />
@@ -314,17 +435,9 @@ export default function ProductionPage() {
                   <TableCell className="font-mono text-[10px] font-bold text-slate-700 py-4 whitespace-nowrap">{item.fileCode}</TableCell>
                   <TableCell className="text-xs font-bold text-slate-800 whitespace-nowrap">{item.brand}</TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <Select defaultValue={item.status}>
-                      <SelectTrigger className={cn("h-7 text-[9px] font-bold border rounded px-1.5 w-[110px]", getStatusStyles(item.status))}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="In Production">In Production</SelectItem>
-                        <SelectItem value="For QA">For QA</SelectItem>
-                        <SelectItem value="Approved">Approved</SelectItem>
-                        <SelectItem value="Client Revision">Client Revision</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className={cn("inline-flex h-7 items-center text-[9px] font-bold border rounded px-1.5 w-[110px]", getStatusStyles(item.status))}>
+                      {item.status}
+                    </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     <Badge variant="outline" className={cn("text-[8px] px-1.5 py-0 rounded tracking-tighter", getPriorityStyles(item.priority))}>
