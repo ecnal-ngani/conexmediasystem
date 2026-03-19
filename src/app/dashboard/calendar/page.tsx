@@ -9,7 +9,12 @@ import {
   ChevronRight, 
   Calendar as CalendarIcon,
   Clock,
-  Loader2
+  Loader2,
+  MapPin,
+  Users,
+  FileText,
+  Briefcase,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore } from '@/firebase';
@@ -21,20 +26,27 @@ import {
   startOfMonth, 
   getDay, 
   getDaysInMonth,
-  isSameMonth,
-  isToday as isTodayFn,
-  parseISO
+  isToday as isTodayFn
 } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Separator } from '@/components/ui/separator';
 
 export default function CalendarPage() {
-  const [viewDate, setViewDate] = useState(new Date(2025, 1, 1)); // Default to Feb 2025 for consistency with design
+  const [viewDate, setViewDate] = useState(new Date());
   const [mounted, setMounted] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const firestore = useFirestore();
 
   // Handle hydration
   useEffect(() => {
     setMounted(true);
-    setViewDate(new Date()); // On mount, switch to current real-world date
   }, []);
 
   // Real-time schedules
@@ -70,8 +82,10 @@ export default function CalendarPage() {
     
     // Fill actual days
     for (let i = 1; i <= daysCount; i++) {
-      const currentMonthStr = format(viewDate, 'yyyy-MM');
-      const dateStr = `${currentMonthStr}-${i.toString().padStart(2, '0')}`;
+      const year = viewDate.getFullYear();
+      const month = (viewDate.getMonth() + 1).toString().padStart(2, '0');
+      const day = i.toString().padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
       
       const dayEvents = schedules?.filter(s => s.date === dateStr) || [];
       const isToday = isTodayFn(new Date(viewDate.getFullYear(), viewDate.getMonth(), i));
@@ -89,15 +103,19 @@ export default function CalendarPage() {
             isToday ? "text-primary font-bold" : "text-slate-400"
           )}>{i}</span>
           
-          <div className="w-full space-y-1 overflow-hidden mt-1">
+          <div className="w-full space-y-1 overflow-y-auto mt-1 flex-1">
             {dayEvents.map((event, idx) => (
-              <div 
+              <button 
                 key={idx} 
-                className="bg-primary text-white text-[8px] font-bold py-1 px-1.5 rounded truncate w-full text-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedEvent(event);
+                }}
+                className="bg-primary hover:bg-primary/90 transition-colors text-white text-[8px] font-bold py-1 px-1.5 rounded truncate w-full text-center block"
                 title={event.title}
               >
                 {event.title}
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -208,6 +226,107 @@ export default function CalendarPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Event Details Dialog */}
+      <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+        <DialogContent className="max-w-[500px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+          <div className="p-6 md:p-8 space-y-6">
+            <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
+                <CalendarIcon className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight truncate">
+                  {selectedEvent?.title}
+                </DialogTitle>
+                <DialogDescription className="text-slate-400 font-medium">
+                  {selectedEvent?.type} Details
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Client / Project</p>
+                  <div className="flex items-center gap-2 text-slate-700 font-bold">
+                    <Briefcase className="w-4 h-4 text-primary" />
+                    {selectedEvent?.client}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</p>
+                  <div className="flex items-center gap-2 text-slate-700 font-bold">
+                    <CalendarIcon className="w-4 h-4 text-primary" />
+                    {selectedEvent?.date}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Call Time</p>
+                  <div className="flex items-center gap-2 text-slate-700 font-bold">
+                    <Clock className="w-4 h-4 text-primary" />
+                    {selectedEvent?.callTime}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Wrap Time</p>
+                  <div className="flex items-center gap-2 text-slate-700 font-bold">
+                    <Clock className="w-4 h-4 text-primary" />
+                    {selectedEvent?.wrapTime}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Location</p>
+                <div className="flex items-center gap-2 text-slate-700 font-bold">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  {selectedEvent?.location || 'Not specified'}
+                </div>
+              </div>
+
+              <Separator className="bg-slate-100" />
+
+              <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Staff</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedEvent?.staff?.length > 0 ? (
+                    selectedEvent.staff.map((member: string) => (
+                      <Badge key={member} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 py-1 px-3">
+                        <Users className="w-3 h-3 mr-1.5 opacity-50" />
+                        {member}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-400 italic">No staff assigned</span>
+                  )}
+                </div>
+              </div>
+
+              {selectedEvent?.notes && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notes</p>
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
+                    <FileText className="w-3 h-3 text-primary inline mr-2" />
+                    {selectedEvent.notes}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <DialogClose asChild>
+                <Button className="w-full h-12 bg-primary hover:bg-primary/90 font-bold rounded-xl shadow-lg shadow-red-100 text-white">
+                  Close Briefing
+                </Button>
+              </DialogClose>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
