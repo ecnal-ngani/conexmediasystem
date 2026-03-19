@@ -450,8 +450,8 @@ export function QuickActions() {
                       </div>
                     </div>
 
-                    {/* Notes */}
-                    <div className="space-y-2">
+                    {/* Notes (Optional) */}
+                    <div className="space-y-2 pb-4">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                         <FileText className="w-3 h-3 text-primary" />
                         Notes (Optional)
@@ -463,7 +463,7 @@ export function QuickActions() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex gap-3 pt-2">
                     <DialogClose asChild>
                       <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
                     </DialogClose>
