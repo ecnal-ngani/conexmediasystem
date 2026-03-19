@@ -24,7 +24,8 @@ import {
   ExternalLink, 
   Download, 
   Filter, 
-  Search 
+  Search,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -54,8 +55,8 @@ export default function ProductionPage() {
   };
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-10 max-w-[1600px] mx-auto">
+      <div className="flex items-center justify-between px-1">
         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Production Matrix</h1>
       </div>
 
@@ -66,7 +67,7 @@ export default function ProductionPage() {
             <Filter className="w-4 h-4" />
           </div>
           <Select defaultValue="all">
-            <SelectTrigger className="w-full sm:w-[140px] md:w-[180px] h-10 shadow-sm border-slate-200 text-xs">
+            <SelectTrigger className="w-full sm:w-[140px] md:w-[180px] h-10 shadow-sm border-slate-200 text-xs font-medium">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -80,15 +81,19 @@ export default function ProductionPage() {
           <div className="relative group flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input 
-              placeholder="Search projects..." 
+              placeholder="Search projects by code, brand or artist..." 
               className="pl-10 h-10 w-full shadow-sm border-slate-200 focus-visible:ring-primary text-xs"
             />
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
-          <Button variant="outline" className="w-full sm:w-auto h-10 border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 shadow-sm text-xs">
-            <Download className="w-4 h-4 mr-2" />
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+          <Button className="w-full sm:w-auto h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs">
+            <Plus className="w-4 h-4 mr-1.5" />
+            Add New Project
+          </Button>
+          <Button variant="outline" className="w-full sm:w-auto h-10 border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm text-xs font-bold">
+            <Download className="w-4 h-4 mr-1.5" />
             Export Matrix
           </Button>
         </div>
@@ -100,7 +105,7 @@ export default function ProductionPage() {
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow className="hover:bg-transparent border-0">
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-4 whitespace-nowrap">Action</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-6 whitespace-nowrap">Action</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">File Code</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Brand</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Status</TableHead>
@@ -112,9 +117,10 @@ export default function ProductionPage() {
             <TableBody>
               {data.map((item, i) => (
                 <TableRow key={i} className="hover:bg-slate-50/50 transition-colors border-0">
-                  <TableCell className="py-4 pl-4 whitespace-nowrap">
-                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2">
-                      <ExternalLink className="w-3 h-3" />
+                  <TableCell className="py-4 pl-6 whitespace-nowrap">
+                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2 font-bold">
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      View
                     </Button>
                   </TableCell>
                   <TableCell className="font-mono text-[10px] font-bold text-slate-700 py-4 whitespace-nowrap">{item.fileCode}</TableCell>
