@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,28 @@ import {
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
+import { 
+  format, 
+  addMonths, 
+  subMonths, 
+  startOfMonth, 
+  getDay, 
+  getDaysInMonth,
+  isSameMonth,
+  isToday as isTodayFn,
+  parseISO
+} from 'date-fns';
 
 export default function CalendarPage() {
-  const [currentDay] = useState(new Date().getDate());
+  const [viewDate, setViewDate] = useState(new Date(2025, 1, 1)); // Default to Feb 2025 for consistency with design
+  const [mounted, setMounted] = useState(false);
   const firestore = useFirestore();
+
+  // Handle hydration
+  useEffect(() => {
+    setMounted(true);
+    setViewDate(new Date()); // On mount, switch to current real-world date
+  }, []);
 
   // Real-time schedules
   const schedulesQuery = useMemo(() => {
@@ -33,34 +51,30 @@ export default function CalendarPage() {
   }, [firestore]);
   const { data: tasks, loading: tasksLoading } = useCollection<any>(tasksQuery);
 
-  const daysInMonth = 28; // Hardcoded for Feb 2025 as per design
-  const startDayOffset = 6; // Feb 1, 2025 is a Saturday
+  const nextMonth = () => setViewDate(prev => addMonths(prev, 1));
+  const prevMonth = () => setViewDate(prev => subMonths(prev, 1));
 
   const renderCalendarDays = () => {
+    if (!mounted) return null;
+
     const days = [];
+    const daysCount = getDaysInMonth(viewDate);
+    const startDayOffset = getDay(startOfMonth(viewDate));
+    
+    // Fill leading empty cells
     for (let i = 0; i < startDayOffset; i++) {
       days.push(
         <div key={`blank-${i}`} className="aspect-square bg-slate-50/50 rounded-lg border border-transparent" />
       );
     }
     
-    for (let i = 1; i <= daysInMonth; i++) {
-      // Find events for this day using timezone-safe string comparison
-      const dayEvents = schedules?.filter(s => {
-        if (!s.date) return false;
-        // Date format from input is YYYY-MM-DD
-        const parts = s.date.split('-');
-        if (parts.length !== 3) return false;
-        
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]);
-        const day = parseInt(parts[2]);
-        
-        // Filter for February (month 2) 2025
-        return day === i && month === 2 && year === 2025;
-      }) || [];
+    // Fill actual days
+    for (let i = 1; i <= daysCount; i++) {
+      const currentMonthStr = format(viewDate, 'yyyy-MM');
+      const dateStr = `${currentMonthStr}-${i.toString().padStart(2, '0')}`;
       
-      const isToday = i === currentDay;
+      const dayEvents = schedules?.filter(s => s.date === dateStr) || [];
+      const isToday = isTodayFn(new Date(viewDate.getFullYear(), viewDate.getMonth(), i));
 
       days.push(
         <div 
@@ -108,12 +122,18 @@ export default function CalendarPage() {
           <CardHeader className="flex flex-row items-center justify-between bg-white border rounded-t-xl py-4 px-6 shadow-sm">
             <div className="flex items-center gap-3">
               <CalendarIcon className="w-5 h-5 text-primary" />
-              <CardTitle className="text-lg font-bold">February 2025</CardTitle>
+              <CardTitle className="text-lg font-bold">
+                {mounted ? format(viewDate, 'MMMM yyyy') : 'Loading...'}
+              </CardTitle>
               {schedulesLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="text-slate-400"><ChevronLeft className="w-4 h-4" /></Button>
-              <Button variant="ghost" size="icon" className="text-slate-400"><ChevronRight className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary" onClick={prevMonth}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary" onClick={nextMonth}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="bg-white border-x border-b rounded-b-xl p-6 shadow-sm">
