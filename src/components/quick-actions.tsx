@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Bell, 
   Zap, 
@@ -22,7 +21,9 @@ import {
   Lightbulb,
   Share2,
   Layers,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Home,
+  User
 } from 'lucide-react';
 import {
   Dialog,
@@ -61,6 +62,22 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 const QUICK_ACTIONS = [
+  {
+    title: 'Home',
+    description: 'Command Center',
+    icon: Home,
+    color: 'text-slate-600',
+    bg: 'bg-slate-100',
+    href: '/dashboard'
+  },
+  {
+    title: 'Profile',
+    description: 'System Identity',
+    icon: User,
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
+    href: '/dashboard/profile'
+  },
   {
     title: 'New Project',
     description: 'Create a production item',
@@ -114,15 +131,8 @@ const NOTIFICATIONS = [
   }
 ];
 
-const STAFF_LIST = [
-  { name: 'Chloe Javier', role: 'Videographer' },
-  { name: 'Clark Tadeo', role: 'Brand Manager' },
-  { name: 'Louise Dela Cruz', role: 'Graphic Designer' },
-  { name: 'Matthew Valenzona', role: 'Production Director' },
-  { name: 'Trish Jarque', role: 'Creative Director' },
-];
-
 export function QuickActions() {
+  const router = useRouter();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isTaskOpen, setIsTaskOpen] = useState(false);
@@ -207,12 +217,12 @@ export function QuickActions() {
           </SheetTrigger>
           <SheetContent className="w-full sm:max-w-md p-0 border-none rounded-l-3xl overflow-hidden">
             <div className="flex flex-col h-full bg-white">
-              <SheetHeader className="p-6 border-b flex flex-row items-center justify-between space-y-0">
+              <SheetHeader className="p-6 border-b flex flex-row items-center justify-between space-y-0 text-left">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-200">
                     <Bell className="w-6 h-6 text-white" />
                   </div>
-                  <div className="text-left">
+                  <div>
                     <SheetTitle className="text-2xl font-bold tracking-tight">Notifications</SheetTitle>
                     <SheetDescription className="text-sm text-slate-500 font-medium">Internal command updates</SheetDescription>
                   </div>
@@ -263,7 +273,7 @@ export function QuickActions() {
                       if (action.action === 'task') setIsTaskOpen(true);
                       else if (action.action === 'schedule') setIsScheduleOpen(true);
                       else if (action.action === 'project') setIsProjectOpen(true);
-                      else if (action.href) window.location.href = action.href;
+                      else if (action.href) router.push(action.href);
                     }}
                     className="flex flex-col p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-primary/20 hover:shadow-md transition-all group text-left"
                   >
