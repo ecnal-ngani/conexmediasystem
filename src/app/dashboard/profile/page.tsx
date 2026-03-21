@@ -16,14 +16,12 @@ import {
   Dumbbell,
   Edit2,
   Save,
-  X,
-  BrainCircuit
+  X
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
@@ -34,20 +32,18 @@ export default function ProfilePage() {
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [preferences, setPreferences] = useState('');
 
   useEffect(() => {
     if (user) {
       setName(user.name);
       setEmail(user.email);
-      setPreferences(user.preferences || '');
     }
   }, [user]);
 
   if (!user) return null;
 
   const handleSave = () => {
-    updateUser({ name, email, preferences });
+    updateUser({ name, email });
     setIsEditing(false);
     toast({
       title: "Identity Updated",
@@ -174,37 +170,11 @@ export default function ProfilePage() {
                 <p className="text-sm font-bold text-slate-800">Manila, Philippines</p>
               </div>
             </div>
-
-            <div className="flex items-start gap-4 col-span-1 md:col-span-2 border-t pt-6 mt-2">
-              <div className="p-2.5 bg-blue-50 rounded-xl text-blue-500 shrink-0">
-                <BrainCircuit className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">AI Curator Preferences</p>
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <Textarea 
-                      value={preferences} 
-                      onChange={(e) => setPreferences(e.target.value)} 
-                      placeholder="Enter your professional interests for the AI curator..."
-                      className="min-h-[100px] text-sm bg-slate-50 border-slate-200"
-                    />
-                    <p className="text-[9px] text-slate-400 font-medium italic">
-                      This information helps the CONEX AI curate the most relevant classified content for you.
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
-                    &quot;{user.preferences || 'No preferences set.'}&quot;
-                  </p>
-                )}
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Attendance Card */}
+      {/* Security Clearance Status Card */}
       <Card className="border shadow-none rounded-xl bg-white">
         <CardHeader className="py-4 border-b">
           <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Security Clearance Status</CardTitle>
