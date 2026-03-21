@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,18 +13,81 @@ import {
   Award,
   Zap,
   Palette,
-  Dumbbell
+  Dumbbell,
+  Edit2,
+  Save,
+  X,
+  BrainCircuit
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Form State
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [preferences, setPreferences] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name);
+      setEmail(user.email);
+      setPreferences(user.preferences || '');
+    }
+  }, [user]);
 
   if (!user) return null;
 
+  const handleSave = () => {
+    updateUser({ name, email, preferences });
+    setIsEditing(false);
+    toast({
+      title: "Identity Updated",
+      description: "Your system profile has been successfully re-synchronized.",
+    });
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900 px-1">My Profile</h1>
+      <div className="flex items-center justify-between px-1">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">My Profile</h1>
+        {!isEditing ? (
+          <Button 
+            onClick={() => setIsEditing(true)} 
+            variant="outline" 
+            className="border-primary/20 text-primary hover:bg-primary/5 font-bold gap-2"
+          >
+            <Edit2 className="w-4 h-4" />
+            Edit Profile
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setIsEditing(false)} 
+              variant="ghost" 
+              className="text-slate-400 hover:text-slate-600 font-bold"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSave} 
+              className="bg-primary hover:bg-primary/90 font-bold gap-2"
+            >
+              <Save className="w-4 h-4" />
+              Save Changes
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Main Profile Header Card */}
       <Card className="border shadow-none rounded-xl overflow-hidden bg-white">
@@ -37,15 +101,28 @@ export default function ProfilePage() {
               </AvatarFallback>
             </Avatar>
             
-            <div className="text-center md:text-left space-y-1 pb-2">
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{user.name}</h2>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                <p className="text-slate-500 font-medium text-sm">{user.role}</p>
-                <span className="text-slate-300 hidden md:block">•</span>
-                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-none font-mono text-[10px] px-2 py-0">
-                  {user.systemId}
-                </Badge>
-              </div>
+            <div className="text-center md:text-left space-y-1 pb-2 flex-1">
+              {isEditing ? (
+                <div className="space-y-1 max-w-sm mx-auto md:mx-0">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Display Name</Label>
+                  <Input 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)} 
+                    className="h-10 text-xl font-bold"
+                  />
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{user.name}</h2>
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                    <p className="text-slate-500 font-medium text-sm">{user.role}</p>
+                    <span className="text-slate-300 hidden md:block">•</span>
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-none font-mono text-[10px] px-2 py-0">
+                      {user.systemId}
+                    </Badge>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -64,9 +141,17 @@ export default function ProfilePage() {
               <div className="p-2.5 bg-red-50 rounded-xl text-red-500 shrink-0">
                 <Mail className="w-5 h-5" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">Corporate Email</p>
-                <p className="text-sm font-bold text-slate-800">{user.email}</p>
+                {isEditing ? (
+                  <Input 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    className="h-8 text-sm"
+                  />
+                ) : (
+                  <p className="text-sm font-bold text-slate-800">{user.email}</p>
+                )}
               </div>
             </div>
 
@@ -87,6 +172,32 @@ export default function ProfilePage() {
               <div>
                 <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">Deployment Hub</p>
                 <p className="text-sm font-bold text-slate-800">Manila, Philippines</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 col-span-1 md:col-span-2 border-t pt-6 mt-2">
+              <div className="p-2.5 bg-blue-50 rounded-xl text-blue-500 shrink-0">
+                <BrainCircuit className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">AI Curator Preferences</p>
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <Textarea 
+                      value={preferences} 
+                      onChange={(e) => setPreferences(e.target.value)} 
+                      placeholder="Enter your professional interests for the AI curator..."
+                      className="min-h-[100px] text-sm bg-slate-50 border-slate-200"
+                    />
+                    <p className="text-[9px] text-slate-400 font-medium italic">
+                      This information helps the CONEX AI curate the most relevant classified content for you.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed italic">
+                    &quot;{user.preferences || 'No preferences set.'}&quot;
+                  </p>
+                )}
               </div>
             </div>
           </div>

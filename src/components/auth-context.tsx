@@ -12,6 +12,7 @@ interface AuthContextType {
   isWfh: boolean;
   isVerified: boolean;
   setVerified: (status: boolean) => void;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,6 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   };
 
+  const updateUser = (updates: Partial<User>) => {
+    if (!user) return;
+    const updatedUser = { ...user, ...updates };
+    setUser(updatedUser);
+    localStorage.setItem('conex_session', JSON.stringify(updatedUser));
+  };
+
   const setVerified = (status: boolean) => {
     setIsVerified(status);
     localStorage.setItem('conex_verified', status.toString());
@@ -80,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, isWfh, isVerified, setVerified }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, isWfh, isVerified, setVerified, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
