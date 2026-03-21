@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -15,7 +16,7 @@ import {
   Building2, 
   Info, 
   ShieldCheck, 
-  User, 
+  User as UserIcon, 
   GraduationCap, 
   ChevronLeft 
 } from 'lucide-react';
@@ -23,8 +24,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+type RoleId = 'admin' | 'employee' | 'intern';
+
 export default function LoginPage() {
   const [view, setView] = useState<'welcome' | 'role' | 'login'>('welcome');
+  const [selectedRole, setSelectedRole] = useState<RoleId | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isWfh, setIsWfh] = useState(false);
@@ -34,7 +38,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login(email, isWfh);
+      await login(email, isWfh, selectedRole || undefined);
       toast({
         title: "Initial Check Passed",
         description: isWfh ? "Please proceed to biometric verification." : "Welcome back to the CONEX MEDIA secure perimeter.",
@@ -49,10 +53,20 @@ export default function LoginPage() {
   };
 
   const roles = [
-    { id: 'admin', title: 'Administrator', icon: ShieldCheck },
-    { id: 'employee', title: 'Employee', icon: User },
-    { id: 'intern', title: 'Intern', icon: GraduationCap },
+    { id: 'admin' as RoleId, title: 'Administrator', icon: ShieldCheck, description: 'Command & Staff Control' },
+    { id: 'employee' as RoleId, title: 'Employee', icon: UserIcon, description: 'Operations & Production' },
+    { id: 'intern' as RoleId, title: 'Intern', icon: GraduationCap, description: 'Support & Training' },
   ];
+
+  const handleRoleSelect = (roleId: RoleId) => {
+    setSelectedRole(roleId);
+    // Auto-fill demo emails based on role
+    if (roleId === 'admin') setEmail('admin@conex.private');
+    else if (roleId === 'employee') setEmail('employee@conex.private');
+    else setEmail('');
+    
+    setView('login');
+  };
 
   if (view === 'welcome') {
     return (
@@ -70,7 +84,7 @@ export default function LoginPage() {
           onClick={() => setView('role')}
           className="w-full max-w-[320px] h-14 bg-primary hover:bg-primary/90 text-white font-medium text-lg rounded-none transition-all active:scale-[0.98]"
         >
-          Log In
+          Initialize Login
         </Button>
 
         <p className="mt-12 text-[10px] uppercase font-black tracking-[0.2em] text-slate-400">
@@ -84,21 +98,24 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="text-center mb-16 space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Select Your Role</h1>
-          <p className="text-slate-500 font-medium text-lg">Choose your access level to continue</p>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Access Node</h1>
+          <p className="text-slate-500 font-medium text-lg">Identify your clearance level to continue</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl px-4">
           {roles.map((role) => (
             <button
               key={role.id}
-              onClick={() => setView('login')}
-              className="flex flex-col items-center justify-center aspect-square bg-white border border-slate-100 rounded-none shadow-sm p-12 space-y-8 hover:border-primary/20 hover:shadow-2xl hover:shadow-slate-100 transition-all group relative overflow-hidden"
+              onClick={() => handleRoleSelect(role.id)}
+              className="flex flex-col items-center justify-center aspect-square bg-white border border-slate-100 rounded-none shadow-sm p-12 space-y-6 hover:border-primary/20 hover:shadow-2xl hover:shadow-slate-100 transition-all group relative overflow-hidden"
             >
               <div className="w-20 h-20 rounded-full border border-slate-100 flex items-center justify-center bg-slate-50 group-hover:bg-primary/5 group-hover:border-primary/20 transition-all duration-500">
                 <role.icon className="w-10 h-10 text-slate-600 group-hover:text-primary transition-colors" />
               </div>
-              <span className="text-2xl font-bold text-slate-900 group-hover:text-primary transition-colors">{role.title}</span>
+              <div className="text-center">
+                <span className="text-2xl font-bold text-slate-900 group-hover:text-primary transition-colors block">{role.title}</span>
+                <span className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-2 block">{role.description}</span>
+              </div>
             </button>
           ))}
         </div>
@@ -114,6 +131,8 @@ export default function LoginPage() {
     );
   }
 
+  const selectedRoleData = roles.find(r => r.id === selectedRole);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -121,11 +140,11 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-6 shadow-xl shadow-primary/20">
             <ShieldAlert className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            CONEX MEDIA
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl uppercase">
+            {selectedRole === 'admin' ? 'Command Access' : 'Private Network'}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Authorized Personnel Only
+            {selectedRoleData?.title} Authentication Node
           </p>
         </div>
 
@@ -147,13 +166,13 @@ export default function LoginPage() {
               </Button>
             </div>
             <CardDescription>
-              Enter your credentials to access the private network.
+              Enter credentials for {selectedRoleData?.title} clearance.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-slate-500">Work Email</Label>
+                <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-slate-500">Authorized Email</Label>
                 <Input 
                   id="email" 
                   type="email" 
@@ -186,8 +205,8 @@ export default function LoginPage() {
                     {isWfh ? <Home className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                   </div>
                   <div className="space-y-0.5">
-                    <Label className="text-xs font-bold">Work From Home?</Label>
-                    <p className="text-[9px] font-medium text-slate-400">Requires biometric check</p>
+                    <Label className="text-xs font-bold">Remote Node Access?</Label>
+                    <p className="text-[9px] font-medium text-slate-400">Requires biometric sync</p>
                   </div>
                 </div>
                 <Switch 
@@ -203,7 +222,7 @@ export default function LoginPage() {
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
                   <>
-                    Initialize System Access
+                    Initialize Security Check
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </>
                 )}
@@ -212,9 +231,8 @@ export default function LoginPage() {
               <Alert className="bg-slate-50 border-dashed border-slate-200">
                 <Info className="h-4 w-4 text-slate-400" />
                 <AlertDescription className="text-[10px] leading-tight text-slate-500">
-                  <strong>DEMO ACCESS:</strong><br />
-                  CEO: s.jenkins@conex.private<br />
-                  Analyst: m.chen@conex.private
+                  <strong>DEMO CREDENTIALS:</strong><br />
+                  {selectedRole === 'admin' ? 'admin@conex.private' : 'employee@conex.private'}
                 </AlertDescription>
               </Alert>
 

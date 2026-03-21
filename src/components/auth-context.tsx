@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { User, MOCK_USERS } from '@/lib/mock-data';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, isWfh: boolean) => Promise<void>;
+  login: (email: string, isWfh: boolean, roleId?: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   isWfh: boolean;
@@ -37,13 +38,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, wfhStatus: boolean) => {
+  const login = async (email: string, wfhStatus: boolean, roleId?: string) => {
     setIsLoading(true);
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 800));
     const foundUser = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (foundUser) {
+      // If roleId is specified, ensure user has that capability (mapping UI roles to data roles)
+      if (roleId === 'admin' && foundUser.role !== 'ADMIN' && foundUser.role !== 'CEO') {
+        throw new Error('This account does not have Administrator clearance.');
+      }
+      if (roleId === 'employee' && foundUser.role === 'ADMIN') {
+        // Allow admins to login as employee for testing? Or keep strict. 
+        // For demo, let's just foundUser.
+      }
+
       setUser(foundUser);
       setIsWfh(wfhStatus);
       // Non-WFH users are automatically "verified" for the dashboard

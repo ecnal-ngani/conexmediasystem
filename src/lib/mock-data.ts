@@ -44,28 +44,38 @@ export const MOCK_USERS: User[] = [
     name: 'Kyle Jarque',
     email: 'k.jarque@conex.private',
     role: 'CEO',
-    preferences: 'High-level strategic summaries and agency-wide performance metrics.',
+    preferences: '',
     avatarUrl: 'https://picsum.photos/seed/kyle/200/200',
     status: 'Office'
   },
   {
     id: 'u2',
+    systemId: 'CX-AD-01',
+    name: 'Command Administrator',
+    email: 'admin@conex.private',
+    role: 'ADMIN',
+    preferences: '',
+    avatarUrl: 'https://picsum.photos/seed/admin/200/200',
+    status: 'Office'
+  },
+  {
+    id: 'u3',
     systemId: 'CX-AN-05',
     name: 'Marcus Chen',
     email: 'm.chen@conex.private',
     role: 'ANALYST',
-    preferences: 'I focus on financial trends, data visualization, and market analysis.',
+    preferences: '',
     avatarUrl: 'https://picsum.photos/seed/marcus/200/200',
     status: 'WFH'
   },
   {
-    id: 'u3',
-    systemId: 'CX-CEO-01',
-    name: 'Kyle Jarque',
-    email: 's.jenkins@conex.private',
-    role: 'CEO',
-    preferences: 'Executive overview and production matrix control.',
-    avatarUrl: 'https://picsum.photos/seed/kyle/200/200',
+    id: 'u4',
+    systemId: 'CX-OP-01',
+    name: 'Employee User',
+    email: 'employee@conex.private',
+    role: 'OPERATOR',
+    preferences: '',
+    avatarUrl: 'https://picsum.photos/seed/emp/200/200',
     status: 'Office'
   }
 ];
