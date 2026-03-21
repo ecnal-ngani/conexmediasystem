@@ -23,7 +23,8 @@ import {
   Plus,
   Lightbulb,
   Zap,
-  Trash2
+  Trash2,
+  ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -455,14 +456,20 @@ export default function CalendarPage() {
                   <Button 
                     onClick={handleDeleteEvent} 
                     variant="destructive" 
-                    className="flex-1 h-12 font-bold rounded-xl gap-2"
+                    className="flex-1 h-12 font-bold rounded-xl gap-2 shadow-lg shadow-red-100"
                   >
                     <Trash2 className="w-4 h-4" />
                     Terminate Event
                   </Button>
                 )}
-                <Button onClick={() => setSelectedEvent(null)} className={cn("h-12 font-bold rounded-xl", user?.role === 'ADMIN' ? "flex-1" : "w-full")}>Close Briefing</Button>
+                <Button onClick={() => setSelectedEvent(null)} variant="outline" className={cn("h-12 font-bold rounded-xl", user?.role === 'ADMIN' ? "flex-1" : "w-full")}>Close Briefing</Button>
               </div>
+              {user?.role === 'ADMIN' && (
+                <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-1.5">
+                  <ShieldAlert className="w-3 h-3" />
+                  Privileged Command Action
+                </p>
+              )}
             </div>
           )}
         </DialogContent>
