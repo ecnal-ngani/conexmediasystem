@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -10,187 +11,75 @@
           "type": "string",
           "description": "Unique identifier for the UserProfile entity."
         },
+        "systemId": {
+          "type": "string",
+          "description": "The unique system identifier (e.g., CX-AD-01)."
+        },
         "email": {
           "type": "string",
           "description": "The user's email address, used for identification and communication.",
           "format": "email"
         },
-        "firstName": {
+        "name": {
           "type": "string",
-          "description": "The first name of the user."
+          "description": "The full name of the user."
         },
-        "lastName": {
+        "role": {
           "type": "string",
-          "description": "The last name of the user."
+          "enum": ["CEO", "ADMIN", "ANALYST", "OPERATOR"],
+          "description": "The security role assigned to the user."
         },
-        "lastLogin": {
+        "status": {
           "type": "string",
-          "description": "Timestamp of the user's last successful login.",
-          "format": "date-time"
+          "enum": ["Office", "WFH", "Offline"],
+          "description": "Current presence status."
+        },
+        "points": {
+          "type": "number"
+        },
+        "xp": {
+          "type": "number"
+        },
+        "salary": {
+          "type": "string"
+        },
+        "badges": {
+          "type": "array",
+          "items": { "type": "string" }
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp when the user profile was created.",
           "format": "date-time"
         },
-        "updatedAt": {
+        "avatarUrl": {
           "type": "string",
-          "description": "Timestamp when the user profile was last updated.",
-          "format": "date-time"
-        },
-        "roleIds": {
-          "type": "array",
-          "description": "References to Roles assigned to this user. (Relationship: UserProfile N:N Role)",
-          "items": {
-            "type": "string"
-          }
+          "format": "uri"
         }
       },
       "required": [
-        "id",
         "email",
-        "firstName",
-        "lastName",
-        "createdAt",
-        "roleIds"
+        "name",
+        "role",
+        "systemId"
       ]
     },
     "Role": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Role",
       "type": "object",
-      "description": "Defines a role within the system, used for Role-Based Access Control (RBAC).",
+      "description": "Defines a role within the system.",
       "properties": {
         "id": {
-          "type": "string",
-          "description": "Unique identifier for the Role entity."
+          "type": "string"
         },
         "name": {
-          "type": "string",
-          "description": "The name of the role (e.g., 'Admin', 'Editor', 'Viewer')."
+          "type": "string"
         },
         "description": {
-          "type": "string",
-          "description": "A brief description of the role's purpose and permissions."
-        },
-        "permissions": {
-          "type": "array",
-          "description": "A list of specific permission strings associated with this role (e.g., 'read_content', 'manage_users').",
-          "items": {
-            "type": "string"
-          }
+          "type": "string"
         }
       },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "permissions"
-      ]
-    },
-    "Content": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Content",
-      "type": "object",
-      "description": "Represents exclusive media content or resources accessible within the private network.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Content entity."
-        },
-        "title": {
-          "type": "string",
-          "description": "The title of the content."
-        },
-        "description": {
-          "type": "string",
-          "description": "A summary or brief description of the content."
-        },
-        "type": {
-          "type": "string",
-          "description": "The type of content (e.g., 'document', 'article', 'video', 'image')."
-        },
-        "url": {
-          "type": "string",
-          "description": "The URL or path where the actual content resource is located.",
-          "format": "uri"
-        },
-        "publishDate": {
-          "type": "string",
-          "description": "The date and time when the content was made available.",
-          "format": "date-time"
-        },
-        "creatorUserId": {
-          "type": "string",
-          "description": "Reference to the UserProfile who created or uploaded this content. (Relationship: UserProfile 1:N Content)"
-        },
-        "requiredRoleIds": {
-          "type": "array",
-          "description": "References to Roles required to access this content. (Relationship: Content N:N Role)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "tags": {
-          "type": "array",
-          "description": "Keywords or categories associated with the content for search and AI curation.",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "description",
-        "type",
-        "url",
-        "publishDate",
-        "creatorUserId",
-        "requiredRoleIds"
-      ]
-    },
-    "UserPreference": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserPreference",
-      "type": "object",
-      "description": "Stores user-specific preferences used by the AI-Powered Content Curator Tool.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserPreference entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the UserProfile for whom these preferences apply. (Relationship: UserProfile 1:N UserPreference)"
-        },
-        "preferredContentTypes": {
-          "type": "array",
-          "description": "A list of content types the user prefers (e.g., ['article', 'video']).",
-          "items": {
-            "type": "string"
-          }
-        },
-        "preferredTopics": {
-          "type": "array",
-          "description": "A list of topics or subjects the user is interested in (e.g., ['cybersecurity', 'AI ethics']).",
-          "items": {
-            "type": "string"
-          }
-        },
-        "lastUpdated": {
-          "type": "string",
-          "description": "Timestamp when these user preferences were last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "preferredContentTypes",
-        "preferredTopics",
-        "lastUpdated"
-      ]
+      "required": ["id", "name"]
     }
   },
   "auth": {
@@ -202,70 +91,21 @@
   "firestore": {
     "structure": [
       {
-        "path": "/userProfiles/{userId}",
+        "path": "/users/{userId}",
         "definition": {
           "entityName": "UserProfile",
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores individual user profiles. The document ID (`{userId}`) corresponds to the Firebase Authentication UID. Access for writes (create, update, delete) is restricted to the owner of the profile (`request.auth.uid == userId`). Read access is typically granted to the owner and potentially to system administrators or for critical authorization lookups (e.g., to retrieve `roleIds`).",
+          "description": "Stores individual user profiles. Document ID is either the Firebase UID or an auto-generated ID for mock-auth.",
           "params": [
             {
               "name": "userId",
-              "description": "The unique identifier of the user, matching `request.auth.uid`."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/roles/{roleId}",
-        "definition": {
-          "entityName": "Role",
-          "schema": {
-            "$ref": "#/backend/entities/Role"
-          },
-          "description": "Defines global system roles and their associated permissions. This collection is primarily read-only for application logic and security rules, with write access highly restricted to system administrators. Includes `id`, `name`, `description`, and `permissions`.",
-          "params": [
-            {
-              "name": "roleId",
-              "description": "The unique identifier for a system role."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/content/{contentId}",
-        "definition": {
-          "entityName": "Content",
-          "schema": {
-            "$ref": "#/backend/entities/Content"
-          },
-          "description": "Stores exclusive media content and resources. Access control is managed via the `requiredRoleIds` field, which denormalizes the necessary authorization context into each document. This enables robust and atomic role-based access checks directly within security rules, supporting secure `list` operations. Also includes `creatorUserId` for auditing.",
-          "params": [
-            {
-              "name": "contentId",
-              "description": "The unique identifier for a piece of exclusive content."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/userPreferences/{userId}",
-        "definition": {
-          "entityName": "UserPreference",
-          "schema": {
-            "$ref": "#/backend/entities/UserPreference"
-          },
-          "description": "Stores user-specific preferences for the AI-Powered Content Curator Tool. This is a 1:1 relationship where the document ID (`{userId}`) matches `request.auth.uid`, ensuring private, owner-only access for reads and writes. The `userId` field within the document also redundantly confirms ownership.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user, matching `request.auth.uid` and the document's `userId` field."
+              "description": "The unique identifier of the user."
             }
           ]
         }
       }
-    ],
-    "reasoning": "The CONEX Gateway application's Firestore structure is designed with a strong emphasis on Authorization Independence, Structural Segregation, and clear Access Modeling, ensuring secure, scalable, and debuggable security rules.\n\n**Authorization Independence:**\n1.  **User Profiles (`/userProfiles/{userId}`):** User profiles are stored at a top-level collection where the document ID (`{userId}`) directly corresponds to `request.auth.uid`. This allows for simple, direct path-based ownership for profile management (`read`, `update` for self) and eliminates the need for `get()` calls to verify ownership in many common scenarios.\n2.  **User Preferences (`/userPreferences/{userId}`):** Similar to user profiles, user preferences are stored in a dedicated top-level collection, with the document ID matching `request.auth.uid`. This ensures that a user can only read or modify their own preferences without requiring any `get()` operations for authorization.\n3.  **Content (`/content/{contentId}`):** Each content document includes a `requiredRoleIds` array. This is a critical denormalization strategy. Instead of security rules having to `get()` the content's parent or a related configuration to determine access, all necessary authorization context (which roles are needed) is directly present within the content document itself. A user's roles (from `/userProfiles/{request.auth.uid}.roleIds`) can be checked directly against `resource.data.requiredRoleIds` in the rule, enabling atomic access checks for individual content items and eliminating `get()` calls for content authorization.\n\n**QAPs (Rules are not Filters):**\n1.  **Structural Segregation for `Content`:** The `/content` collection adheres to homogeneous security posture. All documents within this collection require role-based access defined by their `requiredRoleIds` field. This enables secure `list` operations because clients are expected to query for content based on their assigned roles (e.g., `db.collection('content').where('requiredRoleIds', 'array-contains-any', userRoles)`). The Firestore rules can then confidently validate that *every* document attempting to be read or returned by such a query indeed satisfies the `requiredRoleIds` condition relative to the requesting user's roles. Since `requiredRoleIds` is directly on the document, rules can enforce this without needing to filter on server-side `get()` operations, which Firestore rules explicitly do not do.\n2.  **Path-Based Ownership:** For `/userProfiles/{userId}` and `/userPreferences/{userId}`, `list` operations are typically constrained by the `userId` in the path (e.g., listing only *your own* preferences). This inherently supports QAPs as the query is already constrained by the authenticated user's ID, which the rules can easily verify.\n\n**DBAC (No Custom Claims):** User roles are explicitly stored in the `/userProfiles/{userId}` documents as the `roleIds` array, and the definitions of these roles are in the `/roles/{roleId}` collection. Firebase security rules will leverage `request.auth.uid` to retrieve the current user's profile and subsequently check their `roleIds` against the `requiredRoleIds` on content documents, fully adhering to DBAC principles."
+    ]
   }
 }

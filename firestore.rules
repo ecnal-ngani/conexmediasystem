@@ -1,114 +1,37 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
      * CONEX Gateway Security Rules
-     * 
-     * Core Philosophy:
-     * This ruleset implements a robust Role-Based Access Control (RBAC) and User-Ownership model. 
-     * It ensures that sensitive user data is private to the owner, while shared content 
-     * visibility is managed through a denormalized role-based system.
-     * 
-     * Data Structure:
-     * - /userProfiles/{userId}: Private profile data, linked to Firebase Auth UID.
-     * - /userPreferences/{userId}: Private AI curation settings, linked to Firebase Auth UID.
-     * - /roles/{roleId}: System-wide role definitions (Read-only for users).
-     * - /content/{contentId}: Media resources secured via requiredRoleIds.
-     * 
-     * Key Security Decisions:
-     * - Ownership: Strict path-based ownership is enforced for Profiles and Preferences.
-     * - Content Authorization: To optimize performance and avoid recursive 'get()' calls, 
-     *   required roles are denormalized directly onto Content documents.
-     * - DBAC (Document-Based Access Control): User roles are retrieved from the UserProfile 
-     *   document during content access checks.
-     * - Prototyping Flexibility: Rules enforce strict authorization (who) and relational 
-     *   integrity (ownership links) but allow flexible data shapes (what) for rapid iteration.
      */
 
-    // --- Global Helper Functions ---
-
-    /** @description Checks if the request is from an authenticated user. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** @description Verifies if the authenticated user's UID matches the provided userId. */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    // Allow users to look up their email during mock login
+    match /users/{userId} {
+      allow read: if true; 
+      allow write: if true; // In a production app, restrict this to owners
     }
 
-    /** @description Combines ownership check with existence check for updates and deletes. */
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
+    match /schedules/{scheduleId} {
+      allow read, write: if true;
     }
 
-    /** @description Fetches the current user's role array from their profile document. */
-    function getUserRoles() {
-      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.roleIds;
+    match /tasks/{taskId} {
+      allow read, write: if true;
     }
 
-    /** @description Checks if the user possesses at least one role required for the document. */
-    function hasRequiredRole(requiredRoles) {
-      return isSignedIn() && getUserRoles().hasAny(requiredRoles);
+    match /projects/{projectId} {
+      allow read, write: if true;
     }
 
-    // --- Collection Rules ---
-
-    /**
-     * @description Rules for user profile documents. Restricted to the owner.
-     * @path /userProfiles/{userId}
-     * @allow (get, list, create, update) if the userId matches the authenticated user.
-     * @deny (create) if the internal 'id' field does not match the URL path.
-     * @principle Path-based ownership and relational integrity validation.
-     */
-    match /userProfiles/{userId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Rules for global system roles. Read-only for authenticated users.
-     * @path /roles/{roleId}
-     * @allow (get, list) if the user is signed in.
-     * @deny (create, update, delete) for all standard users (admin-only).
-     * @principle Global configuration data with restricted write access.
-     */
     match /roles/{roleId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if false; // TODO: Restrict to system administrators if needed.
-    }
-
-    /**
-     * @description Rules for media content. Access is granted based on user roles matching document roles.
-     * @path /content/{contentId}
-     * @allow (get) if the user's roles overlap with the content's requiredRoleIds.
-     * @allow (create) if the user sets themselves as the creator.
-     * @deny (get) if the user lacks the specific required system roles.
-     * @principle Role-Based Access Control (RBAC) via denormalized role requirements.
-     */
-    match /content/{contentId} {
-      allow get: if hasRequiredRole(resource.data.requiredRoleIds);
-      allow list: if isSignedIn(); // Queries must be filtered by requiredRoleIds on the client.
-      allow create: if isSignedIn() && request.resource.data.creatorUserId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.creatorUserId) && request.resource.data.creatorUserId == resource.data.creatorUserId;
-      allow delete: if isExistingOwner(resource.data.creatorUserId);
-    }
-
-    /**
-     * @description Rules for AI curator user preferences. Strict owner-only access.
-     * @path /userPreferences/{userId}
-     * @allow (get, create, update) if the authenticated user matches the document ID.
-     * @deny (create) if the userId field in data does not match the path.
-     * @principle 1:1 user-to-document mapping for private settings.
-     */
-    match /userPreferences/{userId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow read: if true;
+      allow write: if false;
     }
   }
 }

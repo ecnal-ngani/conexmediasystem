@@ -34,15 +34,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedVerified = localStorage.getItem('conex_verified') === 'true';
     
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsWfh(storedWfh);
-      setIsVerified(storedVerified);
+      try {
+        setUser(JSON.parse(storedUser));
+        setIsWfh(storedWfh);
+        setIsVerified(storedVerified);
+      } catch (e) {
+        console.error('Failed to parse session', e);
+      }
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, wfhStatus: boolean, roleId?: string) => {
-    if (!firestore) return;
+    if (!firestore) {
+      throw new Error('Database not initialized. Please try again in a few seconds.');
+    }
     
     setIsLoading(true);
     try {
