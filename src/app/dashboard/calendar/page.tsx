@@ -166,14 +166,23 @@ export default function CalendarPage() {
   };
 
   const handleDeleteEvent = () => {
-    if (!firestore || !selectedEvent || !selectedEvent.id) return;
+    if (!firestore || !selectedEvent || !selectedEvent.id) {
+      toast({
+        variant: "destructive",
+        title: "System Error",
+        description: "Could not identify the record ID for deletion."
+      });
+      return;
+    }
 
     let collectionName = '';
     switch (selectedEvent.source) {
       case 'schedule': collectionName = 'schedules'; break;
       case 'production': collectionName = 'projects'; break;
       case 'task': collectionName = 'tasks'; break;
-      default: return;
+      default: 
+        toast({ variant: "destructive", title: "Error", description: "Unknown source node." });
+        return;
     }
 
     const docRef = doc(firestore, collectionName, selectedEvent.id);
@@ -227,6 +236,8 @@ export default function CalendarPage() {
     }
     return days;
   };
+
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
@@ -451,25 +462,30 @@ export default function CalendarPage() {
                   </div>
                 )}
               </div>
-              <div className="flex gap-3 mt-4">
-                {user?.role === 'ADMIN' && (
+              
+              {/* ADMIN ACTION ZONE */}
+              <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
+                {isAdmin && (
                   <Button 
                     onClick={handleDeleteEvent} 
                     variant="destructive" 
-                    className="flex-1 h-12 font-bold rounded-xl gap-2 shadow-lg shadow-red-100"
+                    className="w-full h-12 font-bold rounded-xl gap-2 shadow-lg shadow-red-100"
                   >
                     <Trash2 className="w-4 h-4" />
                     Terminate Event
                   </Button>
                 )}
-                <Button onClick={() => setSelectedEvent(null)} variant="outline" className={cn("h-12 font-bold rounded-xl", user?.role === 'ADMIN' ? "flex-1" : "w-full")}>Close Briefing</Button>
+                <Button onClick={() => setSelectedEvent(null)} variant="outline" className="w-full h-12 font-bold rounded-xl">
+                  Close Briefing
+                </Button>
+                
+                {isAdmin && (
+                  <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 mt-2">
+                    <ShieldAlert className="w-3 h-3 text-red-500" />
+                    Privileged Command Action
+                  </p>
+                )}
               </div>
-              {user?.role === 'ADMIN' && (
-                <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-1.5">
-                  <ShieldAlert className="w-3 h-3" />
-                  Privileged Command Action
-                </p>
-              )}
             </div>
           )}
         </DialogContent>
