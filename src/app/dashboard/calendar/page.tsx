@@ -22,11 +22,12 @@ import {
   RefreshCw,
   Plus,
   Lightbulb,
-  Zap
+  Zap,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
 import { 
   format, 
   addMonths, 
@@ -58,9 +59,11 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useAuth } from '@/components/auth-context';
 
 export default function CalendarPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [viewDate, setViewDate] = useState(new Date());
   const [mounted, setMounted] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -159,6 +162,34 @@ export default function CalendarPage() {
     setEventDate('');
     setEventLocation('');
     setEventNotes('');
+  };
+
+  const handleDeleteEvent = () => {
+    if (!firestore || !selectedEvent || !selectedEvent.id) return;
+
+    let collectionName = '';
+    switch (selectedEvent.source) {
+      case 'schedule': collectionName = 'schedules'; break;
+      case 'production': collectionName = 'projects'; break;
+      case 'task': collectionName = 'tasks'; break;
+      default: return;
+    }
+
+    const docRef = doc(firestore, collectionName, selectedEvent.id);
+    
+    deleteDoc(docRef).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'delete'
+      }));
+    });
+
+    toast({
+      title: "Event Terminated",
+      description: `The ${selectedEvent.source} record has been purged from the matrix.`
+    });
+
+    setSelectedEvent(null);
   };
 
   const renderCalendarDays = () => {
@@ -379,8 +410,8 @@ export default function CalendarPage() {
                 <div className={cn("w-12 h-12 rounded-full flex items-center justify-center", selectedEvent.source === 'production' ? 'bg-blue-600' : 'bg-primary')}>
                   {selectedEvent.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : <CalendarIcon className="w-6 h-6 text-white" />}
                 </div>
-                <div>
-                  <DialogTitle className="text-2xl font-black text-slate-900">{selectedEvent.title || selectedEvent.brand}</DialogTitle>
+                <div className="flex-1 min-w-0">
+                  <DialogTitle className="text-2xl font-black text-slate-900 truncate">{selectedEvent.title || selectedEvent.brand}</DialogTitle>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedEvent.source} Briefing</p>
                 </div>
               </DialogHeader>
@@ -419,7 +450,19 @@ export default function CalendarPage() {
                   </div>
                 )}
               </div>
-              <Button onClick={() => setSelectedEvent(null)} className="w-full h-12 bg-primary font-bold rounded-xl mt-4 text-white">Close Briefing</Button>
+              <div className="flex gap-3 mt-4">
+                {user?.role === 'ADMIN' && (
+                  <Button 
+                    onClick={handleDeleteEvent} 
+                    variant="destructive" 
+                    className="flex-1 h-12 font-bold rounded-xl gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Terminate Event
+                  </Button>
+                )}
+                <Button onClick={() => setSelectedEvent(null)} className={cn("h-12 font-bold rounded-xl", user?.role === 'ADMIN' ? "flex-1" : "w-full")}>Close Briefing</Button>
+              </div>
             </div>
           )}
         </DialogContent>
