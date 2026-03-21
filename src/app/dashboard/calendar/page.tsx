@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -465,6 +464,10 @@ export default function CalendarPage() {
               
               {/* ADMIN ACTION ZONE */}
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
+                <Button onClick={() => setSelectedEvent(null)} variant="outline" className="w-full h-12 font-bold rounded-xl">
+                  Close Briefing
+                </Button>
+
                 {isAdmin && (
                   <Button 
                     onClick={handleDeleteEvent} 
@@ -475,9 +478,6 @@ export default function CalendarPage() {
                     Terminate Event
                   </Button>
                 )}
-                <Button onClick={() => setSelectedEvent(null)} variant="outline" className="w-full h-12 font-bold rounded-xl">
-                  Close Briefing
-                </Button>
                 
                 {isAdmin && (
                   <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 mt-2">
