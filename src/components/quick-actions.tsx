@@ -126,10 +126,10 @@ export function QuickActions() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Listeners for Notifications
-  const schedulesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
-  const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
-  const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
+  // Listeners for Notifications - Increased limit to 10 each for broader visibility
+  const schedulesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(10)) : null, [firestore]);
+  const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(10)) : null, [firestore]);
+  const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(10)) : null, [firestore]);
 
   const { data: recentSchedules } = useCollection<any>(schedulesQuery);
   const { data: recentTasks } = useCollection<any>(tasksQuery);
@@ -144,9 +144,10 @@ export function QuickActions() {
       title: 'New Schedule Added',
       description: s.title,
       time: s.createdAt?.toDate ? formatDistanceToNow(s.createdAt.toDate(), { addSuffix: true }) : 'Just now',
-      priority: s.priority,
+      priority: s.priority || 'NORMAL',
       icon: Calendar,
-      rawTime: s.createdAt?.seconds || 0
+      rawTime: s.createdAt?.seconds || 0,
+      type: 'SCHEDULE'
     }));
 
     recentTasks?.forEach(t => items.push({
@@ -154,9 +155,10 @@ export function QuickActions() {
       title: 'Task Assigned',
       description: t.title,
       time: t.createdAt?.toDate ? formatDistanceToNow(t.createdAt.toDate(), { addSuffix: true }) : 'Just now',
-      priority: t.priority,
+      priority: t.priority || 'NORMAL',
       icon: ListTodo,
-      rawTime: t.createdAt?.seconds || 0
+      rawTime: t.createdAt?.seconds || 0,
+      type: 'TASK'
     }));
 
     recentProjects?.forEach(p => items.push({
@@ -164,12 +166,14 @@ export function QuickActions() {
       title: 'Project Initialized',
       description: `${p.fileCode}: ${p.brand}`,
       time: p.createdAt?.toDate ? formatDistanceToNow(p.createdAt.toDate(), { addSuffix: true }) : 'Just now',
-      priority: p.priority === 'RUSH' ? 'URGENT' : 'NORMAL',
+      priority: p.priority === 'RUSH' ? 'URGENT' : (p.priority || 'REGULAR'),
       icon: Layers,
-      rawTime: p.createdAt?.seconds || 0
+      rawTime: p.createdAt?.seconds || 0,
+      type: 'PRODUCTION'
     }));
 
-    return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 10);
+    // Increased display limit to 20
+    return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 20);
   }, [recentSchedules, recentTasks, recentProjects]);
 
   const urgentCount = useMemo(() => {
@@ -240,6 +244,21 @@ export function QuickActions() {
     setFileCode(''); setBrand('');
   };
 
+  const getPriorityBadgeStyles = (priority: string) => {
+    switch (priority) {
+      case 'URGENT':
+      case 'RUSH':
+        return "bg-red-600 text-white";
+      case 'HIGH':
+        return "bg-orange-500 text-white";
+      case 'NORMAL':
+      case 'REGULAR':
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      default:
+        return "bg-slate-100 text-slate-600";
+    }
+  };
+
   return (
     <>
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-30 pointer-events-none">
@@ -280,31 +299,39 @@ export function QuickActions() {
                     notifications.map((notif) => (
                       <div key={notif.id} className={cn(
                         "p-5 rounded-2xl border-2 transition-all hover:shadow-md",
-                        notif.priority === 'URGENT' || notif.priority === 'HIGH' 
+                        notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH'
                           ? "bg-red-50/30 border-red-100/50 hover:border-red-200" 
                           : "bg-slate-50/50 border-slate-100 hover:border-slate-200"
                       )}>
                         <div className="flex gap-4">
                           <div className={cn(
                             "w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2",
-                            notif.priority === 'URGENT' || notif.priority === 'HIGH' 
+                            notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH'
                               ? "bg-red-500 border-red-200 text-white" 
                               : "bg-white border-slate-100 text-slate-600 shadow-sm"
                           )}>
-                            {notif.priority === 'URGENT' || notif.priority === 'HIGH' ? <ShieldAlert className="w-5 h-5" /> : <notif.icon className="w-5 h-5" />}
+                            {notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH' ? <ShieldAlert className="w-5 h-5" /> : <notif.icon className="w-5 h-5" />}
                           </div>
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
                               <h4 className="text-sm font-bold text-slate-900">{notif.title}</h4>
-                              {notif.priority === 'URGENT' && (
-                                <span className="text-[8px] font-black uppercase tracking-widest bg-red-600 text-white px-1.5 py-0.5 rounded leading-none">RUSH</span>
-                              )}
+                              <span className={cn(
+                                "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded leading-none border",
+                                getPriorityBadgeStyles(notif.priority)
+                              )}>
+                                {notif.priority}
+                              </span>
                             </div>
                             <p className="text-xs text-slate-500 font-medium leading-tight">{notif.description}</p>
-                            <span className="text-[10px] text-slate-400 font-bold pt-2 flex items-center gap-1.5">
-                              <Clock className="w-3 h-3" />
-                              {notif.time}
-                            </span>
+                            <div className="flex items-center justify-between pt-2">
+                              <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5">
+                                <Clock className="w-3 h-3" />
+                                {notif.time}
+                              </span>
+                              <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">
+                                {notif.type}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -412,7 +439,7 @@ export function QuickActions() {
                     <Input type="date" value={projectDueDate} onChange={(e) => setProjectDueDate(e.target.value)} />
                   </div>
                 </div>
-                <Button onClick={handleCreateProject} className="w-full h-12 bg-blue-600 hover:bg-blue-700 font-bold rounded-xl mt-4">Add to Matrix</Button>
+                <Button onClick={handleCreateProject} className="w-full h-12 bg-blue-600 hover:bg-blue-700 font-bold rounded-xl mt-4 text-white">Add to Matrix</Button>
               </div>
             </div>
           </ScrollArea>
@@ -450,7 +477,7 @@ export function QuickActions() {
                   <Input type="date" value={taskDueDate} onChange={(e) => setTaskDueDate(e.target.value)} />
                 </div>
               </div>
-              <Button onClick={handleCreateTask} className="w-full h-12 bg-green-600 hover:bg-green-700 font-bold rounded-xl mt-4">Deploy Task</Button>
+              <Button onClick={handleCreateTask} className="w-full h-12 bg-green-600 hover:bg-green-700 font-bold rounded-xl mt-4 text-white">Deploy Task</Button>
             </div>
           </div>
         </DialogContent>
@@ -501,7 +528,7 @@ export function QuickActions() {
                     <Input placeholder="Location..." value={location} onChange={(e) => setLocation(e.target.value)} />
                   </div>
                 </div>
-                <Button onClick={handleConfirmSchedule} className="w-full h-12 bg-primary hover:bg-primary/90 font-bold rounded-xl mt-4">Add to Calendar</Button>
+                <Button onClick={handleConfirmSchedule} className="w-full h-12 bg-primary hover:bg-primary/90 font-bold rounded-xl mt-4 text-white">Add to Calendar</Button>
               </div>
             </div>
           </ScrollArea>
