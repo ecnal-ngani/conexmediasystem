@@ -494,7 +494,7 @@ export function QuickActions() {
                 <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Internal Task</DialogTitle>
                 <DialogDescription className="text-slate-400 font-medium">Deploy a deliverable to the internal team.</DialogDescription>
               </div>
-            </header>
+            </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Task Title</Label>
