@@ -20,6 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { 
   ExternalLink, 
   Download, 
@@ -52,13 +53,14 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function ProductionPage() {
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -79,6 +81,7 @@ export default function ProductionPage() {
   const [dueDate, setDueDate] = useState('');
   const [bm, setBm] = useState('');
   const [canvasLink, setCanvasLink] = useState('');
+  const [progress, setProgress] = useState(0);
 
   // Real-time listener for projects
   const projectsQuery = useMemoFirebase(() => {
@@ -158,6 +161,7 @@ export default function ProductionPage() {
       dueDate,
       bm,
       canvasLink,
+      progress: 0,
       createdAt: serverTimestamp()
     };
 
@@ -178,6 +182,20 @@ export default function ProductionPage() {
     setIsAddProjectOpen(false);
     // Reset form
     setFileCode(''); setBrand(''); setContentIdea(''); setArtist(''); setDueDate(''); setCanvasLink('');
+  };
+
+  const handleUpdateProgress = (val: number[]) => {
+    if (!firestore || !selectedProject) return;
+    const projectRef = doc(firestore, 'projects', selectedProject.id);
+    const newProgress = val[0];
+    
+    updateDoc(projectRef, { progress: newProgress }).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: projectRef.path,
+        operation: 'update',
+        requestResourceData: { progress: newProgress }
+      }));
+    });
   };
 
   return (
@@ -477,18 +495,19 @@ export default function ProductionPage() {
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Type</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Artist</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Due Date</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap text-center">Progress</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center">
+                  <TableCell colSpan={9} className="h-32 text-center">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
               ) : filteredProjects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-40 text-center">
+                  <TableCell colSpan={9} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <Filter className="w-8 h-8 text-slate-200" />
                       <p className="text-sm font-medium text-slate-400">No production items match your intelligence query.</p>
@@ -499,9 +518,14 @@ export default function ProductionPage() {
               ) : filteredProjects.map((item: any) => (
                 <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors border-0 group">
                   <TableCell className="py-4 pl-6 whitespace-nowrap">
-                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2 font-bold group">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setSelectedProject(item)}
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2 font-bold group"
+                    >
                       <ExternalLink className="w-3 h-3 mr-1 transition-transform group-hover:scale-110" />
-                      View
+                      Brief
                     </Button>
                   </TableCell>
                   <TableCell className="font-mono text-[10px] font-bold text-slate-500 py-4 whitespace-nowrap">{item.fileCode}</TableCell>
@@ -541,12 +565,69 @@ export default function ProductionPage() {
                       <span className="text-[8px] text-slate-400 uppercase font-black">{item.platform}</span>
                     </div>
                   </TableCell>
+                  <TableCell className="py-4 text-center whitespace-nowrap font-bold text-[10px] text-primary">
+                    {item.progress || 0}%
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       </div>
+
+      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
+        <DialogContent className="max-w-md p-8 rounded-3xl border-none shadow-2xl">
+          {selectedProject && (
+            <div className="space-y-6">
+              <DialogHeader>
+                <div className="flex items-center gap-4 mb-4">
+                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-100">
+                    <Layers className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-2xl font-black">{selectedProject.brand}</DialogTitle>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedProject.fileCode}</p>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-4 pt-4 border-t">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Update Progress</Label>
+                    <span className="text-lg font-black text-primary">{selectedProject.progress || 0}%</span>
+                  </div>
+                  <Slider 
+                    defaultValue={[selectedProject.progress || 0]} 
+                    max={100} 
+                    step={1} 
+                    onValueCommit={handleUpdateProgress}
+                    className="py-4"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm mt-6">
+                  <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Type</p>
+                    <p className="font-bold">{selectedProject.type}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Artist</p>
+                    <p className="font-bold">{selectedProject.artist}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button onClick={() => setSelectedProject(null)} className="w-full h-12 rounded-xl font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-100">
+                  Close Briefing
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

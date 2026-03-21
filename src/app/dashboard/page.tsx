@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
   Briefcase, 
   Users, 
@@ -18,10 +19,11 @@ import {
   Trophy,
   Zap,
   Wallet,
-  Loader2
+  Loader2,
+  Clock,
+  ArrowRight,
+  Filter
 } from 'lucide-react';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { 
   Table, 
   TableBody, 
@@ -35,18 +37,10 @@ import { collection, query, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-const performanceData = [
-  { month: "Jan", efficiency: 82, projects: 40 },
-  { month: "Feb", efficiency: 85, projects: 42 },
-  { month: "Mar", efficiency: 88, projects: 45 },
-  { month: "Apr", efficiency: 91, projects: 48 },
-  { month: "May", efficiency: 94, projects: 50 },
-  { month: "Jun", efficiency: 92, projects: 48 },
-];
-
 export default function DashboardPage() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'priority' | 'deadline'>('priority');
   const firestore = useFirestore();
   const router = useRouter();
 
@@ -55,7 +49,13 @@ export default function DashboardPage() {
     return query(collection(firestore, 'users'), orderBy('systemId', 'asc'));
   }, [firestore]);
 
+  const projectsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
+  }, [firestore]);
+
   const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
+  const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
 
   const filteredStaff = useMemo(() => {
     if (!staff) return [];
@@ -65,6 +65,35 @@ export default function DashboardPage() {
       emp.role.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [staff, searchQuery]);
+
+  const creativeStats = useMemo(() => {
+    if (!projects) return { rushCount: 0, activeCount: 0, avgProgress: 0 };
+    
+    const active = projects.filter((p: any) => p.status !== 'Approved');
+    const rush = active.filter((p: any) => p.priority === 'RUSH');
+    const totalProgress = active.reduce((acc: number, p: any) => acc + (p.progress || 0), 0);
+    
+    return {
+      rushCount: rush.length,
+      activeCount: active.length,
+      avgProgress: active.length > 0 ? Math.round(totalProgress / active.length) : 0
+    };
+  }, [projects]);
+
+  const sortedProjects = useMemo(() => {
+    if (!projects) return [];
+    const active = projects.filter((p: any) => p.status !== 'Approved');
+    
+    if (sortBy === 'priority') {
+      return [...active].sort((a, b) => {
+        if (a.priority === 'RUSH' && b.priority !== 'RUSH') return -1;
+        if (a.priority !== 'RUSH' && b.priority === 'RUSH') return 1;
+        return 0;
+      });
+    } else {
+      return [...active].sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
+    }
+  }, [projects, sortBy]);
 
   // ADMIN-ONLY DASHBOARD VIEW
   if (user?.role === 'ADMIN') {
@@ -160,103 +189,152 @@ export default function DashboardPage() {
     );
   }
 
-  // STANDARD DASHBOARD VIEW
+  // CREATIVE DASHBOARD VIEW (EMPLOYEE / EDITOR)
   return (
-    <div className="space-y-6 md:space-y-8 max-w-[1600px] mx-auto pb-10 relative">
+    <div className="space-y-6 md:space-y-8 max-w-[1600px] mx-auto pb-10 animate-in fade-in duration-700">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Global Command Center</h1>
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Creative Dashboard</h1>
       </div>
 
-      <div className="bg-[#FFFBF5] border border-[#F2E8D5] rounded-xl p-6 md:p-8 shadow-sm">
-        <h2 className="text-lg md:text-xl font-bold text-slate-800">Welcome back, {user?.name}</h2>
-        <p className="text-xs md:text-sm text-slate-500 mt-1">Here&apos;s what&apos;s happening with your agency today.</p>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Rush Items Hero */}
+        <Card className="lg:col-span-2 border-2 border-primary/20 bg-white shadow-sm overflow-hidden relative">
+          <CardContent className="p-8 md:p-10 flex items-center gap-8">
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary flex items-center justify-center text-white text-4xl md:text-5xl font-black shadow-xl shadow-red-100 shrink-0">
+              {creativeStats.rushCount}
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-2xl md:text-3xl font-black text-primary tracking-tight">Rush Items</h2>
+              <p className="text-slate-500 font-medium">Requires immediate attention • Due today</p>
+            </div>
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+              <Zap className="w-32 h-32 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
 
-      <section className="space-y-4">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Company Pulse</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Active Projects', value: '12', trend: '+3 this week', icon: Briefcase, color: 'text-red-500', bg: 'bg-red-50' },
-            { label: 'Staff Online', value: staff?.filter((s: any) => s.status !== 'Offline').length || 0, trend: `of ${staff?.length || 0} total`, icon: Users, color: 'text-green-500', bg: 'bg-green-50' },
-            { label: 'Projects Delivered', value: '47', trend: 'this month', icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-50' },
-            { label: 'Client Satisfaction', value: '96%', trend: '+4% vs last month', icon: Award, color: 'text-orange-500', bg: 'bg-orange-50' },
-          ].map((kpi, i) => (
-            <Card key={i} className="border shadow-none rounded-xl">
-              <CardContent className="p-4 md:p-6">
-                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full ${kpi.bg} flex items-center justify-center mb-3 md:mb-4`}>
-                  <kpi.icon className={`w-4 h-4 md:w-5 md:h-5 ${kpi.color}`} />
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 gap-4">
+          <Card className="border border-slate-100 shadow-none">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-3xl font-black text-slate-900">{creativeStats.activeCount}</h3>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Active Tasks</p>
                 </div>
-                <p className="text-[10px] md:text-xs text-slate-400 font-medium">{kpi.label}</p>
-                <h3 className="text-xl md:text-2xl font-bold text-slate-800 mt-1">{kpi.value}</h3>
-                <p className={`text-[9px] md:text-[10px] mt-1 ${kpi.trend.startsWith('+') ? 'text-green-500 font-bold' : 'text-slate-400'}`}>
-                  {kpi.trend}
-                </p>
+                <Briefcase className="w-8 h-8 text-slate-100" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border border-slate-100 shadow-none">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-3xl font-black text-green-600">{creativeStats.avgProgress}%</h3>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Average Progress</p>
+                </div>
+                <CheckCircle2 className="w-8 h-8 text-green-50" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Task Queue Section */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-lg font-bold text-slate-800">Task Queue</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">Sort by:</span>
+            <div className="flex bg-slate-100 p-1 rounded-lg">
+              <button 
+                onClick={() => setSortBy('priority')}
+                className={cn("px-3 py-1 text-[10px] font-black uppercase rounded-md transition-all", sortBy === 'priority' ? "bg-primary text-white shadow-sm" : "text-slate-500 hover:text-slate-900")}
+              >
+                Priority
+              </button>
+              <button 
+                onClick={() => setSortBy('deadline')}
+                className={cn("px-3 py-1 text-[10px] font-black uppercase rounded-md transition-all", sortBy === 'deadline' ? "bg-primary text-white shadow-sm" : "text-slate-500 hover:text-slate-900")}
+              >
+                Deadline
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {pLoading ? (
+            <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+          ) : sortedProjects.length === 0 ? (
+            <div className="text-center py-20 border-2 border-dashed rounded-2xl bg-slate-50/50">
+              <CheckCircle2 className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+              <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No Active Tasks in Matrix</p>
+            </div>
+          ) : sortedProjects.map((project: any) => (
+            <Card 
+              key={project.id} 
+              className={cn(
+                "border-2 transition-all hover:shadow-md cursor-pointer",
+                project.priority === 'RUSH' ? "border-primary/20" : "border-slate-100"
+              )}
+              onClick={() => router.push('/dashboard/production')}
+            >
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row justify-between gap-6">
+                  <div className="space-y-4 flex-1">
+                    <div className="flex items-center gap-3">
+                      <Badge className={cn(
+                        "text-[9px] font-black px-1.5 py-0.5 border-none",
+                        project.priority === 'RUSH' ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
+                      )}>
+                        [{project.priority}]
+                      </Badge>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{project.type}</span>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <h4 className="text-lg font-black text-slate-900 tracking-tight">{project.contentIdea || 'Untitled Production'} - {project.brand}</h4>
+                      <p className="text-xs text-slate-500 font-medium">Client: {project.brand}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                        <span className="text-slate-400">Progress</span>
+                        <span className={cn(
+                          project.progress >= 80 ? "text-green-600" :
+                          project.progress >= 40 ? "text-orange-500" :
+                          "text-primary"
+                        )}>{project.progress || 0}%</span>
+                      </div>
+                      <Progress 
+                        value={project.progress || 0} 
+                        className="h-1.5 bg-slate-100" 
+                        indicatorClassName={cn(
+                          project.priority === 'RUSH' ? "bg-primary" :
+                          project.progress >= 80 ? "bg-green-500" :
+                          "bg-orange-500"
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="md:w-32 flex flex-col justify-between items-end shrink-0">
+                    <div className="text-right">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Due Date</p>
+                      <p className="text-lg font-black text-slate-900">{project.dueDate || 'TBA'}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-slate-400 group-hover:text-primary p-0 h-auto">
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        <section className="lg:col-span-3 space-y-4">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Company Performance</h3>
-          <Card className="border shadow-none rounded-xl p-4 md:p-6">
-            <div className="h-[300px] md:h-[400px] w-full">
-              <ChartContainer config={{ 
-                efficiency: { label: "Efficiency %", color: "#E11D48" },
-                projects: { label: "Projects", color: "#1E293B" }
-              }}>
-                <LineChart data={performanceData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontSize: 10 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontSize: 10 }} domain={[0, 100]} width={25} />
-                  <Tooltip content={<ChartTooltipContent />} />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" formatter={(value) => <span className="text-[10px] text-slate-500 font-medium">{value}</span>} />
-                  <Line type="monotone" dataKey="efficiency" name="Efficiency %" stroke="#E11D48" strokeWidth={2} dot={{ r: 3, fill: '#E11D48', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 5 }} />
-                  <Line type="monotone" dataKey="projects" name="Projects" stroke="#1E293B" strokeWidth={2} dot={{ r: 3, fill: '#1E293B', strokeWidth: 2, stroke: '#fff' }} />
-                </LineChart>
-              </ChartContainer>
-            </div>
-          </Card>
-        </section>
-
-        <section className="space-y-4">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Personnel Status</h3>
-          <Card className="border shadow-none rounded-xl p-4">
-            <div className="space-y-4">
-              {sLoading ? (
-                <div className="flex items-center justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-              ) : staff?.slice(0, 10).map((emp: any, i: number) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className={cn(
-                      "w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[9px] md:text-[10px] font-bold text-white shrink-0",
-                      emp.role === 'ADMIN' ? "bg-red-500" : "bg-slate-500"
-                    )}>
-                      {emp.name.charAt(0)}
-                    </div>
-                    <span className="text-xs font-medium text-slate-700 truncate">{emp.name}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${emp.status === 'Office' ? 'bg-green-500' : emp.status === 'WFH' ? 'bg-orange-500' : 'bg-slate-300'}`}></span>
-                    <span className={cn(
-                      "text-[9px] md:text-[10px] font-bold px-1 py-0.5 rounded",
-                      emp.status === 'Office' ? "bg-green-50 text-green-600" :
-                      emp.status === 'WFH' ? "bg-orange-50 text-orange-600" :
-                      "bg-slate-50 text-slate-400"
-                    )}>
-                      {emp.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {staff && staff.length > 10 && (
-              <Button variant="ghost" className="w-full text-[10px] mt-2 font-bold uppercase text-slate-400" onClick={() => router.push('/dashboard/admin')}>View All Personnel</Button>
-            )}
-          </Card>
-        </section>
-      </div>
     </div>
   );
 }
+
