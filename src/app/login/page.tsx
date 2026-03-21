@@ -63,7 +63,7 @@ export default function LoginPage() {
     // Auto-fill demo emails based on role
     if (roleId === 'admin') setEmail('admin@conex.private');
     else if (roleId === 'employee') setEmail('employee@conex.private');
-    else setEmail('');
+    else if (roleId === 'intern') setEmail('intern@conex.private');
     
     setView('login');
   };
@@ -232,7 +232,7 @@ export default function LoginPage() {
                 <Info className="h-4 w-4 text-slate-400" />
                 <AlertDescription className="text-[10px] leading-tight text-slate-500">
                   <strong>DEMO CREDENTIALS:</strong><br />
-                  {selectedRole === 'admin' ? 'admin@conex.private' : 'employee@conex.private'}
+                  {email} (Selected Role: {selectedRoleData?.title})
                 </AlertDescription>
               </Alert>
 

@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User } from '@/lib/mock-data';
+import { User, Role } from '@/lib/mock-data';
 import { useFirestore } from '@/firebase';
 import { collection, query, where, getDocs, limit, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -59,23 +59,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let foundUser: User | null = null;
 
       if (querySnapshot.empty) {
-        // AUTO-PROVISION MASTER ADMIN IF NOT EXISTS
-        if (email.toLowerCase() === 'admin@conex.private') {
-          const adminData = {
+        // AUTO-PROVISIONING LOGIC FOR DEMO ACCOUNTS
+        const normalizedEmail = email.toLowerCase();
+        let provisionedData = null;
+
+        if (normalizedEmail === 'admin@conex.private') {
+          provisionedData = {
             systemId: 'CX-AD-01',
-            name: 'System Administrator',
-            email: 'admin@conex.private',
+            name: 'Command Administrator',
+            email: normalizedEmail,
             role: 'ADMIN',
             status: 'Office',
             points: 1000,
             xp: 5000,
             salary: '₱150,000',
             badges: ['🏆', '🛡️'],
-            createdAt: serverTimestamp(),
             avatarUrl: 'https://picsum.photos/seed/admin-master/200/200'
           };
-          const docRef = await addDoc(usersRef, adminData);
-          foundUser = { id: docRef.id, ...adminData } as any;
+        } else if (normalizedEmail === 'employee@conex.private') {
+          provisionedData = {
+            systemId: 'CX-OP-01',
+            name: 'Operations Lead',
+            email: normalizedEmail,
+            role: 'OPERATOR',
+            status: 'Office',
+            points: 500,
+            xp: 2500,
+            salary: '₱45,000',
+            badges: ['⚡'],
+            avatarUrl: 'https://picsum.photos/seed/employee-lead/200/200'
+          };
+        } else if (normalizedEmail === 'intern@conex.private') {
+          provisionedData = {
+            systemId: 'CX-IN-01',
+            name: 'Creative Intern',
+            email: normalizedEmail,
+            role: 'OPERATOR', // Standard operator role for intern in this system
+            status: 'Office',
+            points: 100,
+            xp: 500,
+            salary: '₱15,000',
+            badges: [],
+            avatarUrl: 'https://picsum.photos/seed/intern-user/200/200'
+          };
+        }
+
+        if (provisionedData) {
+          const docRef = await addDoc(usersRef, { ...provisionedData, createdAt: serverTimestamp() });
+          foundUser = { id: docRef.id, ...provisionedData } as any;
         } else {
           throw new Error('Invalid credentials. Identity not found in secure database.');
         }
@@ -86,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!foundUser) throw new Error('Authentication failed.');
 
-      // Role validation logic
+      // Access Control validation
       if (roleId === 'admin' && foundUser.role !== 'ADMIN' && foundUser.role !== 'CEO') {
         throw new Error('This account does not have Administrator clearance.');
       }
