@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -51,165 +52,73 @@ export default function CalendarPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Handle hydration
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Real-time schedules
   const schedulesQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'schedules'), orderBy('date', 'asc'));
   }, [firestore]);
-  const { data: schedules, loading: schedulesLoading } = useCollection<any>(schedulesQuery);
+  const { data: schedules, loading: sLoading } = useCollection<any>(schedulesQuery);
 
-  // Real-time projects (Production Matrix)
   const projectsQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'projects'), orderBy('dueDate', 'asc'));
   }, [firestore]);
-  const { data: projects, loading: projectsLoading } = useCollection<any>(projectsQuery);
+  const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
 
-  // Real-time tasks
   const tasksQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'tasks'), orderBy('dueDate', 'asc'));
   }, [firestore]);
-  const { data: tasks, loading: tasksLoading } = useCollection<any>(tasksQuery);
+  const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
 
   const nextMonth = () => setViewDate(prev => addMonths(prev, 1));
   const prevMonth = () => setViewDate(prev => subMonths(prev, 1));
 
-  const handleSyncMatrix = () => {
-    setIsSyncing(true);
-    // Simulate re-validation/sync
-    setTimeout(() => {
-      setIsSyncing(false);
-      toast({
-        title: "Matrix Synchronized",
-        description: "The operations command center is now up to date.",
-      });
-    }, 800);
-  };
-
-  // Optimized data aggregation for the sidebar matrix
   const matrixData = useMemo(() => {
-    const prioritizedScheds = schedules?.filter(s => s.priority === 'URGENT' || s.priority === 'HIGH' || s.priority === 'NORMAL') || [];
-    const pendingProjects = projects?.filter(p => p.status !== 'Approved') || [];
+    const activeProjects = projects?.filter(p => p.status !== 'Approved') || [];
+    const activeTasks = tasks?.filter(t => t.status !== 'completed') || [];
+    const urgent = (schedules?.filter(s => s.priority === 'URGENT').length || 0) + 
+                   (activeTasks.filter(t => t.priority === 'URGENT').length) + 
+                   (activeProjects.filter(p => p.priority === 'RUSH').length);
+    const high = (schedules?.filter(s => s.priority === 'HIGH').length || 0) + 
+                 (activeTasks.filter(t => t.priority === 'HIGH').length);
+    const normal = (schedules?.filter(s => s.priority === 'NORMAL').length || 0) + 
+                   (activeTasks.filter(t => t.priority === 'NORMAL').length) +
+                   (activeProjects.filter(p => p.priority === 'REGULAR').length);
     
-    // Triage counts from all sources
-    const taskUrgent = tasks?.filter(t => t.priority === 'URGENT').length || 0;
-    const schedUrgent = prioritizedScheds.filter(s => s.priority === 'URGENT').length;
-    const projUrgent = pendingProjects.filter(p => p.priority === 'RUSH').length;
-    
-    const taskHigh = tasks?.filter(t => t.priority === 'HIGH').length || 0;
-    const schedHigh = prioritizedScheds.filter(s => s.priority === 'HIGH').length;
-    
-    const taskNormal = tasks?.filter(t => t.priority === 'NORMAL').length || 0;
-    const schedNormal = prioritizedScheds.filter(s => s.priority === 'NORMAL').length;
-    const projNormal = pendingProjects.filter(p => p.priority === 'REGULAR').length;
-
-    return {
-      prioritizedSchedules: prioritizedScheds,
-      pendingProjects,
-      urgentCount: taskUrgent + schedUrgent + projUrgent,
-      highCount: taskHigh + schedHigh,
-      normalCount: taskNormal + schedNormal + projNormal,
-      totalPending: (tasks?.length || 0) + prioritizedScheds.length + pendingProjects.length
-    };
-  }, [schedules, tasks, projects]);
+    return { urgent, high, normal, total: (schedules?.length || 0) + activeProjects.length + activeTasks.length };
+  }, [schedules, projects, tasks]);
 
   const renderCalendarDays = () => {
     if (!mounted) return null;
-
     const days = [];
     const daysCount = getDaysInMonth(viewDate);
-    const startDayOffset = getDay(startOfMonth(viewDate));
+    const startOffset = getDay(startOfMonth(viewDate));
     
-    // Fill leading empty cells
-    for (let i = 0; i < startDayOffset; i++) {
-      days.push(
-        <div key={`blank-${i}`} className="aspect-square bg-slate-50/50 rounded-lg border border-transparent" />
-      );
-    }
+    for (let i = 0; i < startOffset; i++) days.push(<div key={`b-${i}`} className="aspect-square bg-slate-50/50 rounded-lg border border-transparent" />);
     
-    // Fill actual days
     for (let i = 1; i <= daysCount; i++) {
-      const year = viewDate.getFullYear();
-      const month = (viewDate.getMonth() + 1).toString().padStart(2, '0');
-      const day = i.toString().padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
-      
-      const daySchedules = schedules?.filter(s => s.date === dateStr) || [];
-      const dayProjects = projects?.filter(p => p.dueDate === dateStr) || [];
+      const dateStr = `${viewDate.getFullYear()}-${(viewDate.getMonth() + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+      const dayScheds = schedules?.filter(s => s.date === dateStr) || [];
+      const dayProjs = projects?.filter(p => p.dueDate === dateStr) || [];
       const dayTasks = tasks?.filter(t => t.dueDate === dateStr) || [];
-
       const isToday = isTodayFn(new Date(viewDate.getFullYear(), viewDate.getMonth(), i));
 
       days.push(
-        <div 
-          key={i} 
-          className={cn(
-            "aspect-square p-2 bg-white border rounded-lg flex flex-col items-center justify-between transition-all group hover:border-primary/50 relative overflow-hidden",
-            isToday ? "border-primary border-2 shadow-md" : "border-slate-100 shadow-sm"
-          )}
-        >
-          <span className={cn(
-            "text-xs font-semibold",
-            isToday ? "text-primary font-black" : "text-slate-500"
-          )}>{i}</span>
-          
-          <div className="w-full space-y-1 overflow-y-auto mt-1 flex-1">
-            {daySchedules.map((event, idx) => (
-              <button 
-                key={`sched-${idx}`} 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedEvent({ ...event, source: 'schedule' });
-                }}
-                className={cn(
-                  "transition-all text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border",
-                  event.priority === 'URGENT' ? "bg-red-600 border-red-400 hover:bg-red-700" :
-                  event.priority === 'HIGH' ? "bg-orange-600 border-orange-300 hover:bg-orange-700" :
-                  "bg-primary border-primary-foreground/10 hover:bg-primary/90"
-                )}
-                title={event.title}
-              >
-                {event.title}
-              </button>
+        <div key={i} className={cn("aspect-square p-2 bg-white border rounded-lg flex flex-col group relative overflow-hidden", isToday ? "border-primary border-2 shadow-sm" : "border-slate-100")}>
+          <span className={cn("text-[10px] font-bold mb-1", isToday ? "text-primary" : "text-slate-400")}>{i}</span>
+          <div className="w-full space-y-1 flex-1 overflow-y-auto custom-scrollbar">
+            {dayScheds.map((s, idx) => (
+              <button key={`s-${idx}`} onClick={() => setSelectedEvent({...s, source: 'schedule'})} className={cn("w-full text-left truncate text-[9px] font-bold py-0.5 px-1.5 rounded text-white", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')}>{s.title}</button>
             ))}
-
-            {dayProjects.map((project, idx) => (
-              <button 
-                key={`prod-${idx}`} 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedEvent({ ...project, source: 'production' });
-                }}
-                className="bg-blue-600 hover:bg-blue-700 transition-colors text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border border-blue-400"
-                title={`PROD: ${project.brand}`}
-              >
-                PROD: {project.brand}
-              </button>
+            {dayProjs.map((p, idx) => (
+              <button key={`p-${idx}`} onClick={() => setSelectedEvent({...p, source: 'production'})} className="w-full text-left truncate text-[9px] font-bold py-0.5 px-1.5 rounded bg-blue-600 text-white">PROD: {p.brand}</button>
             ))}
-
-            {dayTasks.map((task, idx) => (
-              <button 
-                key={`task-${idx}`} 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedEvent({ ...task, source: 'task' });
-                }}
-                className={cn(
-                  "text-white text-[10px] font-bold py-1 px-2 rounded-md truncate w-full text-left block shadow-sm border transition-colors",
-                  task.priority === 'URGENT' ? "bg-red-600 border-red-400 hover:bg-red-700" :
-                  task.priority === 'HIGH' ? "bg-orange-600 border-orange-300 hover:bg-orange-700" :
-                  "bg-blue-500 border-blue-300 hover:bg-blue-600"
-                )}
-                title={`TASK: ${task.title}`}
-              >
-                TASK: {task.title}
-              </button>
+            {dayTasks.map((t, idx) => (
+              <button key={`t-${idx}`} onClick={() => setSelectedEvent({...t, source: 'task'})} className={cn("w-full text-left truncate text-[9px] font-bold py-0.5 px-1.5 rounded text-white", t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700')}>TASK: {t.title}</button>
             ))}
           </div>
         </div>
@@ -220,404 +129,84 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Operations Calendar</h1>
-      </div>
-
+      <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 px-1">Operations Command</h1>
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        {/* Main Calendar Grid */}
         <Card className="xl:col-span-3 border-none shadow-none bg-transparent">
           <CardHeader className="flex flex-row items-center justify-between bg-white border rounded-t-xl py-4 px-6 shadow-sm">
             <div className="flex items-center gap-3">
               <CalendarIcon className="w-5 h-5 text-primary" />
-              <CardTitle className="text-lg font-bold">
-                {mounted ? format(viewDate, 'MMMM yyyy') : 'Loading...'}
-              </CardTitle>
-              {(schedulesLoading || projectsLoading || tasksLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+              <CardTitle className="text-lg font-bold">{mounted ? format(viewDate, 'MMMM yyyy') : 'Loading...'}</CardTitle>
+              {(sLoading || pLoading || tLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
             </div>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary" onClick={prevMonth}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary" onClick={nextMonth}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
             </div>
           </CardHeader>
           <CardContent className="bg-white border-x border-b rounded-b-xl p-6 shadow-sm">
             <div className="grid grid-cols-7 gap-4 text-center mb-6">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <span key={day} className="text-[10px] font-black uppercase tracking-widest text-slate-400">{day}</span>
-              ))}
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <span key={d} className="text-[10px] font-black uppercase tracking-widest text-slate-400">{d}</span>)}
             </div>
-            <div className="grid grid-cols-7 gap-4">
-              {renderCalendarDays()}
-            </div>
+            <div className="grid grid-cols-7 gap-4">{renderCalendarDays()}</div>
           </CardContent>
         </Card>
 
-        {/* Optimized Pending Matrix Sidebar */}
         <Card className="border shadow-none rounded-xl bg-white overflow-hidden flex flex-col h-fit">
-          <CardHeader className="border-b bg-slate-50/30">
-            <CardTitle className="text-base font-bold text-slate-800">Command-Wide Pending Matrix</CardTitle>
-          </CardHeader>
+          <CardHeader className="border-b bg-slate-50/30"><CardTitle className="text-base font-bold text-slate-800">Command-Wide Matrix</CardTitle></CardHeader>
           <CardContent className="p-4 space-y-6">
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-red-50 border border-red-100 p-3 rounded-lg text-center transition-all">
-                <p className="text-xl font-bold text-red-600">{matrixData.urgentCount}</p>
-                <p className="text-[9px] font-medium text-red-400 uppercase tracking-wider">Urgent</p>
-              </div>
-              <div className="bg-orange-50 border border-orange-100 p-3 rounded-lg text-center transition-all">
-                <p className="text-xl font-bold text-orange-600">{matrixData.highCount}</p>
-                <p className="text-[9px] font-medium text-orange-400 uppercase tracking-wider">High</p>
-              </div>
-              <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg text-center transition-all">
-                <p className="text-xl font-bold text-blue-600">{matrixData.normalCount}</p>
-                <p className="text-[9px] font-medium text-blue-400 uppercase tracking-wider">Normal</p>
-              </div>
+              <div className="bg-red-50 p-2 rounded-lg text-center"><p className="text-xl font-bold text-red-600">{matrixData.urgent}</p><p className="text-[9px] font-medium text-red-400 uppercase">Urgent</p></div>
+              <div className="bg-orange-50 p-2 rounded-lg text-center"><p className="text-xl font-bold text-orange-600">{matrixData.high}</p><p className="text-[9px] font-medium text-orange-400 uppercase">High</p></div>
+              <div className="bg-blue-50 p-2 rounded-lg text-center"><p className="text-xl font-bold text-blue-600">{matrixData.normal}</p><p className="text-[9px] font-medium text-blue-400 uppercase">Normal</p></div>
             </div>
-
-            <div className="space-y-3">
-              {(tasksLoading || schedulesLoading || projectsLoading) ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Synchronizing Matrix...</p>
-                </div>
-              ) : matrixData.totalPending === 0 ? (
-                <p className="text-xs text-center text-slate-400 py-8 italic">No pending operations found.</p>
-              ) : (
-                <ScrollArea className="h-[400px] pr-2">
-                  <div className="space-y-3">
-                    {/* Tasks */}
-                    {tasks?.map((task: any) => (
-                      <div 
-                        key={task.id} 
-                        onClick={() => setSelectedEvent({ ...task, source: 'task' })}
-                        className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-primary/20 transition-all cursor-pointer group active:scale-[0.98]"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug max-w-[70%]">{task.title}</h4>
-                          <Badge className={cn(
-                            "text-[8px] font-black px-1.5 py-0.5 rounded",
-                            task.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
-                            task.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
-                            "bg-blue-50 text-blue-500 border-blue-100"
-                          )} variant="outline">
-                            {task.priority}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between mt-4">
-                          <span className="text-[10px] text-slate-400 font-medium">{task.category}</span>
-                          <div className="flex items-center gap-1.5 text-slate-400">
-                            <Clock className="w-3 h-3" />
-                            <span className="text-[10px] font-medium">{task.dueDate}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Production Projects */}
-                    {matrixData.pendingProjects.map((project: any) => (
-                      <div 
-                        key={project.id} 
-                        onClick={() => setSelectedEvent({ ...project, source: 'production' })}
-                        className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-primary/20 transition-all cursor-pointer group active:scale-[0.98]"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Briefcase className="w-3 h-3 text-blue-600" />
-                            <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug truncate max-w-[120px]">{project.brand}</h4>
-                          </div>
-                          <Badge className={cn(
-                            "text-[8px] font-black px-1.5 py-0.5 rounded",
-                            project.priority === 'RUSH' ? "bg-red-50 text-red-500 border-red-100" : "bg-blue-50 text-blue-500 border-blue-100"
-                          )} variant="outline">
-                            {project.priority}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between mt-4">
-                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">Status: {project.status}</span>
-                          <div className="flex items-center gap-1.5 text-slate-400">
-                            <Clock className="w-3 h-3" />
-                            <span className="text-[10px] font-medium">{project.dueDate}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Prioritized Schedules */}
-                    {matrixData.prioritizedSchedules.map((schedule: any) => (
-                      <div 
-                        key={schedule.id} 
-                        onClick={() => setSelectedEvent({ ...schedule, source: 'schedule' })}
-                        className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-primary/20 transition-all cursor-pointer group active:scale-[0.98]"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <CalendarIcon className="w-3 h-3 text-primary" />
-                            <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug truncate max-w-[120px]">{schedule.title}</h4>
-                          </div>
-                          <Badge className={cn(
-                            "text-[8px] font-black px-1.5 py-0.5 rounded",
-                            schedule.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
-                            schedule.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
-                            "bg-blue-50 text-blue-500 border-blue-100"
-                          )} variant="outline">
-                            {schedule.priority}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between mt-4">
-                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">Operation: {schedule.type}</span>
-                          <div className="flex items-center gap-1.5 text-slate-400">
-                            <Clock className="w-3 h-3" />
-                            <span className="text-[10px] font-medium">{schedule.date}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+            <ScrollArea className="h-[450px] pr-2">
+              <div className="space-y-3">
+                {tasks?.map((task: any) => (
+                  <div key={task.id} onClick={() => setSelectedEvent({...task, source: 'task'})} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-primary/20 cursor-pointer group">
+                    <div className="flex justify-between mb-2">
+                      <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary truncate max-w-[70%]">{task.title}</h4>
+                      <Badge variant="outline" className={cn("text-[8px]", task.priority === 'URGENT' ? "text-red-600" : "text-blue-600")}>{task.priority}</Badge>
+                    </div>
+                    <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span>TASK</span><span>{task.dueDate}</span></div>
                   </div>
-                </ScrollArea>
-              )}
-            </div>
-
-            <Button 
-              onClick={handleSyncMatrix}
-              disabled={isSyncing}
-              className="w-full bg-primary hover:bg-primary/90 font-bold h-11 rounded-xl shadow-lg shadow-red-100 mt-2 text-white transition-all active:scale-[0.98]"
-            >
-              {isSyncing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Synchronizing...
-                </>
-              ) : (
-                'Synchronize Matrix'
-              )}
+                ))}
+                {projects?.filter(p => p.status !== 'Approved').map((p: any) => (
+                  <div key={p.id} onClick={() => setSelectedEvent({...p, source: 'production'})} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-blue-200 cursor-pointer group">
+                    <div className="flex justify-between mb-2">
+                      <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 truncate max-w-[70%]">{p.brand}</h4>
+                      <Badge variant="outline" className="text-[8px] text-blue-600">{p.priority}</Badge>
+                    </div>
+                    <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span>PRODUCTION</span><span>{p.dueDate}</span></div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+            <Button onClick={() => setIsSyncing(true)} disabled={isSyncing} className="w-full bg-primary font-bold h-11 rounded-xl shadow-lg shadow-red-100">
+              {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Synchronize Matrix'}
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Event Details Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
-        <DialogContent className="max-w-[500px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
-          {!selectedEvent ? null : (
-            <div className="p-6 md:p-8 space-y-6">
-              <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-lg",
-                  selectedEvent?.source === 'production' ? "bg-blue-600 shadow-blue-100" : 
-                  selectedEvent?.source === 'task' ? "bg-green-600 shadow-green-100" :
-                  selectedEvent?.priority === 'URGENT' ? "bg-red-600 shadow-red-100" :
-                  selectedEvent?.priority === 'HIGH' ? "bg-orange-600 shadow-orange-100" :
-                  "bg-primary shadow-red-100"
-                )}>
-                  {selectedEvent?.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : 
-                  selectedEvent?.source === 'task' ? <CheckCircle2 className="w-6 h-6 text-white" /> :
-                  <CalendarIcon className="w-6 h-6 text-white" />}
+        <DialogContent className="max-w-[480px] p-8 rounded-3xl border-none shadow-2xl">
+          {selectedEvent && (
+            <div className="space-y-6">
+              <DialogHeader className="flex flex-row items-center gap-4">
+                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center", selectedEvent.source === 'production' ? 'bg-blue-600' : 'bg-primary')}>
+                  {selectedEvent.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : <CalendarIcon className="w-6 h-6 text-white" />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight truncate">
-                    {selectedEvent?.source === 'production' ? `Project: ${selectedEvent?.brand}` : 
-                    selectedEvent?.source === 'task' ? `Task: ${selectedEvent?.title}` :
-                    selectedEvent?.title}
-                  </DialogTitle>
-                  <DialogDescription className="text-slate-400 font-medium uppercase text-[10px] tracking-widest">
-                    {selectedEvent?.source === 'production' ? 'Production Asset' : 
-                    selectedEvent?.source === 'task' ? 'Internal Task' :
-                    selectedEvent?.type} Briefing
-                  </DialogDescription>
+                <div>
+                  <DialogTitle className="text-2xl font-black text-slate-900">{selectedEvent.title || selectedEvent.brand}</DialogTitle>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedEvent.source} Briefing</p>
                 </div>
               </DialogHeader>
-
-              <div className="space-y-6">
-                {selectedEvent?.source === 'task' ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Priority</p>
-                        <Badge className={cn(
-                          "text-[10px] font-black px-2 py-1 rounded",
-                          selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
-                          selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
-                          "bg-blue-50 text-blue-500 border-blue-100"
-                        )} variant="outline">
-                          {selectedEvent.priority || 'NORMAL'}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Due Date</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold">
-                          <CalendarIcon className="w-4 h-4 text-slate-400" />
-                          {selectedEvent?.dueDate}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <Briefcase className="w-4 h-4 text-slate-400" />
-                        {selectedEvent?.category}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</p>
-                      <Badge variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100">
-                        {selectedEvent?.status?.toUpperCase() || 'PENDING'}
-                      </Badge>
-                    </div>
-                  </div>
-                ) : selectedEvent?.source === 'production' ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">File Code</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold font-mono text-sm">
-                          <FileText className="w-4 h-4 text-blue-600" />
-                          {selectedEvent?.fileCode}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Due Date</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold">
-                          <CalendarIcon className="w-4 h-4 text-blue-600" />
-                          {selectedEvent?.dueDate}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Platform</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold">
-                          <Briefcase className="w-4 h-4 text-blue-600" />
-                          {selectedEvent?.platform}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Artist</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold">
-                          <Users className="w-4 h-4 text-blue-600" />
-                          {selectedEvent?.artist}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Idea</p>
-                      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
-                        {selectedEvent?.contentIdea}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operation Priority</p>
-                        <Badge className={cn(
-                          "text-[10px] font-black px-2 py-1 rounded",
-                          selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
-                          selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
-                          "bg-blue-50 text-blue-500 border-blue-100"
-                        )} variant="outline">
-                          {selectedEvent.priority || 'NORMAL'}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold">
-                          <CalendarIcon className="w-4 h-4 text-primary" />
-                          {selectedEvent?.date}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Client / Project</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold">
-                          <Briefcase className="w-4 h-4 text-primary" />
-                          {selectedEvent?.client}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Type</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold">
-                          <AlertCircle className="w-4 h-4 text-primary" />
-                          {selectedEvent?.type}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Call Time</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold">
-                          <Clock className="w-4 h-4 text-primary" />
-                          {selectedEvent?.callTime}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Wrap Time</p>
-                        <div className="flex items-center gap-2 text-slate-700 font-bold">
-                          <Clock className="w-4 h-4 text-primary" />
-                          {selectedEvent?.wrapTime}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Location</p>
-                      <div className="flex items-center gap-2 text-slate-700 font-bold">
-                        <MapPin className="w-4 h-4 text-primary" />
-                        {selectedEvent?.location || 'Not specified'}
-                      </div>
-                    </div>
-
-                    <Separator className="bg-slate-100" />
-
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assigned Staff</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedEvent?.staff?.length > 0 ? (
-                          selectedEvent.staff.map((member: string) => (
-                            <Badge key={member} variant="secondary" className="bg-slate-50 text-slate-600 border-slate-100 py-1 px-3">
-                              <Users className="w-3 h-3 mr-1.5 opacity-50" />
-                              {member}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-xs text-slate-400 italic">No staff assigned</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {selectedEvent?.notes && (
-                      <div className="space-y-2">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notes</p>
-                        <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 text-xs text-slate-600 leading-relaxed italic">
-                          <FileText className="w-3 h-3 text-primary inline mr-2" />
-                          {selectedEvent.notes}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className="grid grid-cols-2 gap-6 pt-4 border-t">
+                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Priority</p><Badge variant="outline" className="font-bold">{selectedEvent.priority || 'NORMAL'}</Badge></div>
+                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Date</p><p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p></div>
+                {selectedEvent.location && <div className="space-y-1 col-span-2"><p className="text-[10px] uppercase font-black text-slate-400">Location</p><p className="text-xs font-bold text-slate-700">{selectedEvent.location}</p></div>}
               </div>
-
-              <div className="flex gap-3 pt-4">
-                <DialogClose asChild>
-                  <Button className={cn(
-                    "w-full h-12 font-bold rounded-xl shadow-lg text-white transition-all active:scale-[0.98]",
-                    selectedEvent?.source === 'production' ? "bg-blue-600 hover:bg-blue-700 shadow-blue-100" : 
-                    selectedEvent?.source === 'task' ? "bg-green-600 hover:bg-green-700 shadow-green-100" :
-                    selectedEvent?.priority === 'URGENT' ? "bg-red-600 hover:bg-red-700 shadow-red-100" :
-                    selectedEvent?.priority === 'HIGH' ? "bg-orange-600 hover:bg-orange-700 shadow-orange-100" :
-                    "bg-primary hover:bg-primary/90 shadow-red-100"
-                  )}>
-                    Close Briefing
-                  </Button>
-                </DialogClose>
-              </div>
+              <Button onClick={() => setSelectedEvent(null)} className="w-full h-12 bg-primary font-bold rounded-xl mt-4">Close Briefing</Button>
             </div>
           )}
         </DialogContent>
