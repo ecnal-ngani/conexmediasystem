@@ -49,15 +49,16 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
 
 const ROLE_MAPPINGS: Record<string, string> = {
-  "CEO": "CEO",
   "ADMIN": "AD",
-  "ANALYST": "AN",
-  "OPERATOR": "OP"
+  "BRAND_MANAGER": "BM",
+  "VIDEOGRAPHER": "VG",
+  "EDITOR": "ED",
+  "INTERN": "IN"
 };
 
 export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRole, setSelectedRole] = useState('OPERATOR');
+  const [selectedRole, setSelectedRole] = useState('EDITOR');
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -190,7 +191,7 @@ export default function AdminPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {Object.keys(ROLE_MAPPINGS).map((role) => (
-                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                            <SelectItem key={role} value={role}>{role.replace('_', ' ')}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -242,7 +243,7 @@ export default function AdminPage() {
               <TableRow className="hover:bg-transparent border-0">
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 pl-6 whitespace-nowrap">System ID</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Name</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Clearance</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Role</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">Status</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">XP</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Salary</TableHead>
@@ -272,7 +273,7 @@ export default function AdminPage() {
                       {emp.name}
                     </TableCell>
                     <TableCell className="py-4 text-xs text-slate-500 whitespace-nowrap font-medium">
-                      {emp.role}
+                      {emp.role.replace('_', ' ')}
                     </TableCell>
                     <TableCell className="py-4 text-center whitespace-nowrap">
                       <Badge className={cn(

@@ -1,5 +1,5 @@
 
-export type Role = 'CEO' | 'ADMIN' | 'ANALYST' | 'OPERATOR';
+export type Role = 'ADMIN' | 'BRAND_MANAGER' | 'VIDEOGRAPHER' | 'EDITOR' | 'INTERN';
 
 export interface User {
   id: string;
@@ -10,6 +10,10 @@ export interface User {
   preferences: string;
   avatarUrl: string;
   status: 'Office' | 'WFH' | 'Offline';
+  xp?: number;
+  points?: number;
+  salary?: string;
+  badges?: string[];
 }
 
 export interface ContentItem {
@@ -40,17 +44,17 @@ export interface ProductionItem {
 export const MOCK_USERS: User[] = [
   {
     id: 'u1',
-    systemId: 'CX-CEO-01',
+    systemId: 'CX-AD-01',
     name: 'Kyle Jarque',
     email: 'k.jarque@conex.private',
-    role: 'CEO',
+    role: 'ADMIN',
     preferences: '',
     avatarUrl: 'https://picsum.photos/seed/kyle/200/200',
     status: 'Office'
   },
   {
     id: 'u2',
-    systemId: 'CX-AD-01',
+    systemId: 'CX-AD-02',
     name: 'Command Administrator',
     email: 'admin@conex.private',
     role: 'ADMIN',
@@ -60,20 +64,20 @@ export const MOCK_USERS: User[] = [
   },
   {
     id: 'u3',
-    systemId: 'CX-AN-05',
+    systemId: 'CX-BM-01',
     name: 'Marcus Chen',
     email: 'm.chen@conex.private',
-    role: 'ANALYST',
+    role: 'BRAND_MANAGER',
     preferences: '',
     avatarUrl: 'https://picsum.photos/seed/marcus/200/200',
     status: 'WFH'
   },
   {
     id: 'u4',
-    systemId: 'CX-OP-01',
+    systemId: 'CX-ED-01',
     name: 'Employee User',
     email: 'employee@conex.private',
-    role: 'OPERATOR',
+    role: 'EDITOR',
     preferences: '',
     avatarUrl: 'https://picsum.photos/seed/emp/200/200',
     status: 'Office'
@@ -98,19 +102,9 @@ export const AUTHORIZED_CONTENT: ContentItem[] = [
     description: 'High-definition assets and strategic narrative for the 2025 global rollout.',
     category: 'media',
     tags: ['branding', 'global', 'strategy'],
-    requiredRole: 'CEO',
+    requiredRole: 'ADMIN',
     content: 'The global expansion narrative focuses on sustainable infrastructure and AI-driven logistics...',
     thumbnail: 'https://picsum.photos/seed/media1/800/400'
-  },
-  {
-    id: 'c2',
-    title: 'Q3 Executive Briefing',
-    description: 'A summarized view of performance metrics across all regional hubs.',
-    category: 'report',
-    tags: ['performance', 'metrics', 'Q3'],
-    requiredRole: 'CEO',
-    content: 'Quarterly growth exceeded expectations in the EMEA region by 12%...',
-    thumbnail: 'https://picsum.photos/seed/media2/800/400'
   }
 ];
 
@@ -126,58 +120,6 @@ export const PRODUCTION_DATA: ProductionItem[] = [
     platform: 'Instagram',
     dueDate: 'Feb 5',
     bm: 'Clark',
-    canvasLink: '#'
-  },
-  {
-    fileCode: 'VLM-260120-02',
-    brand: 'Shimmer & Shield',
-    contentIdea: 'Tutorial reel',
-    status: 'For QA',
-    priority: 'RUSH',
-    artist: 'John Loyde Dalope',
-    type: 'Video',
-    platform: 'TikTok',
-    dueDate: 'Feb 6',
-    bm: 'Clark',
-    canvasLink: '#'
-  },
-  {
-    fileCode: 'VLM-260122-03',
-    brand: 'Dentasmile',
-    contentIdea: 'Before/After carousel',
-    status: 'In Production',
-    priority: 'REGULAR',
-    artist: 'John Loyde Dalope',
-    type: 'Graphic Design',
-    platform: 'Instagram',
-    dueDate: 'Feb 8',
-    bm: 'Clark',
-    canvasLink: '#'
-  },
-  {
-    fileCode: 'VLM-260119-15',
-    brand: 'Solarmaxx',
-    contentIdea: 'Testimonial video',
-    status: 'Approved',
-    priority: 'REGULAR',
-    artist: 'Daisy Atilano',
-    type: 'Video',
-    platform: 'Facebook',
-    dueDate: 'Jan 31',
-    bm: 'CA',
-    canvasLink: '#'
-  },
-  {
-    fileCode: 'VLM-260118-08',
-    brand: 'Keto Lifestyle',
-    contentIdea: 'Recipe animation',
-    status: 'Client Revision',
-    priority: 'REGULAR',
-    artist: 'Andrei Capili',
-    type: 'Motion Graphics',
-    platform: 'Instagram',
-    dueDate: 'Feb 4',
-    bm: 'Janella',
     canvasLink: '#'
   }
 ];

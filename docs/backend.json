@@ -26,7 +26,7 @@
         },
         "role": {
           "type": "string",
-          "enum": ["CEO", "ADMIN", "ANALYST", "OPERATOR"],
+          "enum": ["ADMIN", "BRAND_MANAGER", "VIDEOGRAPHER", "EDITOR", "INTERN"],
           "description": "The security role assigned to the user."
         },
         "status": {

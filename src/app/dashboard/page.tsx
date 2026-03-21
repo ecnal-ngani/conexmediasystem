@@ -67,7 +67,7 @@ export default function DashboardPage() {
   }, [staff, searchQuery]);
 
   // ADMIN-ONLY DASHBOARD VIEW
-  if (user?.role === 'ADMIN' || user?.role === 'CEO') {
+  if (user?.role === 'ADMIN') {
     return (
       <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
         <div className="flex items-center justify-between px-1">
@@ -137,7 +137,7 @@ export default function DashboardPage() {
                   <TableRow key={emp.id} className="hover:bg-slate-50/50 transition-colors border-0">
                     <TableCell className="py-4 pl-6 font-mono text-[10px] font-bold text-slate-500 whitespace-nowrap">{emp.systemId}</TableCell>
                     <TableCell className="py-4 font-bold text-slate-900 whitespace-nowrap">{emp.name}</TableCell>
-                    <TableCell className="py-4 text-xs text-slate-500 whitespace-nowrap">{emp.role}</TableCell>
+                    <TableCell className="py-4 text-xs text-slate-500 whitespace-nowrap">{emp.role.replace('_', ' ')}</TableCell>
                     <TableCell className="py-4 text-center whitespace-nowrap">
                       <Badge className={cn(
                         "text-[9px] font-bold px-2 py-0.5 border-none",
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-3 overflow-hidden">
                     <div className={cn(
                       "w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[9px] md:text-[10px] font-bold text-white shrink-0",
-                      emp.role === 'CEO' || emp.role === 'ADMIN' ? "bg-red-500" : "bg-slate-500"
+                      emp.role === 'ADMIN' ? "bg-red-500" : "bg-slate-500"
                     )}>
                       {emp.name.charAt(0)}
                     </div>

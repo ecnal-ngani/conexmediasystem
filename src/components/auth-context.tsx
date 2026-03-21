@@ -78,10 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
         } else if (normalizedEmail === 'employee@conex.private') {
           provisionedData = {
-            systemId: 'CX-OP-01',
-            name: 'Operations Lead',
+            systemId: 'CX-ED-01',
+            name: 'Production Editor',
             email: normalizedEmail,
-            role: 'OPERATOR',
+            role: 'EDITOR',
             status: 'Office',
             points: 500,
             xp: 2500,
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             systemId: 'CX-IN-01',
             name: 'Creative Intern',
             email: normalizedEmail,
-            role: 'OPERATOR', // Standard operator role for intern in this system
+            role: 'INTERN',
             status: 'Office',
             points: 100,
             xp: 500,
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!foundUser) throw new Error('Authentication failed.');
 
       // Access Control validation
-      if (roleId === 'admin' && foundUser.role !== 'ADMIN' && foundUser.role !== 'CEO') {
+      if (roleId === 'admin' && foundUser.role !== 'ADMIN') {
         throw new Error('This account does not have Administrator clearance.');
       }
 
