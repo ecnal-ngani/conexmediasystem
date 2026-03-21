@@ -1,12 +1,8 @@
-'use client';
-
-// This is a placeholder for the Firebase configuration.
-// In the Studio environment, this is usually provisioned automatically.
 export const firebaseConfig = {
-  apiKey: "placeholder-api-key",
-  authDomain: "conex-media.firebaseapp.com",
-  projectId: "conex-media",
-  storageBucket: "conex-media.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
+  "projectId": "studio-3343148485-16424",
+  "appId": "1:312209983488:web:d545aad7f2ac1ff410f0e5",
+  "apiKey": "AIzaSyCTxSNJZ24Qgu9R16mkViJzcICrVGYG5ko",
+  "authDomain": "studio-3343148485-16424.firebaseapp.com",
+  "measurementId": "",
+  "messagingSenderId": "312209983488"
 };
