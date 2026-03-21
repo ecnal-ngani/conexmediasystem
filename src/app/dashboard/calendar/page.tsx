@@ -18,11 +18,14 @@ import {
   Layers,
   CheckCircle2,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Lightbulb,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   format, 
   addMonths, 
@@ -39,18 +42,39 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function CalendarPage() {
   const router = useRouter();
   const [viewDate, setViewDate] = useState(new Date());
   const [mounted, setMounted] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  // New Event Form State
+  const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
+  const [eventPriority, setEventPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
+  const [eventClient, setEventClient] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [eventLocation, setEventLocation] = useState('');
+  const [eventNotes, setEventNotes] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -94,6 +118,49 @@ export default function CalendarPage() {
     return { urgent, high, normal, total: activeScheds.length + activeProjects.length + activeTasks.length };
   }, [schedules, projects, tasks]);
 
+  const handleCreateEvent = () => {
+    if (!firestore || !eventClient || !eventDate) {
+      toast({
+        variant: "destructive",
+        title: "Incomplete Intel",
+        description: "Client/Project name and Date are required for command synchronization."
+      });
+      return;
+    }
+
+    const schedulesRef = collection(firestore, 'schedules');
+    const scheduleData = {
+      title: `${eventType}: ${eventClient}`,
+      type: eventType,
+      priority: eventPriority,
+      client: eventClient,
+      date: eventDate,
+      location: eventLocation,
+      notes: eventNotes,
+      createdAt: serverTimestamp()
+    };
+
+    addDoc(schedulesRef, scheduleData)
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: schedulesRef.path,
+          operation: 'create',
+          requestResourceData: scheduleData
+        }));
+      });
+
+    toast({
+      title: "Event Synchronized",
+      description: `${eventClient} has been added to the master calendar.`
+    });
+
+    setIsAddEventOpen(false);
+    setEventClient('');
+    setEventDate('');
+    setEventLocation('');
+    setEventNotes('');
+  };
+
   const renderCalendarDays = () => {
     if (!mounted) return null;
     const days = [];
@@ -131,7 +198,121 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
-      <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 px-1">Operations Command</h1>
+      <div className="flex items-center justify-between px-1">
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Operations Command</h1>
+        
+        <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary hover:bg-primary/90 font-bold h-10 px-6 rounded-xl shadow-lg shadow-red-100 text-white gap-2">
+              <Plus className="w-4 h-4" />
+              Create New Event
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+            <ScrollArea className="max-h-[90vh]">
+              <div className="p-6 md:p-8 space-y-6">
+                <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
+                    <CalendarIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Event Schedule</DialogTitle>
+                    <DialogDescription className="text-slate-400 font-medium">Synchronize a new event with the master calendar.</DialogDescription>
+                  </div>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Type</Label>
+                      <Select value={eventType} onValueChange={(val: any) => setEventType(val)}>
+                        <SelectTrigger className="h-11 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Shoot">Shoot</SelectItem>
+                          <SelectItem value="Meeting">Meeting</SelectItem>
+                          <SelectItem value="Deadline">Deadline</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                        <Zap className="w-3 h-3 text-primary" />
+                        Priority
+                      </Label>
+                      <Select value={eventPriority} onValueChange={(val: any) => setEventPriority(val)}>
+                        <SelectTrigger className="h-11 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="URGENT">URGENT</SelectItem>
+                          <SelectItem value="HIGH">HIGH</SelectItem>
+                          <SelectItem value="NORMAL">NORMAL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Client / Project Name</Label>
+                    <Input 
+                      placeholder="e.g. CJC Eco Bag" 
+                      value={eventClient} 
+                      onChange={(e) => setEventClient(e.target.value)}
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Date</Label>
+                      <Input 
+                        type="date" 
+                        value={eventDate} 
+                        onChange={(e) => setEventDate(e.target.value)}
+                        className="h-11 rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</Label>
+                      <Input 
+                        placeholder="Studio A / Site" 
+                        value={eventLocation} 
+                        onChange={(e) => setEventLocation(e.target.value)}
+                        className="h-11 rounded-xl"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Operational Notes</Label>
+                    <Input 
+                      placeholder="Special instructions or gear required..." 
+                      value={eventNotes} 
+                      onChange={(e) => setEventNotes(e.target.value)}
+                      className="h-11 rounded-xl"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <DialogClose asChild>
+                      <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
+                    </DialogClose>
+                    <Button 
+                      onClick={handleCreateEvent}
+                      className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
+                    >
+                      Deploy to Calendar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
         <Card className="xl:col-span-3 border-none shadow-none bg-transparent">
           <CardHeader className="flex flex-row items-center justify-between bg-white border rounded-t-xl py-4 px-6 shadow-sm">
@@ -176,14 +357,14 @@ export default function CalendarPage() {
                   <div key={p.id} onClick={() => setSelectedEvent({...p, source: 'production'})} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-blue-200 cursor-pointer group">
                     <div className="flex justify-between mb-2">
                       <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 truncate max-w-[70%]">{p.brand}</h4>
-                      <Badge variant="outline" className="text-[8px] text-blue-600">{p.priority}</Badge>
+                      <Badge variant="outline" className="text-[8px] text-blue-600">{p.priority === 'RUSH' ? 'URGENT' : 'REGULAR'}</Badge>
                     </div>
                     <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span>PRODUCTION</span><span>{p.dueDate}</span></div>
                   </div>
                 ))}
               </div>
             </ScrollArea>
-            <Button onClick={() => router.push('/dashboard/production')} className="w-full bg-primary font-bold h-11 rounded-xl shadow-lg shadow-red-100">
+            <Button onClick={() => router.push('/dashboard/production')} className="w-full bg-primary font-bold h-11 rounded-xl shadow-lg shadow-red-100 text-white">
               View All Company Tasks
             </Button>
           </CardContent>
@@ -208,7 +389,7 @@ export default function CalendarPage() {
                   <p className="text-[10px] uppercase font-black text-slate-400">Priority</p>
                   <Badge className={cn(
                     "text-[10px] font-black px-2 py-1 rounded",
-                    selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
+                    selectedEvent.priority === 'URGENT' || selectedEvent.priority === 'RUSH' ? "bg-red-50 text-red-500 border-red-100" :
                     selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
                     "bg-blue-50 text-blue-500 border-blue-100"
                   )} variant="outline">
@@ -231,8 +412,14 @@ export default function CalendarPage() {
                     <p className="text-xs font-bold text-slate-700">{selectedEvent.contentIdea}</p>
                   </div>
                 )}
+                {selectedEvent.notes && (
+                  <div className="space-y-1 col-span-2">
+                    <p className="text-[10px] uppercase font-black text-slate-400">Operational Notes</p>
+                    <p className="text-xs font-medium text-slate-500 italic">{selectedEvent.notes}</p>
+                  </div>
+                )}
               </div>
-              <Button onClick={() => setSelectedEvent(null)} className="w-full h-12 bg-primary font-bold rounded-xl mt-4">Close Briefing</Button>
+              <Button onClick={() => setSelectedEvent(null)} className="w-full h-12 bg-primary font-bold rounded-xl mt-4 text-white">Close Briefing</Button>
             </div>
           )}
         </DialogContent>
