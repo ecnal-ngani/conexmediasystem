@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -126,7 +125,7 @@ export function QuickActions() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Listeners for Notifications - Increased limit to 10 each for broader visibility
+  // Listeners for Notifications
   const schedulesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(10)) : null, [firestore]);
   const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(10)) : null, [firestore]);
   const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(10)) : null, [firestore]);
@@ -172,12 +171,11 @@ export function QuickActions() {
       type: 'PRODUCTION'
     }));
 
-    // Increased display limit to 20
-    return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 20);
+    return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 30);
   }, [recentSchedules, recentTasks, recentProjects]);
 
-  const urgentCount = useMemo(() => {
-    return notifications.filter(n => n.priority === 'URGENT' || n.priority === 'HIGH' || n.priority === 'RUSH').length;
+  const totalCount = useMemo(() => {
+    return notifications.length;
   }, [notifications]);
 
   // Schedule Form State
@@ -266,9 +264,9 @@ export function QuickActions() {
           <SheetTrigger asChild>
             <button className="pointer-events-auto relative w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform active:scale-95 group">
               <Bell className="w-5 h-5" />
-              {urgentCount > 0 && (
+              {totalCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-800 border-2 border-white text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
-                  {urgentCount}
+                  {totalCount}
                 </span>
               )}
             </button>
