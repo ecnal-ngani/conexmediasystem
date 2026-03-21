@@ -131,7 +131,7 @@ export function QuickActions() {
   const projectsQuery = useMemo(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
 
   const { data: recentSchedules } = useCollection<any>(schedulesQuery);
-  const { data: recentTasks } = useCollection<any>(recentTasksQuery);
+  const { data: recentTasks } = useCollection<any>(tasksQuery);
   const { data: recentProjects } = useCollection<any>(projectsQuery);
 
   // Combine and format notifications
