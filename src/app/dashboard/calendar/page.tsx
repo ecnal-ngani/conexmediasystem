@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -24,7 +25,7 @@ import {
   Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   format, 
@@ -44,7 +45,6 @@ import {
   DialogClose,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -80,19 +80,19 @@ export default function CalendarPage() {
     setMounted(true);
   }, []);
 
-  const schedulesQuery = useMemo(() => {
+  const schedulesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'schedules'), orderBy('date', 'asc'));
   }, [firestore]);
   const { data: schedules, loading: sLoading } = useCollection<any>(schedulesQuery);
 
-  const projectsQuery = useMemo(() => {
+  const projectsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'projects'), orderBy('dueDate', 'asc'));
   }, [firestore]);
   const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
 
-  const tasksQuery = useMemo(() => {
+  const tasksQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'tasks'), orderBy('dueDate', 'asc'));
   }, [firestore]);

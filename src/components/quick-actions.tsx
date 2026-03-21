@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -56,7 +57,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -126,9 +127,9 @@ export function QuickActions() {
   const { toast } = useToast();
 
   // Listeners for Notifications
-  const schedulesQuery = useMemo(() => firestore ? query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
-  const tasksQuery = useMemo(() => firestore ? query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
-  const projectsQuery = useMemo(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
+  const schedulesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
+  const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
+  const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore]);
 
   const { data: recentSchedules } = useCollection<any>(schedulesQuery);
   const { data: recentTasks } = useCollection<any>(tasksQuery);

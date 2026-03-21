@@ -42,10 +42,11 @@ import {
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { cn } from '@/lib/utils';
 
 const ROLE_MAPPINGS: Record<string, string> = {
   "CEO": "CEO",
@@ -63,7 +64,7 @@ export default function AdminPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  const usersQuery = useMemo(() => {
+  const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users'), orderBy('systemId', 'asc'));
   }, [firestore]);
