@@ -57,6 +57,8 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function ProductionPage() {
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -79,6 +81,22 @@ export default function ProductionPage() {
     return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
   }, [firestore]);
   const { data: projects, loading } = useCollection<any>(projectsQuery);
+
+  // Filtered Data Logic
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+    
+    return projects.filter((project: any) => {
+      const matchesSearch = 
+        (project.fileCode?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (project.brand?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (project.artist?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+        
+      const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [projects, searchQuery, statusFilter]);
 
   const getStatusStyles = (status: string) => {
     switch (status) {
@@ -128,7 +146,6 @@ export default function ProductionPage() {
       createdAt: serverTimestamp()
     };
 
-    // Optimistic write: Do not await.
     addDoc(projectsRef, projectData)
       .catch(async (err) => {
         const permissionError = new FirestorePermissionError({
@@ -139,7 +156,6 @@ export default function ProductionPage() {
         errorEmitter.emit('permission-error', permissionError);
       });
 
-    // Immediate UI response
     toast({
       title: "Project Initialized",
       description: `${fileCode} is being added to the Production Matrix.`
@@ -167,7 +183,7 @@ export default function ProductionPage() {
           <div className="hidden sm:flex w-10 h-10 border rounded-lg items-center justify-center bg-white shadow-sm text-slate-400 shrink-0">
             <Filter className="w-4 h-4" />
           </div>
-          <Select defaultValue="all">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[140px] md:w-[180px] h-10 shadow-sm border-slate-200 text-xs font-medium">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -183,6 +199,8 @@ export default function ProductionPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input 
               placeholder="Search projects by code, brand or artist..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-10 w-full shadow-sm border-slate-200 focus-visible:ring-primary text-xs"
             />
           </div>
@@ -422,13 +440,13 @@ export default function ProductionPage() {
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
-              ) : projects?.length === 0 ? (
+              ) : filteredProjects.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-32 text-center text-slate-400">
-                    No production items found.
+                    {searchQuery || statusFilter !== 'all' ? 'No projects match your current filters.' : 'No production items found.'}
                   </TableCell>
                 </TableRow>
-              ) : projects?.map((item: any) => (
+              ) : filteredProjects.map((item: any) => (
                 <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors border-0">
                   <TableCell className="py-4 pl-6 whitespace-nowrap">
                     <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2 font-bold group">
