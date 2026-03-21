@@ -95,18 +95,29 @@ export default function CalendarPage() {
   // Optimized data aggregation for the sidebar matrix
   const matrixData = useMemo(() => {
     const prioritizedScheds = schedules?.filter(s => s.priority === 'URGENT' || s.priority === 'HIGH' || s.priority === 'NORMAL') || [];
-    const urgentCount = (tasks?.filter(t => t.priority === 'URGENT').length || 0) + (prioritizedScheds.filter(s => s.priority === 'URGENT').length);
-    const highCount = (tasks?.filter(t => t.priority === 'HIGH').length || 0) + (prioritizedScheds.filter(s => s.priority === 'HIGH').length);
-    const normalCount = (tasks?.filter(t => t.priority === 'NORMAL').length || 0) + (prioritizedScheds.filter(s => s.priority === 'NORMAL').length);
+    const pendingProjects = projects?.filter(p => p.status !== 'Approved') || [];
+    
+    // Triage counts from all sources
+    const taskUrgent = tasks?.filter(t => t.priority === 'URGENT').length || 0;
+    const schedUrgent = prioritizedScheds.filter(s => s.priority === 'URGENT').length;
+    const projUrgent = pendingProjects.filter(p => p.priority === 'RUSH').length;
+    
+    const taskHigh = tasks?.filter(t => t.priority === 'HIGH').length || 0;
+    const schedHigh = prioritizedScheds.filter(s => s.priority === 'HIGH').length;
+    
+    const taskNormal = tasks?.filter(t => t.priority === 'NORMAL').length || 0;
+    const schedNormal = prioritizedScheds.filter(s => s.priority === 'NORMAL').length;
+    const projNormal = pendingProjects.filter(p => p.priority === 'REGULAR').length;
 
     return {
       prioritizedSchedules: prioritizedScheds,
-      urgentCount,
-      highCount,
-      normalCount,
-      totalPending: (tasks?.length || 0) + prioritizedScheds.length
+      pendingProjects,
+      urgentCount: taskUrgent + schedUrgent + projUrgent,
+      highCount: taskHigh + schedHigh,
+      normalCount: taskNormal + schedNormal + projNormal,
+      totalPending: (tasks?.length || 0) + prioritizedScheds.length + pendingProjects.length
     };
-  }, [schedules, tasks]);
+  }, [schedules, tasks, projects]);
 
   const renderCalendarDays = () => {
     if (!mounted) return null;
@@ -245,7 +256,7 @@ export default function CalendarPage() {
           </CardContent>
         </Card>
 
-        {/* Optimized Pending Tasks Sidebar */}
+        {/* Optimized Pending Matrix Sidebar */}
         <Card className="border shadow-none rounded-xl bg-white overflow-hidden flex flex-col h-fit">
           <CardHeader className="border-b bg-slate-50/30">
             <CardTitle className="text-base font-bold text-slate-800">Command-Wide Pending Matrix</CardTitle>
@@ -267,7 +278,7 @@ export default function CalendarPage() {
             </div>
 
             <div className="space-y-3">
-              {(tasksLoading || schedulesLoading) ? (
+              {(tasksLoading || schedulesLoading || projectsLoading) ? (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Synchronizing Matrix...</p>
@@ -277,6 +288,7 @@ export default function CalendarPage() {
               ) : (
                 <ScrollArea className="h-[400px] pr-2">
                   <div className="space-y-3">
+                    {/* Tasks */}
                     {tasks?.map((task: any) => (
                       <div 
                         key={task.id} 
@@ -304,6 +316,36 @@ export default function CalendarPage() {
                       </div>
                     ))}
                     
+                    {/* Production Projects */}
+                    {matrixData.pendingProjects.map((project: any) => (
+                      <div 
+                        key={project.id} 
+                        onClick={() => setSelectedEvent({ ...project, source: 'production' })}
+                        className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-primary/20 transition-all cursor-pointer group active:scale-[0.98]"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Briefcase className="w-3 h-3 text-blue-600" />
+                            <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary transition-colors leading-snug truncate max-w-[120px]">{project.brand}</h4>
+                          </div>
+                          <Badge className={cn(
+                            "text-[8px] font-black px-1.5 py-0.5 rounded",
+                            project.priority === 'RUSH' ? "bg-red-50 text-red-500 border-red-100" : "bg-blue-50 text-blue-500 border-blue-100"
+                          )} variant="outline">
+                            {project.priority}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between mt-4">
+                          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">Status: {project.status}</span>
+                          <div className="flex items-center gap-1.5 text-slate-400">
+                            <Clock className="w-3 h-3" />
+                            <span className="text-[10px] font-medium">{project.dueDate}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Prioritized Schedules */}
                     {matrixData.prioritizedSchedules.map((schedule: any) => (
                       <div 
                         key={schedule.id} 
