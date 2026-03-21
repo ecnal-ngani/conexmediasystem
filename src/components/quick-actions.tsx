@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   Bell, 
@@ -24,7 +24,8 @@ import {
   Link as LinkIcon,
   Home,
   User,
-  Info
+  Info,
+  CheckCheck
 } from 'lucide-react';
 import {
   Dialog,
@@ -120,15 +121,22 @@ export function QuickActions() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [isProjectOpen, setIsProjectOpen] = useState(false);
+  const [lastReadTime, setLastReadTime] = useState<number>(0);
   
   // Firestore
   const firestore = useFirestore();
   const { toast } = useToast();
 
+  // Load last read time from storage
+  useEffect(() => {
+    const stored = localStorage.getItem('conex_last_notif_read');
+    if (stored) setLastReadTime(parseInt(stored));
+  }, []);
+
   // Listeners for Notifications
-  const schedulesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(10)) : null, [firestore]);
-  const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(10)) : null, [firestore]);
-  const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(10)) : null, [firestore]);
+  const schedulesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(15)) : null, [firestore]);
+  const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(15)) : null, [firestore]);
+  const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(15)) : null, [firestore]);
 
   const { data: recentSchedules } = useCollection<any>(schedulesQuery);
   const { data: recentTasks } = useCollection<any>(tasksQuery);
@@ -142,10 +150,11 @@ export function QuickActions() {
       id: `s-${s.id}`,
       title: 'New Schedule Added',
       description: s.title,
+      details: `${s.location || 'No location'} • ${s.callTime || ''}-${s.wrapTime || ''}`,
       time: s.createdAt?.toDate ? formatDistanceToNow(s.createdAt.toDate(), { addSuffix: true }) : 'Just now',
       priority: s.priority || 'NORMAL',
       icon: Calendar,
-      rawTime: s.createdAt?.seconds || 0,
+      rawTime: s.createdAt?.seconds || Math.floor(Date.now() / 1000),
       type: 'SCHEDULE'
     }));
 
@@ -153,10 +162,11 @@ export function QuickActions() {
       id: `t-${t.id}`,
       title: 'Task Assigned',
       description: t.title,
+      details: `Due: ${t.dueDate || 'No date'} • ${t.category || 'Ops'}`,
       time: t.createdAt?.toDate ? formatDistanceToNow(t.createdAt.toDate(), { addSuffix: true }) : 'Just now',
       priority: t.priority || 'NORMAL',
       icon: ListTodo,
-      rawTime: t.createdAt?.seconds || 0,
+      rawTime: t.createdAt?.seconds || Math.floor(Date.now() / 1000),
       type: 'TASK'
     }));
 
@@ -164,19 +174,27 @@ export function QuickActions() {
       id: `p-${p.id}`,
       title: 'Project Initialized',
       description: `${p.fileCode}: ${p.brand}`,
+      details: `${p.artist || 'Unassigned'} • ${p.platform || 'General'}`,
       time: p.createdAt?.toDate ? formatDistanceToNow(p.createdAt.toDate(), { addSuffix: true }) : 'Just now',
       priority: p.priority === 'RUSH' ? 'URGENT' : (p.priority || 'REGULAR'),
       icon: Layers,
-      rawTime: p.createdAt?.seconds || 0,
+      rawTime: p.createdAt?.seconds || Math.floor(Date.now() / 1000),
       type: 'PRODUCTION'
     }));
 
-    return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 30);
+    return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 45);
   }, [recentSchedules, recentTasks, recentProjects]);
 
-  const totalCount = useMemo(() => {
-    return notifications.length;
-  }, [notifications]);
+  const unreadCount = useMemo(() => {
+    return notifications.filter(n => n.rawTime > lastReadTime).length;
+  }, [notifications, lastReadTime]);
+
+  const handleMarkAllRead = () => {
+    const now = Math.floor(Date.now() / 1000);
+    setLastReadTime(now);
+    localStorage.setItem('conex_last_notif_read', now.toString());
+    toast({ title: "Intelligence Cleared", description: "All command updates marked as read." });
+  };
 
   // Schedule Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
@@ -246,14 +264,14 @@ export function QuickActions() {
     switch (priority) {
       case 'URGENT':
       case 'RUSH':
-        return "bg-red-600 text-white";
+        return "bg-red-600 text-white border-red-700 shadow-sm";
       case 'HIGH':
-        return "bg-orange-500 text-white";
+        return "bg-orange-500 text-white border-orange-600 shadow-sm";
       case 'NORMAL':
       case 'REGULAR':
         return "bg-blue-100 text-blue-700 border-blue-200";
       default:
-        return "bg-slate-100 text-slate-600";
+        return "bg-slate-100 text-slate-600 border-slate-200";
     }
   };
 
@@ -264,9 +282,9 @@ export function QuickActions() {
           <SheetTrigger asChild>
             <button className="pointer-events-auto relative w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform active:scale-95 group">
               <Bell className="w-5 h-5" />
-              {totalCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-800 border-2 border-white text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
-                  {totalCount}
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-800 border-2 border-white text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce shadow-lg">
+                  {unreadCount}
                 </span>
               )}
             </button>
@@ -274,14 +292,26 @@ export function QuickActions() {
           <SheetContent className="w-full sm:max-w-md p-0 border-none rounded-l-3xl overflow-hidden shadow-2xl">
             <div className="flex flex-col h-full bg-white">
               <SheetHeader className="p-8 border-b bg-slate-50/50">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-200">
-                    <Bell className="w-6 h-6 text-white" />
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-200">
+                      <Bell className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <SheetTitle className="text-2xl font-black text-slate-900 tracking-tight">Intelligence Feed</SheetTitle>
+                      <SheetDescription className="text-sm text-slate-500 font-medium">Real-time activity log</SheetDescription>
+                    </div>
                   </div>
-                  <div>
-                    <SheetTitle className="text-2xl font-black text-slate-900 tracking-tight">Intelligence Feed</SheetTitle>
-                    <SheetDescription className="text-sm text-slate-500 font-medium">Real-time command updates from all nodes</SheetDescription>
-                  </div>
+                  {unreadCount > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      onClick={handleMarkAllRead}
+                      className="text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 h-8 px-2"
+                    >
+                      <CheckCheck className="w-3 h-3 mr-1" />
+                      Mark Read
+                    </Button>
+                  )}
                 </div>
               </SheetHeader>
               <ScrollArea className="flex-1">
@@ -294,46 +324,54 @@ export function QuickActions() {
                       <p className="text-sm font-bold text-slate-400">All systems quiet. No recent updates.</p>
                     </div>
                   ) : (
-                    notifications.map((notif) => (
-                      <div key={notif.id} className={cn(
-                        "p-5 rounded-2xl border-2 transition-all hover:shadow-md",
-                        notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH'
-                          ? "bg-red-50/30 border-red-100/50 hover:border-red-200" 
-                          : "bg-slate-50/50 border-slate-100 hover:border-slate-200"
-                      )}>
-                        <div className="flex gap-4">
-                          <div className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2",
-                            notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH'
-                              ? "bg-red-500 border-red-200 text-white" 
-                              : "bg-white border-slate-100 text-slate-600 shadow-sm"
-                          )}>
-                            {notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH' ? <ShieldAlert className="w-5 h-5" /> : <notif.icon className="w-5 h-5" />}
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-bold text-slate-900">{notif.title}</h4>
-                              <span className={cn(
-                                "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded leading-none border",
-                                getPriorityBadgeStyles(notif.priority)
-                              )}>
-                                {notif.priority}
-                              </span>
+                    notifications.map((notif) => {
+                      const isUnread = notif.rawTime > lastReadTime;
+                      return (
+                        <div key={notif.id} className={cn(
+                          "p-5 rounded-2xl border-2 transition-all hover:shadow-md relative overflow-hidden",
+                          isUnread ? "bg-white border-primary/20 shadow-sm" : "bg-slate-50/50 border-slate-100",
+                          (notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH') && "border-l-4 border-l-red-500"
+                        )}>
+                          {isUnread && (
+                            <div className="absolute top-0 right-0">
+                              <div className="bg-primary text-white text-[7px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-bl-lg shadow-sm">NEW</div>
                             </div>
-                            <p className="text-xs text-slate-500 font-medium leading-tight">{notif.description}</p>
-                            <div className="flex items-center justify-between pt-2">
-                              <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5">
-                                <Clock className="w-3 h-3" />
-                                {notif.time}
-                              </span>
-                              <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">
-                                {notif.type}
-                              </span>
+                          )}
+                          <div className="flex gap-4">
+                            <div className={cn(
+                              "w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2",
+                              notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH'
+                                ? "bg-red-500 border-red-200 text-white" 
+                                : "bg-white border-slate-100 text-slate-600 shadow-sm"
+                            )}>
+                              {notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH' ? <ShieldAlert className="w-5 h-5" /> : <notif.icon className="w-5 h-5" />}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-bold text-slate-900 truncate pr-4">{notif.title}</h4>
+                                <span className={cn(
+                                  "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded leading-none border shrink-0",
+                                  getPriorityBadgeStyles(notif.priority)
+                                )}>
+                                  {notif.priority}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-600 font-bold leading-tight">{notif.description}</p>
+                              {notif.details && <p className="text-[10px] text-slate-400 font-medium">{notif.details}</p>}
+                              <div className="flex items-center justify-between pt-2">
+                                <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5">
+                                  <Clock className="w-3 h-3" />
+                                  {notif.time}
+                                </span>
+                                <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">
+                                  {notif.type}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </ScrollArea>
@@ -456,7 +494,7 @@ export function QuickActions() {
                 <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Internal Task</DialogTitle>
                 <DialogDescription className="text-slate-400 font-medium">Deploy a deliverable to the internal team.</DialogDescription>
               </div>
-            </DialogHeader>
+            </header>
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Task Title</Label>
