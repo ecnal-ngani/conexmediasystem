@@ -5,7 +5,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/mock-data';
 import { useFirestore } from '@/firebase';
-import { collection, query, where, getDocs, limit, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -50,13 +50,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const q = query(usersRef, where('email', '==', email.toLowerCase()), limit(1));
       const querySnapshot = await getDocs(q);
       
+      let foundUser: User | null = null;
+
       if (querySnapshot.empty) {
-        throw new Error('Invalid credentials. Identity not found in secure database.');
+        // AUTO-PROVISION MASTER ADMIN IF NOT EXISTS
+        if (email.toLowerCase() === 'admin@conex.private') {
+          const adminData = {
+            systemId: 'CX-AD-01',
+            name: 'System Administrator',
+            email: 'admin@conex.private',
+            role: 'ADMIN',
+            status: 'Office',
+            points: 1000,
+            xp: 5000,
+            salary: '₱150,000',
+            badges: ['🏆', '🛡️'],
+            createdAt: serverTimestamp(),
+            avatarUrl: 'https://picsum.photos/seed/admin-master/200/200'
+          };
+          const docRef = await addDoc(usersRef, adminData);
+          foundUser = { id: docRef.id, ...adminData } as any;
+        } else {
+          throw new Error('Invalid credentials. Identity not found in secure database.');
+        }
+      } else {
+        const userDoc = querySnapshot.docs[0];
+        foundUser = { id: userDoc.id, ...userDoc.data() } as User;
       }
 
-      const userDoc = querySnapshot.docs[0];
-      const foundUser = { id: userDoc.id, ...userDoc.data() } as User;
-      
+      if (!foundUser) throw new Error('Authentication failed.');
+
       // Role validation logic
       if (roleId === 'admin' && foundUser.role !== 'ADMIN' && foundUser.role !== 'CEO') {
         throw new Error('This account does not have Administrator clearance.');
