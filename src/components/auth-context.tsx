@@ -3,7 +3,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, MOCK_USERS } from '@/lib/mock-data';
+import { User } from '@/lib/mock-data';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, getDocs, limit, doc, updateDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -24,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isWfh, setIsWfh] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const router = useRouter();
+  const firestore = useFirestore();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('conex_session');
@@ -39,24 +42,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, wfhStatus: boolean, roleId?: string) => {
-    setIsLoading(true);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    const foundUser = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!firestore) return;
     
-    if (foundUser) {
-      // If roleId is specified, ensure user has that capability (mapping UI roles to data roles)
+    setIsLoading(true);
+    try {
+      const usersRef = collection(firestore, 'users');
+      const q = query(usersRef, where('email', '==', email.toLowerCase()), limit(1));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        throw new Error('Invalid credentials. Identity not found in secure database.');
+      }
+
+      const userDoc = querySnapshot.docs[0];
+      const foundUser = { id: userDoc.id, ...userDoc.data() } as User;
+      
+      // Role validation logic
       if (roleId === 'admin' && foundUser.role !== 'ADMIN' && foundUser.role !== 'CEO') {
         throw new Error('This account does not have Administrator clearance.');
-      }
-      if (roleId === 'employee' && foundUser.role === 'ADMIN') {
-        // Allow admins to login as employee for testing? Or keep strict. 
-        // For demo, let's just foundUser.
       }
 
       setUser(foundUser);
       setIsWfh(wfhStatus);
-      // Non-WFH users are automatically "verified" for the dashboard
       const verifiedStatus = !wfhStatus;
       setIsVerified(verifiedStatus);
       
@@ -69,17 +76,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         router.push('/dashboard');
       }
-    } else {
-      throw new Error('Invalid credentials. Access denied.');
+    } catch (err: any) {
+      setIsLoading(false);
+      throw err;
     }
     setIsLoading(false);
   };
 
   const updateUser = (updates: Partial<User>) => {
-    if (!user) return;
+    if (!user || !firestore) return;
     const updatedUser = { ...user, ...updates };
     setUser(updatedUser);
     localStorage.setItem('conex_session', JSON.stringify(updatedUser));
+    
+    // Sync to Firestore
+    const userRef = doc(firestore, 'users', user.id);
+    updateDoc(userRef, updates).catch(e => console.error('Failed to sync profile:', e));
   };
 
   const setVerified = (status: boolean) => {

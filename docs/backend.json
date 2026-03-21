@@ -52,6 +52,25 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["fileCode", "brand", "status", "priority"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Professional identity and clearance for CONEX personnel.",
+      "type": "object",
+      "properties": {
+        "systemId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["CEO", "ADMIN", "ANALYST", "OPERATOR"] },
+        "status": { "type": "string", "enum": ["Office", "WFH", "Offline"] },
+        "points": { "type": "number" },
+        "xp": { "type": "number" },
+        "salary": { "type": "string" },
+        "badges": { "type": "array", "items": { "type": "string" } },
+        "avatarUrl": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["systemId", "name", "email", "role"]
     }
   },
   "auth": {
@@ -69,6 +88,10 @@
     "/projects/{projectId}": {
       "schema": "ProductionProject",
       "description": "Collection of production matrix projects."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Centralized personnel identity database."
     }
   }
 }
