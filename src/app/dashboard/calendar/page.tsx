@@ -1,7 +1,7 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,10 +45,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 
 export default function CalendarPage() {
+  const router = useRouter();
   const [viewDate, setViewDate] = useState(new Date());
   const [mounted, setMounted] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -80,16 +80,18 @@ export default function CalendarPage() {
   const matrixData = useMemo(() => {
     const activeProjects = projects?.filter(p => p.status !== 'Approved') || [];
     const activeTasks = tasks?.filter(t => t.status !== 'completed') || [];
-    const urgent = (schedules?.filter(s => s.priority === 'URGENT').length || 0) + 
+    const activeScheds = schedules || [];
+
+    const urgent = (activeScheds.filter(s => s.priority === 'URGENT').length || 0) + 
                    (activeTasks.filter(t => t.priority === 'URGENT').length) + 
                    (activeProjects.filter(p => p.priority === 'RUSH').length);
-    const high = (schedules?.filter(s => s.priority === 'HIGH').length || 0) + 
+    const high = (activeScheds.filter(s => s.priority === 'HIGH').length || 0) + 
                  (activeTasks.filter(t => t.priority === 'HIGH').length);
-    const normal = (schedules?.filter(s => s.priority === 'NORMAL').length || 0) + 
+    const normal = (activeScheds.filter(s => s.priority === 'NORMAL').length || 0) + 
                    (activeTasks.filter(t => t.priority === 'NORMAL').length) +
                    (activeProjects.filter(p => p.priority === 'REGULAR').length);
     
-    return { urgent, high, normal, total: (schedules?.length || 0) + activeProjects.length + activeTasks.length };
+    return { urgent, high, normal, total: activeScheds.length + activeProjects.length + activeTasks.length };
   }, [schedules, projects, tasks]);
 
   const renderCalendarDays = () => {
@@ -112,13 +114,13 @@ export default function CalendarPage() {
           <span className={cn("text-[10px] font-bold mb-1", isToday ? "text-primary" : "text-slate-400")}>{i}</span>
           <div className="w-full space-y-1 flex-1 overflow-y-auto custom-scrollbar">
             {dayScheds.map((s, idx) => (
-              <button key={`s-${idx}`} onClick={() => setSelectedEvent({...s, source: 'schedule'})} className={cn("w-full text-left truncate text-[9px] font-bold py-0.5 px-1.5 rounded text-white", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')}>{s.title}</button>
+              <button key={`s-${idx}`} onClick={() => setSelectedEvent({...s, source: 'schedule'})} className={cn("w-full text-left truncate text-[10px] font-bold py-0.5 px-1.5 rounded text-white", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')}>{s.title}</button>
             ))}
             {dayProjs.map((p, idx) => (
-              <button key={`p-${idx}`} onClick={() => setSelectedEvent({...p, source: 'production'})} className="w-full text-left truncate text-[9px] font-bold py-0.5 px-1.5 rounded bg-blue-600 text-white">PROD: {p.brand}</button>
+              <button key={`p-${idx}`} onClick={() => setSelectedEvent({...p, source: 'production'})} className="w-full text-left truncate text-[10px] font-bold py-0.5 px-1.5 rounded bg-blue-600 text-white">PROD: {p.brand}</button>
             ))}
             {dayTasks.map((t, idx) => (
-              <button key={`t-${idx}`} onClick={() => setSelectedEvent({...t, source: 'task'})} className={cn("w-full text-left truncate text-[9px] font-bold py-0.5 px-1.5 rounded text-white", t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700')}>TASK: {t.title}</button>
+              <button key={`t-${idx}`} onClick={() => setSelectedEvent({...t, source: 'task'})} className={cn("w-full text-left truncate text-[10px] font-bold py-0.5 px-1.5 rounded text-white", t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700')}>TASK: {t.title}</button>
             ))}
           </div>
         </div>
@@ -181,8 +183,8 @@ export default function CalendarPage() {
                 ))}
               </div>
             </ScrollArea>
-            <Button onClick={() => setIsSyncing(true)} disabled={isSyncing} className="w-full bg-primary font-bold h-11 rounded-xl shadow-lg shadow-red-100">
-              {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Synchronize Matrix'}
+            <Button onClick={() => router.push('/dashboard/production')} className="w-full bg-primary font-bold h-11 rounded-xl shadow-lg shadow-red-100">
+              View All Company Tasks
             </Button>
           </CardContent>
         </Card>
@@ -202,9 +204,33 @@ export default function CalendarPage() {
                 </div>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-6 pt-4 border-t">
-                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Priority</p><Badge variant="outline" className="font-bold">{selectedEvent.priority || 'NORMAL'}</Badge></div>
-                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Date</p><p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p></div>
-                {selectedEvent.location && <div className="space-y-1 col-span-2"><p className="text-[10px] uppercase font-black text-slate-400">Location</p><p className="text-xs font-bold text-slate-700">{selectedEvent.location}</p></div>}
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase font-black text-slate-400">Priority</p>
+                  <Badge className={cn(
+                    "text-[10px] font-black px-2 py-1 rounded",
+                    selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" :
+                    selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
+                    "bg-blue-50 text-blue-500 border-blue-100"
+                  )} variant="outline">
+                    {selectedEvent.priority || 'NORMAL'}
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase font-black text-slate-400">Date</p>
+                  <p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p>
+                </div>
+                {selectedEvent.location && (
+                  <div className="space-y-1 col-span-2">
+                    <p className="text-[10px] uppercase font-black text-slate-400">Location</p>
+                    <p className="text-xs font-bold text-slate-700">{selectedEvent.location}</p>
+                  </div>
+                )}
+                {selectedEvent.contentIdea && (
+                  <div className="space-y-1 col-span-2">
+                    <p className="text-[10px] uppercase font-black text-slate-400">Content Idea</p>
+                    <p className="text-xs font-bold text-slate-700">{selectedEvent.contentIdea}</p>
+                  </div>
+                )}
               </div>
               <Button onClick={() => setSelectedEvent(null)} className="w-full h-12 bg-primary font-bold rounded-xl mt-4">Close Briefing</Button>
             </div>
