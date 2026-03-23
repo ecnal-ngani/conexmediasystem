@@ -8,7 +8,6 @@ import {
   Users, 
   ChevronLeft,
   ChevronRight,
-  Command,
   LogOut
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
@@ -38,6 +37,24 @@ const navItems = [
   { title: 'Admin & HR', url: '/dashboard/admin', icon: Users },
 ];
 
+const ConexLogo = ({ isCollapsed }: { isCollapsed: boolean }) => (
+  <div className="flex items-center gap-2 overflow-hidden">
+    <div className="bg-[#722F37] min-w-[36px] w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-md">
+      {/* Tactical SVG Logo Mark */}
+      <svg viewBox="0 0 100 100" className="w-6 h-6 text-white" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M30 40C30 30 40 25 50 25C60 25 70 30 70 40V75M40 75V40C40 35 45 32 50 32C55 32 60 35 60 40V75" stroke="currentColor" strokeWidth="6" strokeLinecap="round"/>
+        <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="opacity-30" />
+      </svg>
+    </div>
+    {!isCollapsed && (
+      <div className="flex flex-col animate-in slide-in-from-left-2 duration-500">
+        <span className="font-black text-sm tracking-tighter uppercase text-slate-900 leading-none">conex</span>
+        <span className="text-[10px] font-black tracking-[0.2em] uppercase text-primary leading-none mt-1">media</span>
+      </div>
+    )}
+  </div>
+);
+
 export function DashboardSidebar() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
@@ -53,16 +70,7 @@ export function DashboardSidebar() {
         "h-20 flex flex-row items-center border-b transition-all duration-300 relative",
         isCollapsed ? "px-0 justify-center" : "px-4 justify-between"
       )}>
-        <div className="flex items-center gap-2 overflow-hidden">
-          <div className="bg-[#722F37] min-w-[36px] w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-md">
-            <Command className="w-5 h-5 text-white" />
-          </div>
-          {!isCollapsed && (
-            <span className="font-black text-base tracking-tighter truncate uppercase animate-in slide-in-from-left-2 duration-500 text-slate-900">
-              conex media
-            </span>
-          )}
-        </div>
+        <ConexLogo isCollapsed={isCollapsed} />
         {!isCollapsed && (
           <button 
             onClick={toggleSidebar}

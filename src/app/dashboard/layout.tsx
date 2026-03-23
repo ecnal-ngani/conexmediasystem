@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-context';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { DashboardSidebar } from '@/components/dashboard-sidebar';
-import { Loader2, Command } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { QuickActions } from '@/components/quick-actions';
 
@@ -44,10 +44,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <div className="flex items-center gap-2">
-              <div className="bg-[#722F37] w-6 h-6 rounded flex items-center justify-center">
-                <Command className="w-4 h-4 text-white" />
+              <div className="bg-[#722F37] w-8 h-8 rounded flex items-center justify-center shrink-0">
+                <svg viewBox="0 0 100 100" className="w-5 h-5 text-white" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M30 40C30 30 40 25 50 25C60 25 70 30 70 40V75M40 75V40C40 35 45 32 50 32C55 32 60 35 60 40V75" stroke="currentColor" strokeWidth="6" strokeLinecap="round"/>
+                </svg>
               </div>
-              <span className="font-bold text-sm tracking-tight">conex media</span>
+              <div className="flex flex-col">
+                <span className="font-black text-xs tracking-tighter uppercase text-slate-900 leading-none">conex</span>
+                <span className="text-[8px] font-black tracking-[0.2em] uppercase text-primary leading-none mt-0.5">media</span>
+              </div>
             </div>
           </header>
 
