@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -37,7 +38,8 @@ import {
   CheckCircle2,
   Lightbulb,
   Loader2,
-  XCircle
+  XCircle,
+  Save
 } from 'lucide-react';
 import {
   Dialog,
@@ -67,6 +69,9 @@ export default function ProductionPage() {
   
   const firestore = useFirestore();
   const { toast } = useToast();
+
+  // Project Editing State
+  const [editingLink, setEditingLink] = useState('');
 
   // New Project Form State
   const [fileCode, setFileCode] = useState('');
@@ -192,6 +197,25 @@ export default function ProductionPage() {
         path: projectRef.path,
         operation: 'update',
         requestResourceData: { progress: newProgress }
+      }));
+    });
+  };
+
+  const handleUpdateLink = () => {
+    if (!firestore || !selectedProject || !editingLink) return;
+    const projectRef = doc(firestore, 'projects', selectedProject.id);
+    
+    updateDoc(projectRef, { canvasLink: editingLink }).then(() => {
+      toast({
+        title: "Asset Link Updated",
+        description: "The project's destination link has been synchronized."
+      });
+      setSelectedProject({ ...selectedProject, canvasLink: editingLink });
+    }).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: projectRef.path,
+        operation: 'update',
+        requestResourceData: { canvasLink: editingLink }
       }));
     });
   };
@@ -516,15 +540,32 @@ export default function ProductionPage() {
               ) : filteredProjects.map((item: any) => (
                 <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors border-0 group">
                   <TableCell className="py-4 pl-6 whitespace-nowrap">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setSelectedProject(item)}
-                      className="text-primary hover:text-primary/80 hover:bg-primary/5 h-7 text-[10px] px-2 font-bold group"
-                    >
-                      <LinkIcon className="w-3 h-3 mr-1 transition-transform group-hover:scale-110" />
-                      Link
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => {
+                          setSelectedProject(item);
+                          setEditingLink(item.canvasLink || '');
+                        }}
+                        className="text-primary hover:text-primary/80 hover:bg-primary/5 h-7 text-[10px] px-2 font-bold group"
+                      >
+                        <LinkIcon className="w-3 h-3 mr-1 transition-transform group-hover:scale-110" />
+                        Link
+                      </Button>
+                      {item.canvasLink && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 text-blue-600 hover:bg-blue-50"
+                          asChild
+                        >
+                          <a href={item.canvasLink} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="font-mono text-[10px] font-bold text-slate-500 py-4 whitespace-nowrap">{item.fileCode}</TableCell>
                   <TableCell className="py-4 whitespace-nowrap">
@@ -589,7 +630,8 @@ export default function ProductionPage() {
                 </div>
               </DialogHeader>
 
-              <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-6 pt-4 border-t">
+                {/* Progress Update */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Update Progress</Label>
@@ -604,7 +646,34 @@ export default function ProductionPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm mt-6">
+                {/* Link Configuration */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Asset Link (Canvas/Reel)</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="https://link-to-asset.com" 
+                      value={editingLink}
+                      onChange={(e) => setEditingLink(e.target.value)}
+                      className="h-10 rounded-xl bg-slate-50 border-slate-200"
+                    />
+                    <Button 
+                      onClick={handleUpdateLink}
+                      className="bg-primary hover:bg-primary/90 text-white font-bold h-10 px-3 shrink-0 rounded-xl"
+                    >
+                      <Save className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {selectedProject.canvasLink && (
+                    <Button variant="outline" className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/5 h-10 rounded-xl" asChild>
+                      <a href={selectedProject.canvasLink} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="w-4 h-4" />
+                        Jump to Asset
+                      </a>
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Type</p>
                     <p className="font-bold">{selectedProject.type}</p>
@@ -614,17 +683,6 @@ export default function ProductionPage() {
                     <p className="font-bold">{selectedProject.artist}</p>
                   </div>
                 </div>
-
-                {selectedProject.canvasLink && (
-                  <div className="pt-4">
-                    <Button variant="outline" className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/5" asChild>
-                      <a href={selectedProject.canvasLink} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4" />
-                        Open Asset Link
-                      </a>
-                    </Button>
-                  </div>
-                )}
               </div>
 
               <div className="flex gap-3 pt-4">
