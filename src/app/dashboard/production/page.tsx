@@ -21,7 +21,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   ExternalLink, 
-  Download, 
   Filter, 
   Search,
   Plus,
@@ -214,10 +213,6 @@ export default function ProductionPage() {
                Reset Filters
              </Button>
            )}
-           <Button variant="outline" className="hidden sm:flex h-10 border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm text-xs font-bold">
-            <Download className="w-4 h-4 mr-1.5" />
-            Export Hub
-          </Button>
         </div>
       </div>
 
@@ -338,7 +333,7 @@ export default function ProductionPage() {
                         value={contentIdea}
                         onChange={(e) => setContentIdea(e.target.value)}
                         className="h-12 border-slate-200 rounded-xl" 
-                      />
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
