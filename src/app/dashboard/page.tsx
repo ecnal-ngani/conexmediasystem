@@ -21,7 +21,10 @@ import {
   Lightbulb,
   CheckCircle2,
   Clock,
-  HardDrive
+  HardDrive,
+  BookOpen,
+  Award,
+  Calendar
 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
@@ -120,13 +123,13 @@ export default function DashboardPage() {
         };
       case 'INTERN':
         return {
-          title: 'Learning & Support Portal',
+          title: 'Multimedia Intern Dashboard',
           subtitle: "Skill development and operational assistance.",
           stats: [
-            { label: 'Tasks Completed', value: '28', sub: '12 this week', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
-            { label: 'Knowledge Points', value: user?.points || 120, sub: 'Expert tier: 500', icon: Lightbulb, color: 'text-yellow-500', bg: 'bg-yellow-50', subColor: 'text-yellow-600' },
-            { label: 'Training Hours', value: '84', sub: 'Q1 requirement met', icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
-            { label: 'System XP', value: user?.xp || 450, sub: 'Next level at 600', icon: Trophy, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
+            { label: 'Hours Required', value: '300', sub: 'Standard Program', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', subColor: 'text-slate-400' },
+            { label: 'Hours Rendered', value: '140', sub: '47% of target', icon: TrendingUp, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
+            { label: 'Tasks Completed', value: '28', sub: 'Across 12 brands', icon: Award, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
+            { label: 'Current XP', value: '245', sub: 'Junior Level', icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
           ]
         };
       default:
@@ -137,6 +140,110 @@ export default function DashboardPage() {
         };
     }
   }, [user, staff, projects]);
+
+  if (user?.role === 'INTERN') {
+    return (
+      <div className="space-y-8 max-w-[1600px] mx-auto pb-10 animate-in fade-in duration-700">
+        <div className="flex items-center gap-2 px-1">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Multimedia Intern Dashboard</h1>
+          <ChevronRight className="w-4 h-4 text-primary" />
+        </div>
+
+        {/* Intern Hero with Circular Progress */}
+        <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
+          <CardContent className="p-12 flex flex-col items-center justify-center text-center space-y-6">
+            <div className="relative w-48 h-48 flex items-center justify-center">
+              {/* SVG Background Circle */}
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="96"
+                  cy="96"
+                  r="80"
+                  stroke="currentColor"
+                  strokeWidth="16"
+                  fill="transparent"
+                  className="text-slate-100"
+                />
+                {/* SVG Progress Circle */}
+                <circle
+                  cx="96"
+                  cy="96"
+                  r="80"
+                  stroke="currentColor"
+                  strokeWidth="16"
+                  strokeDasharray={2 * Math.PI * 80}
+                  strokeDashoffset={2 * Math.PI * 80 * (1 - 140/300)}
+                  strokeLinecap="round"
+                  fill="transparent"
+                  className="text-primary"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-5xl font-black text-slate-900">140</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">of 300 hours</span>
+                <span className="text-xl font-black text-primary mt-1">47%</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Internship Progress</h2>
+              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">160 hours remaining</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* KPI Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {roleConfig.stats.map((stat, i) => (
+            <Card key={i} className="border shadow-none rounded-xl bg-white hover:border-primary/20 transition-all group">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className={cn("p-2.5 rounded-lg", stat.bg)}>
+                    <stat.icon className={cn("w-4 h-4", stat.color)} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</p>
+                  <h3 className="text-3xl font-bold text-slate-900">{stat.value}</h3>
+                  <p className={cn("text-[10px] font-bold", stat.subColor)}>{stat.sub}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Internship Details Section */}
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Internship Details</h3>
+          <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
+            <CardContent className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">School</p>
+                    <p className="text-sm font-bold text-slate-900">University of Santo Tomas</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Start Date</p>
+                    <p className="text-sm font-bold text-slate-900">November 1, 2025</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Course</p>
+                    <p className="text-sm font-bold text-slate-900">BS Multimedia Arts</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Expected Completion</p>
+                    <p className="text-sm font-bold text-slate-900">March 15, 2026</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto pb-10">
