@@ -139,11 +139,10 @@ export default function AdminPage() {
   };
 
   const matrixStats = useMemo(() => {
-    if (!staff) return { total: 0, active: 0, xp: 0 };
+    if (!staff) return { total: 0, active: 0 };
     return {
       total: staff.length,
-      active: staff.filter((s: any) => s.status !== 'Offline').length,
-      xp: staff.reduce((acc: number, s: any) => acc + (s.xp || 0), 0)
+      active: staff.filter((s: any) => s.status !== 'Offline').length
     };
   }, [staff]);
 
@@ -215,8 +214,8 @@ export default function AdminPage() {
         {[
           { label: 'Total Personnel', value: matrixStats.total, icon: Users, color: 'text-slate-900' },
           { label: 'Active Today', value: matrixStats.active, icon: CheckCircle2, color: 'text-green-600' },
-          { label: 'Total Matrix XP', value: matrixStats.xp.toLocaleString(), icon: Trophy, color: 'text-primary' },
           { label: 'Security Clearance', value: 'Level 4', icon: ShieldCheck, color: 'text-blue-600' },
+          { label: 'Hub Status', value: 'Nominal', icon: Zap, color: 'text-orange-500' },
         ].map((kpi, i) => (
           <Card key={i} className="border shadow-none rounded-xl bg-white">
             <CardContent className="p-6">
@@ -262,20 +261,19 @@ export default function AdminPage() {
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Name</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Role</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">Status</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">XP</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Badges</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-40 text-center">
+                      <TableCell colSpan={5} className="h-40 text-center">
                         <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                       </TableCell>
                     </TableRow>
                   ) : filteredStaff.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium">
+                      <TableCell colSpan={5} className="h-40 text-center text-slate-400 font-medium">
                         No personnel matches the current query.
                       </TableCell>
                     </TableRow>
@@ -300,9 +298,6 @@ export default function AdminPage() {
                           )}>
                             {emp.status.toUpperCase()}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="py-4 text-center font-bold text-primary text-xs whitespace-nowrap">
-                          {(emp.xp || 0).toLocaleString()}
                         </TableCell>
                         <TableCell className="py-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">

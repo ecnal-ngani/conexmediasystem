@@ -70,9 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: normalizedEmail,
             role: 'ADMIN',
             status: 'Office',
-            points: 1000,
-            xp: 5000,
-            badges: ['🏆', '🛡️'],
+            badges: ['🛡️'],
             avatarUrl: 'https://picsum.photos/seed/admin-master/200/200'
           };
         } else if (normalizedEmail === 'employee@conex.private') {

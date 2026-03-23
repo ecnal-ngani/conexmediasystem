@@ -49,7 +49,8 @@ export const MOCK_USERS: User[] = [
     role: 'ADMIN',
     preferences: '',
     avatarUrl: 'https://picsum.photos/seed/kyle/200/200',
-    status: 'Office'
+    status: 'Office',
+    badges: ['🛡️']
   },
   {
     id: 'u2',
@@ -59,7 +60,8 @@ export const MOCK_USERS: User[] = [
     role: 'ADMIN',
     preferences: '',
     avatarUrl: 'https://picsum.photos/seed/admin/200/200',
-    status: 'Office'
+    status: 'Office',
+    badges: ['🛡️']
   },
   {
     id: 'u3',
@@ -69,7 +71,9 @@ export const MOCK_USERS: User[] = [
     role: 'BRAND_MANAGER',
     preferences: '',
     avatarUrl: 'https://picsum.photos/seed/marcus/200/200',
-    status: 'WFH'
+    status: 'WFH',
+    xp: 3200,
+    points: 800
   },
   {
     id: 'u4',
@@ -79,7 +83,9 @@ export const MOCK_USERS: User[] = [
     role: 'EDITOR',
     preferences: '',
     avatarUrl: 'https://picsum.photos/seed/emp/200/200',
-    status: 'Office'
+    status: 'Office',
+    xp: 2500,
+    points: 500
   }
 ];
 
