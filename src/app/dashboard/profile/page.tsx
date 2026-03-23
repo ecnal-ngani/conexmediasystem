@@ -36,18 +36,27 @@ export default function ProfilePage() {
   // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [school, setSchool] = useState('');
+  const [course, setCourse] = useState('');
 
   useEffect(() => {
     if (user) {
       setName(user.name);
       setEmail(user.email);
+      setSchool(user.school || '');
+      setCourse(user.course || '');
     }
   }, [user]);
 
   if (!user) return null;
 
   const handleSave = () => {
-    updateUser({ name, email });
+    updateUser({ 
+      name, 
+      email, 
+      school: isIntern ? school : undefined, 
+      course: isIntern ? course : undefined 
+    });
     setIsEditing(false);
     toast({
       title: "Identity Updated",
@@ -193,9 +202,18 @@ export default function ProfilePage() {
                 <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600 shrink-0">
                   <BookOpen className="w-5 h-5" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">School / Institution</p>
-                  <p className="text-sm font-bold text-slate-900">{user.school || 'University of Santo Tomas'}</p>
+                  {isEditing ? (
+                    <Input 
+                      value={school} 
+                      onChange={(e) => setSchool(e.target.value)} 
+                      placeholder="University of Santo Tomas"
+                      className="h-8 text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm font-bold text-slate-900">{user.school || 'University of Santo Tomas'}</p>
+                  )}
                 </div>
               </div>
 
@@ -203,9 +221,18 @@ export default function ProfilePage() {
                 <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600 shrink-0">
                   <Palette className="w-5 h-5" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">Academic Course</p>
-                  <p className="text-sm font-bold text-slate-900">{user.course || 'BS Multimedia Arts'}</p>
+                  {isEditing ? (
+                    <Input 
+                      value={course} 
+                      onChange={(e) => setCourse(e.target.value)} 
+                      placeholder="BS Multimedia Arts"
+                      className="h-8 text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm font-bold text-slate-900">{user.course || 'BS Multimedia Arts'}</p>
+                  )}
                 </div>
               </div>
 
@@ -281,3 +308,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
