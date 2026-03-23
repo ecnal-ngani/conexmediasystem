@@ -55,8 +55,10 @@ import { collection, addDoc, serverTimestamp, query, orderBy, doc, updateDoc } f
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useAuth } from '@/components/auth-context';
 
 export default function ProductionPage() {
+  const { user } = useAuth();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -202,6 +204,8 @@ export default function ProductionPage() {
     });
   };
 
+  const canCreateProjects = user?.role !== 'INTERN';
+
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-10 max-w-[1600px] mx-auto">
       <div className="flex items-center justify-between px-1">
@@ -275,209 +279,211 @@ export default function ProductionPage() {
             </SelectContent>
           </Select>
 
-          <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
-            <DialogTrigger asChild>
-              <Button className="h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs text-white w-full">
-                <Plus className="w-4 h-4 mr-1.5" />
-                New Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-[540px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
-              <ScrollArea className="max-h-[90vh]">
-                <div className="p-6 md:p-8 space-y-6">
-                  <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
-                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
-                      <Plus className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle>
-                      <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the hub.</DialogDescription>
-                    </div>
-                  </DialogHeader>
+          {canCreateProjects && (
+            <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
+              <DialogTrigger asChild>
+                <Button className="h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs text-white w-full">
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  New Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[540px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+                <ScrollArea className="max-h-[90vh]">
+                  <div className="p-6 md:p-8 space-y-6">
+                    <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+                      <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
+                        <Plus className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle>
+                        <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the hub.</DialogDescription>
+                      </div>
+                    </DialogHeader>
 
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <FileText className="w-3 h-3 text-primary" />
+                            File Code
+                          </Label>
+                          <Input 
+                            placeholder="VLM-260120-01" 
+                            value={fileCode}
+                            onChange={(e) => setFileCode(e.target.value)}
+                            className="h-12 border-slate-200 rounded-xl" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <Briefcase className="w-3 h-3 text-primary" />
+                            Brand Name
+                          </Label>
+                          <Input 
+                            placeholder="CJC Eco Bag" 
+                            value={brand}
+                            onChange={(e) => setBrand(e.target.value)}
+                            className="h-12 border-slate-200 rounded-xl" 
+                          />
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <FileText className="w-3 h-3 text-primary" />
-                          File Code
+                          <Lightbulb className="w-3 h-3 text-primary" />
+                          Content Idea
                         </Label>
                         <Input 
-                          placeholder="VLM-260120-01" 
-                          value={fileCode}
-                          onChange={(e) => setFileCode(e.target.value)}
+                          placeholder="Product showcase reel" 
+                          value={contentIdea}
+                          onChange={(e) => setContentIdea(e.target.value)}
                           className="h-12 border-slate-200 rounded-xl" 
-                        />
+                          />
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <Briefcase className="w-3 h-3 text-primary" />
-                          Brand Name
-                        </Label>
-                        <Input 
-                          placeholder="CJC Eco Bag" 
-                          value={brand}
-                          onChange={(e) => setBrand(e.target.value)}
-                          className="h-12 border-slate-200 rounded-xl" 
-                        />
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <CheckCircle2 className="w-3 h-3 text-primary" />
+                            Status
+                          </Label>
+                          <Select value={status} onValueChange={setStatus}>
+                            <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="In Production">In Production</SelectItem>
+                              <SelectItem value="For QA">For QA</SelectItem>
+                              <SelectItem value="Approved">Approved</SelectItem>
+                              <SelectItem value="Client Revision">Client Revision</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <Zap className="w-3 h-3 text-primary" />
+                            Priority
+                          </Label>
+                          <Select value={priority} onValueChange={setPriority}>
+                            <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="REGULAR">REGULAR</SelectItem>
+                              <SelectItem value="RUSH">RUSH</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <User className="w-3 h-3 text-primary" />
+                            Artist
+                          </Label>
+                          <Input 
+                            placeholder="Jhon Lester Nolial" 
+                            value={artist}
+                            onChange={(e) => setArtist(e.target.value)}
+                            className="h-12 border-slate-200 rounded-xl" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <Layers className="w-3 h-3 text-primary" />
+                            Type
+                          </Label>
+                          <Select value={type} onValueChange={setType}>
+                            <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Video">Video</SelectItem>
+                              <SelectItem value="Graphic Design">Graphic Design</SelectItem>
+                              <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
+                              <SelectItem value="Photography">Photography</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <Share2 className="w-3 h-3 text-primary" />
+                            Platform
+                          </Label>
+                          <Select value={platform} onValueChange={setPlatform}>
+                            <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Instagram">Instagram</SelectItem>
+                              <SelectItem value="TikTok">TikTok</SelectItem>
+                              <SelectItem value="Facebook">Facebook</SelectItem>
+                              <SelectItem value="YouTube">YouTube</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <Calendar className="w-3 h-3 text-primary" />
+                            Due Date
+                          </Label>
+                          <Input 
+                            type="date" 
+                            value={dueDate}
+                            onChange={(e) => setDueDate(e.target.value)}
+                            className="h-12 border-slate-200 rounded-xl" 
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <User className="w-3 h-3 text-primary" />
+                            Brand Manager (BM)
+                          </Label>
+                          <Input 
+                            placeholder="Clark" 
+                            value={bm}
+                            onChange={(e) => setBm(e.target.value)}
+                            className="h-12 border-slate-200 rounded-xl" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <LinkIcon className="w-3 h-3 text-primary" />
+                            Canvas Link
+                          </Label>
+                          <Input 
+                            placeholder="https://..." 
+                            value={canvasLink}
+                            onChange={(e) => setCanvasLink(e.target.value)}
+                            className="h-12 border-slate-200 rounded-xl" 
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                        <Lightbulb className="w-3 h-3 text-primary" />
-                        Content Idea
-                      </Label>
-                      <Input 
-                        placeholder="Product showcase reel" 
-                        value={contentIdea}
-                        onChange={(e) => setContentIdea(e.target.value)}
-                        className="h-12 border-slate-200 rounded-xl" 
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <CheckCircle2 className="w-3 h-3 text-primary" />
-                          Status
-                        </Label>
-                        <Select value={status} onValueChange={setStatus}>
-                          <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="In Production">In Production</SelectItem>
-                            <SelectItem value="For QA">For QA</SelectItem>
-                            <SelectItem value="Approved">Approved</SelectItem>
-                            <SelectItem value="Client Revision">Client Revision</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <Zap className="w-3 h-3 text-primary" />
-                          Priority
-                        </Label>
-                        <Select value={priority} onValueChange={setPriority}>
-                          <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="REGULAR">REGULAR</SelectItem>
-                            <SelectItem value="RUSH">RUSH</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <User className="w-3 h-3 text-primary" />
-                          Artist
-                        </Label>
-                        <Input 
-                          placeholder="Jhon Lester Nolial" 
-                          value={artist}
-                          onChange={(e) => setArtist(e.target.value)}
-                          className="h-12 border-slate-200 rounded-xl" 
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <Layers className="w-3 h-3 text-primary" />
-                          Type
-                        </Label>
-                        <Select value={type} onValueChange={setType}>
-                          <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Video">Video</SelectItem>
-                            <SelectItem value="Graphic Design">Graphic Design</SelectItem>
-                            <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
-                            <SelectItem value="Photography">Photography</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <Share2 className="w-3 h-3 text-primary" />
-                          Platform
-                        </Label>
-                        <Select value={platform} onValueChange={setPlatform}>
-                          <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Instagram">Instagram</SelectItem>
-                            <SelectItem value="TikTok">TikTok</SelectItem>
-                            <SelectItem value="Facebook">Facebook</SelectItem>
-                            <SelectItem value="YouTube">YouTube</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <Calendar className="w-3 h-3 text-primary" />
-                          Due Date
-                        </Label>
-                        <Input 
-                          type="date" 
-                          value={dueDate}
-                          onChange={(e) => setDueDate(e.target.value)}
-                          className="h-12 border-slate-200 rounded-xl" 
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <User className="w-3 h-3 text-primary" />
-                          Brand Manager (BM)
-                        </Label>
-                        <Input 
-                          placeholder="Clark" 
-                          value={bm}
-                          onChange={(e) => setBm(e.target.value)}
-                          className="h-12 border-slate-200 rounded-xl" 
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <LinkIcon className="w-3 h-3 text-primary" />
-                          Canvas Link
-                        </Label>
-                        <Input 
-                          placeholder="https://..." 
-                          value={canvasLink}
-                          onChange={(e) => setCanvasLink(e.target.value)}
-                          className="h-12 border-slate-200 rounded-xl" 
-                        />
-                      </div>
+                    <div className="flex gap-3 pt-4">
+                      <DialogClose asChild>
+                        <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
+                      </DialogClose>
+                      <Button 
+                        onClick={handleAddProject}
+                        className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
+                      >
+                        Add to Hub
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <DialogClose asChild>
-                      <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
-                    </DialogClose>
-                    <Button 
-                      onClick={handleAddProject}
-                      className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
-                    >
-                      Add to Hub
-                    </Button>
-                  </div>
-                </div>
-              </ScrollArea>
-            </DialogContent>
-          </Dialog>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 

@@ -148,7 +148,16 @@ export function QuickActions() {
   // Filter actions based on role
   const filteredActions = useMemo(() => {
     return QUICK_ACTIONS.filter(action => {
+      // Admin only filtering
       if (action.adminOnly && user?.role !== 'ADMIN') return false;
+      
+      // Intern restrictions: Cannot create projects, schedules, or tasks
+      if (user?.role === 'INTERN') {
+        if (action.action === 'project' || action.action === 'schedule' || action.action === 'task') {
+          return false;
+        }
+      }
+      
       return true;
     });
   }, [user]);

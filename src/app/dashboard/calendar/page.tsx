@@ -237,122 +237,125 @@ export default function CalendarPage() {
   };
 
   const isAdmin = user?.role === 'ADMIN';
+  const canCreateEvents = user?.role !== 'INTERN';
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
       <div className="flex items-center justify-between px-1">
         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Operations Command</h1>
         
-        <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 font-bold h-10 px-6 rounded-xl shadow-lg shadow-red-100 text-white gap-2">
-              <Plus className="w-4 h-4" />
-              Create New Event
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
-            <ScrollArea className="max-h-[90vh]">
-              <div className="p-6 md:p-8 space-y-6">
-                <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
-                    <CalendarIcon className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Event Schedule</DialogTitle>
-                    <DialogDescription className="text-slate-400 font-medium">Synchronize a new event with the master calendar.</DialogDescription>
-                  </div>
-                </DialogHeader>
-
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Type</Label>
-                      <Select value={eventType} onValueChange={(val: any) => setEventType(val)}>
-                        <SelectTrigger className="h-11 rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Shoot">Shoot</SelectItem>
-                          <SelectItem value="Meeting">Meeting</SelectItem>
-                          <SelectItem value="Deadline">Deadline</SelectItem>
-                        </SelectContent>
-                      </Select>
+        {canCreateEvents && (
+          <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 font-bold h-10 px-6 rounded-xl shadow-lg shadow-red-100 text-white gap-2">
+                <Plus className="w-4 h-4" />
+                Create New Event
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+              <ScrollArea className="max-h-[90vh]">
+                <div className="p-6 md:p-8 space-y-6">
+                  <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
+                      <CalendarIcon className="w-6 h-6 text-white" />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                        <Zap className="w-3 h-3 text-primary" />
-                        Priority
-                      </Label>
-                      <Select value={eventPriority} onValueChange={(val: any) => setEventPriority(val)}>
-                        <SelectTrigger className="h-11 rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="URGENT">URGENT</SelectItem>
-                          <SelectItem value="HIGH">HIGH</SelectItem>
-                          <SelectItem value="NORMAL">NORMAL</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div>
+                      <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Event Schedule</DialogTitle>
+                      <DialogDescription className="text-slate-400 font-medium">Synchronize a new event with the master calendar.</DialogDescription>
                     </div>
-                  </div>
+                  </DialogHeader>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Client / Project Name</Label>
-                    <Input 
-                      placeholder="e.g. CJC Eco Bag" 
-                      value={eventClient} 
-                      onChange={(e) => setEventClient(e.target.value)}
-                      className="h-11 rounded-xl"
-                    />
-                  </div>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Type</Label>
+                        <Select value={eventType} onValueChange={(val: any) => setEventType(val)}>
+                          <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Shoot">Shoot</SelectItem>
+                            <SelectItem value="Meeting">Meeting</SelectItem>
+                            <SelectItem value="Deadline">Deadline</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                          <Zap className="w-3 h-3 text-primary" />
+                          Priority
+                        </Label>
+                        <Select value={eventPriority} onValueChange={(val: any) => setEventPriority(val)}>
+                          <SelectTrigger className="h-11 rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="URGENT">URGENT</SelectItem>
+                            <SelectItem value="HIGH">HIGH</SelectItem>
+                            <SelectItem value="NORMAL">NORMAL</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Date</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Client / Project Name</Label>
                       <Input 
-                        type="date" 
-                        value={eventDate} 
-                        onChange={(e) => setEventDate(e.target.value)}
+                        placeholder="e.g. CJC Eco Bag" 
+                        value={eventClient} 
+                        onChange={(e) => setEventClient(e.target.value)}
                         className="h-11 rounded-xl"
                       />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Date</Label>
+                        <Input 
+                          type="date" 
+                          value={eventDate} 
+                          onChange={(e) => setEventDate(e.target.value)}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</Label>
+                        <Input 
+                          placeholder="Studio A / Site" 
+                          value={eventLocation} 
+                          onChange={(e) => setEventLocation(e.target.value)}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Operational Notes</Label>
                       <Input 
-                        placeholder="Studio A / Site" 
-                        value={eventLocation} 
-                        onChange={(e) => setEventLocation(e.target.value)}
+                        placeholder="Special instructions or gear required..." 
+                        value={eventNotes} 
+                        onChange={(e) => setEventNotes(e.target.value)}
                         className="h-11 rounded-xl"
                       />
                     </div>
-                  </div>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Operational Notes</Label>
-                    <Input 
-                      placeholder="Special instructions or gear required..." 
-                      value={eventNotes} 
-                      onChange={(e) => setEventNotes(e.target.value)}
-                      className="h-11 rounded-xl"
-                    />
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <DialogClose asChild>
-                      <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
-                    </DialogClose>
-                    <Button 
-                      onClick={handleCreateEvent}
-                      className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
-                    >
-                      Deploy to Calendar
-                    </Button>
+                    <div className="flex gap-3 pt-4">
+                      <DialogClose asChild>
+                        <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
+                      </DialogClose>
+                      <Button 
+                        onClick={handleCreateEvent}
+                        className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
+                      >
+                        Deploy to Calendar
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </ScrollArea>
-          </DialogContent>
-        </Dialog>
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
