@@ -26,6 +26,14 @@ import {
   Award,
   Calendar
 } from 'lucide-react';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { useMemo } from 'react';
@@ -153,7 +161,6 @@ export default function DashboardPage() {
         <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
           <CardContent className="p-12 flex flex-col items-center justify-center text-center space-y-6">
             <div className="relative w-48 h-48 flex items-center justify-center">
-              {/* SVG Background Circle */}
               <svg className="w-full h-full transform -rotate-90">
                 <circle
                   cx="96"
@@ -164,7 +171,6 @@ export default function DashboardPage() {
                   fill="transparent"
                   className="text-slate-100"
                 />
-                {/* SVG Progress Circle */}
                 <circle
                   cx="96"
                   cy="96"
@@ -211,6 +217,57 @@ export default function DashboardPage() {
           ))}
         </div>
 
+        {/* Recent Tasks Table */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-slate-900 px-1">Recent Tasks</h3>
+          <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
+             <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-0">
+                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-6">Task</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Hours</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Status</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pr-6">Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[
+                    { task: 'Social media graphics', hours: '3h', status: 'Completed', date: 'Today' },
+                    { task: 'Video thumbnail design', hours: '2h', status: 'Completed', date: 'Yesterday' },
+                    { task: 'Content calendar update', hours: '1.5h', status: 'Completed', date: 'Yesterday' },
+                    { task: 'Brand asset organization', hours: '2.5h', status: 'In Progress', date: 'Today' },
+                  ].map((t, idx) => (
+                    <TableRow key={idx} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                      <TableCell className="py-4 pl-6 font-bold text-slate-900">{t.task}</TableCell>
+                      <TableCell className="py-4 text-slate-500 text-sm font-medium">{t.hours}</TableCell>
+                      <TableCell className="py-4">
+                        <Badge className={cn(
+                          "text-[9px] font-bold px-2 py-0.5 border-none",
+                          t.status === 'Completed' ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"
+                        )}>
+                          {t.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-4 pr-6 text-slate-400 text-xs font-medium">{t.date}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+             </Table>
+          </Card>
+        </div>
+
+        {/* Action Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="border shadow-none rounded-xl bg-white p-6 hover:border-primary/20 transition-all cursor-pointer group">
+            <h4 className="font-bold text-slate-900 mb-1 group-hover:text-primary transition-colors">Request Day Off</h4>
+            <p className="text-xs text-slate-400 font-medium">Submit a leave request</p>
+          </Card>
+          <Card className="border shadow-none rounded-xl bg-white p-6 hover:border-primary/20 transition-all cursor-pointer group">
+            <h4 className="font-bold text-slate-900 mb-1 group-hover:text-primary transition-colors">View Certificate Progress</h4>
+            <p className="text-xs text-slate-400 font-medium">Check completion requirements</p>
+          </Card>
+        </div>
+
         {/* Internship Details Section */}
         <div className="space-y-4">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Internship Details</h3>
@@ -220,21 +277,21 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">School</p>
-                    <p className="text-sm font-bold text-slate-900">University of Santo Tomas</p>
+                    <p className="text-sm font-bold text-slate-900">{user.school || 'University of Santo Tomas'}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Start Date</p>
-                    <p className="text-sm font-bold text-slate-900">November 1, 2025</p>
+                    <p className="text-sm font-bold text-slate-900">{user.startDate || 'November 1, 2025'}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Course</p>
-                    <p className="text-sm font-bold text-slate-900">BS Multimedia Arts</p>
+                    <p className="text-sm font-bold text-slate-900">{user.course || 'BS Multimedia Arts'}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Expected Completion</p>
-                    <p className="text-sm font-bold text-slate-900">March 15, 2026</p>
+                    <p className="text-sm font-bold text-slate-900">{user.expectedCompletionDate || 'March 15, 2026'}</p>
                   </div>
                 </div>
               </div>
@@ -247,13 +304,11 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto pb-10">
-      {/* Page Header */}
       <div className="flex items-center gap-2 px-1">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">{roleConfig.title}</h1>
         <ChevronRight className="w-4 h-4 text-primary" />
       </div>
 
-      {/* Welcome Hero */}
       <Card className="border shadow-sm rounded-none bg-orange-50/30 overflow-hidden">
         <CardContent className="p-8">
           <h2 className="text-2xl font-bold text-slate-900 mb-1">Welcome back, {user?.name || 'Authorized User'}</h2>
@@ -261,7 +316,6 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* KPI Grid */}
       <div className="space-y-4">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Metrics</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -285,7 +339,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        {/* Main Chart Section */}
         <div className="xl:col-span-3 space-y-4">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mission Performance Trend</h3>
           <Card className="border shadow-none rounded-none bg-white p-6">
@@ -338,7 +391,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Employee Status Sidebar */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
