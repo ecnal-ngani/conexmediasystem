@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -81,7 +80,6 @@ export default function ProductionPage() {
   const [dueDate, setDueDate] = useState('');
   const [bm, setBm] = useState('');
   const [canvasLink, setCanvasLink] = useState('');
-  const [progress, setProgress] = useState(0);
 
   // Real-time listener for projects
   const projectsQuery = useMemoFirebase(() => {
@@ -522,10 +520,10 @@ export default function ProductionPage() {
                       variant="ghost" 
                       size="sm" 
                       onClick={() => setSelectedProject(item)}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 text-[10px] px-2 font-bold group"
+                      className="text-primary hover:text-primary/80 hover:bg-primary/5 h-7 text-[10px] px-2 font-bold group"
                     >
-                      <ExternalLink className="w-3 h-3 mr-1 transition-transform group-hover:scale-110" />
-                      Brief
+                      <LinkIcon className="w-3 h-3 mr-1 transition-transform group-hover:scale-110" />
+                      Link
                     </Button>
                   </TableCell>
                   <TableCell className="font-mono text-[10px] font-bold text-slate-500 py-4 whitespace-nowrap">{item.fileCode}</TableCell>
@@ -582,7 +580,7 @@ export default function ProductionPage() {
               <DialogHeader>
                 <div className="flex items-center gap-4 mb-4">
                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-100">
-                    <Layers className="w-6 h-6 text-white" />
+                    <LinkIcon className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <DialogTitle className="text-2xl font-black">{selectedProject.brand}</DialogTitle>
@@ -616,11 +614,22 @@ export default function ProductionPage() {
                     <p className="font-bold">{selectedProject.artist}</p>
                   </div>
                 </div>
+
+                {selectedProject.canvasLink && (
+                  <div className="pt-4">
+                    <Button variant="outline" className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/5" asChild>
+                      <a href={selectedProject.canvasLink} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="w-4 h-4" />
+                        Open Asset Link
+                      </a>
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4">
                 <Button onClick={() => setSelectedProject(null)} className="w-full h-12 rounded-xl font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-100">
-                  Close Briefing
+                  Close Link Details
                 </Button>
               </div>
             </div>
@@ -630,4 +639,3 @@ export default function ProductionPage() {
     </div>
   );
 }
-
