@@ -63,6 +63,7 @@ import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '@/components/auth-context';
 
 const QUICK_ACTIONS = [
   {
@@ -111,12 +112,14 @@ const QUICK_ACTIONS = [
     icon: Users,
     color: 'text-orange-600',
     bg: 'bg-orange-50',
-    href: '/dashboard/admin'
+    href: '/dashboard/admin',
+    adminOnly: true
   }
 ];
 
 export function QuickActions() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isTaskOpen, setIsTaskOpen] = useState(false);
@@ -141,6 +144,14 @@ export function QuickActions() {
   const { data: recentSchedules } = useCollection<any>(schedulesQuery);
   const { data: recentTasks } = useCollection<any>(tasksQuery);
   const { data: recentProjects } = useCollection<any>(projectsQuery);
+
+  // Filter actions based on role
+  const filteredActions = useMemo(() => {
+    return QUICK_ACTIONS.filter(action => {
+      if (action.adminOnly && user?.role !== 'ADMIN') return false;
+      return true;
+    });
+  }, [user]);
 
   // Combine and format notifications
   const notifications = useMemo(() => {
@@ -406,7 +417,7 @@ export function QuickActions() {
                 </div>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4">
-                {QUICK_ACTIONS.map((action, i) => (
+                {filteredActions.map((action, i) => (
                   <button 
                     key={i} 
                     onClick={() => {
