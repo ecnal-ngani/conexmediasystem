@@ -255,7 +255,7 @@ export function QuickActions() {
     addDoc(ref, data).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data }));
     });
-    toast({ title: "Project Initialized", description: `${fileCode} added to Production Matrix.` });
+    toast({ title: "Project Initialized", description: `${fileCode} added to Production Hub.` });
     setIsProjectOpen(false);
     setFileCode(''); setBrand('');
   };
@@ -444,7 +444,7 @@ export function QuickActions() {
                 </div>
                 <div>
                   <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Production Project</DialogTitle>
-                  <DialogDescription className="text-slate-400 font-medium">Initialize a new creative asset in the matrix.</DialogDescription>
+                  <DialogDescription className="text-slate-400 font-medium">Initialize a new creative asset in the hub.</DialogDescription>
                 </div>
               </DialogHeader>
               <div className="space-y-4">
@@ -475,7 +475,7 @@ export function QuickActions() {
                     <Input type="date" value={projectDueDate} onChange={(e) => setProjectDueDate(e.target.value)} />
                   </div>
                 </div>
-                <Button onClick={handleCreateProject} className="w-full h-12 bg-blue-600 hover:bg-blue-700 font-bold rounded-xl mt-4 text-white">Add to Matrix</Button>
+                <Button onClick={handleCreateProject} className="w-full h-12 bg-blue-600 hover:bg-blue-700 font-bold rounded-xl mt-4 text-white">Add to Hub</Button>
               </div>
             </div>
           </ScrollArea>

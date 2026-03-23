@@ -114,7 +114,7 @@ export const PRODUCTION_DATA: ProductionItem[] = [
     contentIdea: 'Product showcase reel',
     status: 'In Production',
     priority: 'RUSH',
-    artist: 'Jhon Lester Nolial',
+    artist: 'Artist',
     type: 'Video',
     platform: 'Instagram',
     dueDate: 'Feb 5',

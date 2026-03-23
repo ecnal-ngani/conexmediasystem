@@ -1,4 +1,4 @@
-# **App Name**: CONEX Gateway
+# **App Name**: CONEX Media
 
 ## Core Features:
 

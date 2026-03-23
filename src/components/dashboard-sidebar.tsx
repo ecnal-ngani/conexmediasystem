@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { title: 'Home', url: '/dashboard', icon: Home },
-  { title: 'Production', url: '/dashboard/production', icon: Layers },
+  { title: 'Production Hub', url: '/dashboard/production', icon: Layers },
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
   { title: 'Admin & HR', url: '/dashboard/admin', icon: Users, adminOnly: true },
 ];

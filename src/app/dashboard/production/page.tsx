@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -179,7 +178,7 @@ export default function ProductionPage() {
 
     toast({
       title: "Project Initialized",
-      description: `${fileCode} has been added to the Production Matrix.`
+      description: `${fileCode} has been added to the Production Hub.`
     });
     
     setIsAddProjectOpen(false);
@@ -223,7 +222,7 @@ export default function ProductionPage() {
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-10 max-w-[1600px] mx-auto">
       <div className="flex items-center justify-between px-1">
-        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Production Matrix</h1>
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Production Hub</h1>
         <div className="flex items-center gap-2">
            {(statusFilter !== 'all' || priorityFilter !== 'all' || typeFilter !== 'all' || searchQuery !== '') && (
              <Button variant="ghost" onClick={resetFilters} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary">
@@ -233,7 +232,7 @@ export default function ProductionPage() {
            )}
            <Button variant="outline" className="hidden sm:flex h-10 border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm text-xs font-bold">
             <Download className="w-4 h-4 mr-1.5" />
-            Export Matrix
+            Export Hub
           </Button>
         </div>
       </div>
@@ -313,7 +312,7 @@ export default function ProductionPage() {
                     </div>
                     <div>
                       <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle>
-                      <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the matrix.</DialogDescription>
+                      <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the hub.</DialogDescription>
                     </div>
                   </DialogHeader>
 
@@ -493,7 +492,7 @@ export default function ProductionPage() {
                       onClick={handleAddProject}
                       className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
                     >
-                      Add to Matrix
+                      Add to Hub
                     </Button>
                   </div>
                 </div>
