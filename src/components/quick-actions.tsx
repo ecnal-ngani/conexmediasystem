@@ -25,7 +25,8 @@ import {
   Home,
   User,
   Info,
-  CheckCheck
+  CheckCheck,
+  Timer
 } from 'lucide-react';
 import {
   Dialog,
@@ -232,6 +233,7 @@ export function QuickActions() {
   const [taskCategory, setTaskCategory] = useState('Operations');
   const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [taskDueDate, setTaskDueDate] = useState('');
+  const [taskHours, setTaskHours] = useState('');
 
   // Project Form State
   const [fileCode, setFileCode] = useState('');
@@ -259,13 +261,22 @@ export function QuickActions() {
   const handleCreateTask = () => {
     if (!firestore || !taskTitle || !taskDueDate) return;
     const ref = collection(firestore, 'tasks');
-    const data = { title: taskTitle, category: taskCategory, priority: taskPriority, dueDate: taskDueDate, status: 'pending', createdAt: serverTimestamp() };
+    const data = { 
+      title: taskTitle, 
+      category: taskCategory, 
+      priority: taskPriority, 
+      dueDate: taskDueDate, 
+      hours: taskHours || '0h',
+      status: 'pending', 
+      createdAt: serverTimestamp() 
+    };
     addDoc(ref, data).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data }));
     });
     toast({ title: "Task Assigned", description: `"${taskTitle}" added to company list.` });
     setIsTaskOpen(false);
     setTaskTitle('');
+    setTaskHours('');
   };
 
   const handleCreateProject = () => {
@@ -532,6 +543,13 @@ export function QuickActions() {
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Due Date</Label>
                   <Input type="date" value={taskDueDate} onChange={(e) => setTaskDueDate(e.target.value)} />
                 </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                  <Timer className="w-3 h-3 text-primary" />
+                  Estimated Hours
+                </Label>
+                <Input placeholder="e.g. 3h" value={taskHours} onChange={(e) => setTaskHours(e.target.value)} />
               </div>
               <Button onClick={handleCreateTask} className="w-full h-12 bg-green-600 hover:bg-green-700 font-bold rounded-xl mt-4 text-white">Deploy Task</Button>
             </div>

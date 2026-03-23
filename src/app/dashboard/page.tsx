@@ -35,7 +35,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { 
@@ -50,6 +50,7 @@ import {
 } from 'recharts';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { EMPLOYEES } from '@/lib/mock-data';
+import { format } from 'date-fns';
 
 const performanceData = [
   { name: 'Jan', efficiency: 82, projects: 45 },
@@ -74,8 +75,14 @@ export default function DashboardPage() {
     return query(collection(firestore, 'projects'));
   }, [firestore]);
 
+  const tasksQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(10));
+  }, [firestore]);
+
   const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
   const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
+  const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
 
   const roleConfig = useMemo(() => {
     const role = user?.role || 'EDITOR';
@@ -231,26 +238,42 @@ export default function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[
-                    { task: 'Social media graphics', hours: '3h', status: 'Completed', date: 'Today' },
-                    { task: 'Video thumbnail design', hours: '2h', status: 'Completed', date: 'Yesterday' },
-                    { task: 'Content calendar update', hours: '1.5h', status: 'Completed', date: 'Yesterday' },
-                    { task: 'Brand asset organization', hours: '2.5h', status: 'In Progress', date: 'Today' },
-                  ].map((t, idx) => (
-                    <TableRow key={idx} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
-                      <TableCell className="py-4 pl-6 font-bold text-slate-900">{t.task}</TableCell>
-                      <TableCell className="py-4 text-slate-500 text-sm font-medium">{t.hours}</TableCell>
-                      <TableCell className="py-4">
-                        <Badge className={cn(
-                          "text-[9px] font-bold px-2 py-0.5 border-none",
-                          t.status === 'Completed' ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"
-                        )}>
-                          {t.status}
-                        </Badge>
+                  {tLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-40 text-center">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                       </TableCell>
-                      <TableCell className="py-4 pr-6 text-slate-400 text-xs font-medium">{t.date}</TableCell>
                     </TableRow>
-                  ))}
+                  ) : tasks?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-40 text-center text-slate-400 font-medium">
+                        No orders assigned yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    tasks?.map((t: any, idx: number) => (
+                      <TableRow key={t.id || idx} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                        <TableCell className="py-4 pl-6">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-900">{t.title}</span>
+                            <span className="text-[9px] uppercase font-black text-slate-400 tracking-widest">{t.category}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4 text-slate-500 text-sm font-medium">{t.hours || '0h'}</TableCell>
+                        <TableCell className="py-4">
+                          <Badge className={cn(
+                            "text-[9px] font-bold px-2 py-0.5 border-none",
+                            t.status === 'completed' || t.status === 'Approved' ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"
+                          )}>
+                            {t.status?.toUpperCase() || 'PENDING'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-4 pr-6 text-slate-400 text-xs font-medium">
+                          {t.createdAt?.toDate ? format(t.createdAt.toDate(), 'MMM d') : 'Recent'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
              </Table>
           </Card>
@@ -280,7 +303,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-bold text-slate-900">{user.school || 'University of Santo Tomas'}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Start Date</p>
+                    <p className="text-[10px) font-black uppercase tracking-widest text-slate-400">Start Date</p>
                     <p className="text-sm font-bold text-slate-900">{user.startDate || 'November 1, 2025'}</p>
                   </div>
                 </div>
