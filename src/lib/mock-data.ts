@@ -13,6 +13,10 @@ export interface User {
   xp?: number;
   points?: number;
   badges?: string[];
+  school?: string;
+  course?: string;
+  startDate?: string;
+  expectedCompletionDate?: string;
 }
 
 export interface ContentItem {

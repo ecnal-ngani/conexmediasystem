@@ -44,6 +44,22 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "school": {
+          "type": "string",
+          "description": "Academic institution for interns."
+        },
+        "course": {
+          "type": "string",
+          "description": "Degree or course of study."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Internship start date."
+        },
+        "expectedCompletionDate": {
+          "type": "string",
+          "description": "Projected end date for the internship."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time"

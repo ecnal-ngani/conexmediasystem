@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,7 +17,10 @@ import {
   Dumbbell,
   Edit2,
   Save,
-  X
+  X,
+  GraduationCap,
+  BookOpen,
+  CalendarDays
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -50,6 +54,8 @@ export default function ProfilePage() {
       description: "Your system profile has been successfully re-synchronized.",
     });
   };
+
+  const isIntern = user.role === 'INTERN';
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10">
@@ -174,6 +180,59 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
+      {/* Intern-Specific Academic Records Card */}
+      {isIntern && (
+        <Card className="border shadow-none rounded-xl bg-white overflow-hidden animate-in slide-in-from-bottom-2 duration-500">
+          <CardHeader className="py-4 border-b bg-slate-50/50 flex flex-row items-center gap-2">
+            <GraduationCap className="w-5 h-5 text-primary" />
+            <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-900">Internship Academic Records</CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
+              <div className="flex items-start gap-4">
+                <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600 shrink-0">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">School / Institution</p>
+                  <p className="text-sm font-bold text-slate-900">{user.school || 'University of Santo Tomas'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600 shrink-0">
+                  <Palette className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">Academic Course</p>
+                  <p className="text-sm font-bold text-slate-900">{user.course || 'BS Multimedia Arts'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2.5 bg-orange-50 rounded-xl text-orange-600 shrink-0">
+                  <CalendarDays className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">Program Start Date</p>
+                  <p className="text-sm font-bold text-slate-900">{user.startDate || 'November 1, 2025'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2.5 bg-green-50 rounded-xl text-green-600 shrink-0">
+                  <CalendarDays className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-0.5">Expected Completion</p>
+                  <p className="text-sm font-bold text-slate-900">{user.expectedCompletionDate || 'March 15, 2026'}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Security Clearance Status Card */}
       <Card className="border shadow-none rounded-xl bg-white">
         <CardHeader className="py-4 border-b">
@@ -187,7 +246,7 @@ export default function ProfilePage() {
             </Badge>
             <div className="h-8 w-px bg-slate-100 hidden sm:block" />
             <p className="text-xs text-slate-500 font-medium">
-              Last synchronized: {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+              Last synchronized: {new Date().toLocaleDateString()}
             </p>
           </div>
           <Badge variant="outline" className="border-slate-200 text-slate-600 font-bold px-3 py-1">

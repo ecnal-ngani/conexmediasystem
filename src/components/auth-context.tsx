@@ -95,7 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             points: 100,
             xp: 500,
             badges: [],
-            avatarUrl: 'https://picsum.photos/seed/intern-user/200/200'
+            avatarUrl: 'https://picsum.photos/seed/intern-user/200/200',
+            school: 'University of Santo Tomas',
+            course: 'BS Multimedia Arts',
+            startDate: '2025-11-01',
+            expectedCompletionDate: '2026-03-15'
           };
         }
 
@@ -165,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, isWfh, isVerified, setVerified, updateUser }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, iWfh: isWfh, iVerified: isVerified, setVerified, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
