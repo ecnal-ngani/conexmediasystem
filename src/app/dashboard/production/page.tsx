@@ -204,7 +204,8 @@ export default function ProductionPage() {
     });
   };
 
-  const canCreateProjects = user?.role !== 'INTERN';
+  const isIntern = user?.role === 'INTERN';
+  const canCreateProjects = !isIntern;
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-10 max-w-[1600px] mx-auto">
@@ -614,20 +615,28 @@ export default function ProductionPage() {
                 {/* Link Configuration */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Asset Link (Canvas/Reel)</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      placeholder="https://link-to-asset.com" 
-                      value={editingLink}
-                      onChange={(e) => setEditingLink(e.target.value)}
-                      className="h-10 rounded-xl bg-slate-50 border-slate-200"
-                    />
-                    <Button 
-                      onClick={handleUpdateLink}
-                      className="bg-primary hover:bg-primary/90 text-white font-bold h-10 px-3 shrink-0 rounded-xl"
-                    >
-                      <Save className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  
+                  {!isIntern ? (
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="https://link-to-asset.com" 
+                        value={editingLink}
+                        onChange={(e) => setEditingLink(e.target.value)}
+                        className="h-10 rounded-xl bg-slate-50 border-slate-200"
+                      />
+                      <Button 
+                        onClick={handleUpdateLink}
+                        className="bg-primary hover:bg-primary/90 text-white font-bold h-10 px-3 shrink-0 rounded-xl"
+                      >
+                        <Save className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-mono break-all text-slate-600">
+                      {selectedProject.canvasLink || 'No link synchronized.'}
+                    </div>
+                  )}
+
                   {selectedProject.canvasLink && (
                     <Button variant="outline" className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/5 h-10 rounded-xl" asChild>
                       <a href={selectedProject.canvasLink} target="_blank" rel="noopener noreferrer">
