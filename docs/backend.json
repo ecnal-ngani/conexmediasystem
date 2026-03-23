@@ -40,9 +40,6 @@
         "xp": {
           "type": "number"
         },
-        "salary": {
-          "type": "string"
-        },
         "badges": {
           "type": "array",
           "items": { "type": "string" }

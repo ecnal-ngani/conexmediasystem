@@ -12,7 +12,6 @@ export interface User {
   status: 'Office' | 'WFH' | 'Offline';
   xp?: number;
   points?: number;
-  salary?: string;
   badges?: string[];
 }
 

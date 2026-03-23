@@ -14,10 +14,8 @@ import {
   Zap,
   Users,
   CheckCircle2,
-  Wallet,
   Loader2,
   ShieldCheck,
-  History,
   Camera,
   Calendar
 } from 'lucide-react';
@@ -117,7 +115,6 @@ export default function AdminPage() {
       status: 'Offline',
       points: 0,
       xp: 0,
-      salary: '₱0',
       badges: [],
       createdAt: serverTimestamp(),
       avatarUrl: `https://picsum.photos/seed/${generatedId}/200/200`
@@ -266,20 +263,19 @@ export default function AdminPage() {
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Role</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">Status</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">XP</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Salary</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Badges</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-40 text-center">
+                      <TableCell colSpan={6} className="h-40 text-center">
                         <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                       </TableCell>
                     </TableRow>
                   ) : filteredStaff.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-40 text-center text-slate-400 font-medium">
+                      <TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium">
                         No personnel matches the current query.
                       </TableCell>
                     </TableRow>
@@ -307,9 +303,6 @@ export default function AdminPage() {
                         </TableCell>
                         <TableCell className="py-4 text-center font-bold text-primary text-xs whitespace-nowrap">
                           {(emp.xp || 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="py-4 text-xs font-medium text-slate-700 whitespace-nowrap">
-                          {emp.salary || '₱0'}
                         </TableCell>
                         <TableCell className="py-4 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">

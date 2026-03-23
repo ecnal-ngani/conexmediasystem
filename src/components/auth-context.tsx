@@ -72,7 +72,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             status: 'Office',
             points: 1000,
             xp: 5000,
-            salary: '₱150,000',
             badges: ['🏆', '🛡️'],
             avatarUrl: 'https://picsum.photos/seed/admin-master/200/200'
           };
@@ -85,7 +84,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             status: 'Office',
             points: 500,
             xp: 2500,
-            salary: '₱45,000',
             badges: ['⚡'],
             avatarUrl: 'https://picsum.photos/seed/employee-lead/200/200'
           };
@@ -98,7 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             status: 'Office',
             points: 100,
             xp: 500,
-            salary: '₱15,000',
             badges: [],
             avatarUrl: 'https://picsum.photos/seed/intern-user/200/200'
           };
