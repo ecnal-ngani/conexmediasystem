@@ -29,6 +29,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /verifications/{logId} {
+      allow read, write: if true;
+    }
+
     match /roles/{roleId} {
       allow read: if true;
       allow write: if false;
