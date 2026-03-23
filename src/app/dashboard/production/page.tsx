@@ -19,7 +19,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
 import { 
   ExternalLink, 
   Download, 
@@ -163,7 +162,6 @@ export default function ProductionPage() {
       dueDate,
       bm,
       canvasLink,
-      progress: 0,
       createdAt: serverTimestamp()
     };
 
@@ -184,20 +182,6 @@ export default function ProductionPage() {
     setIsAddProjectOpen(false);
     // Reset form
     setFileCode(''); setBrand(''); setContentIdea(''); setArtist(''); setDueDate(''); setCanvasLink('');
-  };
-
-  const handleUpdateProgress = (val: number[]) => {
-    if (!firestore || !selectedProject) return;
-    const projectRef = doc(firestore, 'projects', selectedProject.id);
-    const newProgress = val[0];
-    
-    updateDoc(projectRef, { progress: newProgress }).catch(async (err) => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: projectRef.path,
-        operation: 'update',
-        requestResourceData: { progress: newProgress }
-      }));
-    });
   };
 
   const handleUpdateLink = () => {
@@ -516,19 +500,18 @@ export default function ProductionPage() {
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Type</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Artist</TableHead>
                 <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Due Date</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap text-center">Progress</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center">
+                  <TableCell colSpan={8} className="h-32 text-center">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
               ) : filteredProjects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-40 text-center">
+                  <TableCell colSpan={8} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <Filter className="w-8 h-8 text-slate-200" />
                       <p className="text-sm font-medium text-slate-400">No production items match your intelligence query.</p>
@@ -603,9 +586,6 @@ export default function ProductionPage() {
                       <span className="text-[8px] text-slate-400 uppercase font-black">{item.platform}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4 text-center whitespace-nowrap font-bold text-[10px] text-primary">
-                    {item.progress || 0}%
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -630,21 +610,6 @@ export default function ProductionPage() {
               </DialogHeader>
 
               <div className="space-y-6 pt-4 border-t">
-                {/* Progress Update */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Update Progress</Label>
-                    <span className="text-lg font-black text-primary">{selectedProject.progress || 0}%</span>
-                  </div>
-                  <Slider 
-                    defaultValue={[selectedProject.progress || 0]} 
-                    max={100} 
-                    step={1} 
-                    onValueCommit={handleUpdateProgress}
-                    className="py-4"
-                  />
-                </div>
-
                 {/* Link Configuration */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Asset Link (Canvas/Reel)</Label>
