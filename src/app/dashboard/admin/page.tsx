@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -17,7 +16,10 @@ import {
   Loader2,
   ShieldCheck,
   Camera,
-  Calendar
+  Calendar,
+  Trash2,
+  UserMinus,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   Table, 
@@ -36,6 +38,17 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -46,7 +59,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
@@ -136,6 +149,25 @@ export default function AdminPage() {
     setIsGenerateOpen(false);
     setNewUserName('');
     setNewUserEmail('');
+  };
+
+  const handleDeleteUser = (userId: string, userName: string) => {
+    if (!firestore) return;
+    const userRef = doc(firestore, 'users', userId);
+    
+    deleteDoc(userRef)
+      .then(() => {
+        toast({
+          title: "Personnel Terminated",
+          description: `${userName} has been removed from the secure database.`,
+        });
+      })
+      .catch(async (e) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: userRef.path,
+          operation: 'delete'
+        }));
+      });
   };
 
   const matrixStats = useMemo(() => {
@@ -262,18 +294,19 @@ export default function AdminPage() {
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Role</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-center">Status</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap">Badges</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 whitespace-nowrap text-right pr-6">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-40 text-center">
+                      <TableCell colSpan={6} className="h-40 text-center">
                         <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                       </TableCell>
                     </TableRow>
                   ) : filteredStaff.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-40 text-center text-slate-400 font-medium">
+                      <TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium">
                         No personnel matches the current query.
                       </TableCell>
                     </TableRow>
@@ -307,6 +340,36 @@ export default function AdminPage() {
                               </div>
                             ))}
                           </div>
+                        </TableCell>
+                        <TableCell className="py-4 text-right pr-6 whitespace-nowrap">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50">
+                                <UserMinus className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
+                              <AlertDialogHeader>
+                                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4 text-red-600">
+                                  <AlertTriangle className="w-6 h-6" />
+                                </div>
+                                <AlertDialogTitle className="text-xl font-black text-slate-900">Terminate Personnel?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-slate-500">
+                                  You are about to remove <strong>{emp.name}</strong> ({emp.systemId}) from the CONEX MEDIA secure database. 
+                                  This action will immediately revoke all network privileges and cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="gap-2 sm:gap-0">
+                                <AlertDialogCancel className="rounded-xl h-11 border-slate-200">Cancel Protocol</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteUser(emp.id, emp.name)}
+                                  className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl h-11"
+                                >
+                                  Confirm Termination
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))
