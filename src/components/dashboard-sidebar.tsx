@@ -34,7 +34,7 @@ const navItems = [
   { title: 'Home', url: '/dashboard', icon: Home },
   { title: 'Production', url: '/dashboard/production', icon: Layers },
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
-  { title: 'Admin & HR', url: '/dashboard/admin', icon: Users },
+  { title: 'Admin & HR', url: '/dashboard/admin', icon: Users, adminOnly: true },
 ];
 
 const ConexLogo = ({ isCollapsed }: { isCollapsed: boolean }) => (
@@ -63,6 +63,12 @@ export function DashboardSidebar() {
   const isCollapsed = state === 'collapsed';
 
   if (!user) return null;
+
+  // Filter navigation items based on user role
+  const filteredNavItems = navItems.filter(item => {
+    if (item.adminOnly && user.role !== 'ADMIN') return false;
+    return true;
+  });
 
   return (
     <Sidebar collapsible="icon" className="border-r bg-white transition-all duration-300 ease-in-out">
@@ -139,7 +145,7 @@ export function DashboardSidebar() {
           </SidebarMenu>
 
           <SidebarMenu>
-            {navItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton 
                   asChild 
