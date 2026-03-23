@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -9,11 +10,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Camera, Loader2, ShieldCheck, ShieldAlert, RefreshCw, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { verifyFace } from '@/ai/flows/face-verification-flow';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function VerifyPage() {
   const { user, isWfh, setVerified, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
   const videoRef = useRef<HTMLVideoElement>(null);
   
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -59,7 +65,7 @@ export default function VerifyPage() {
   }, [user, isWfh, authLoading, router, toast]);
 
   const handleCapture = async () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !user || !firestore) return;
 
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
@@ -67,13 +73,34 @@ export default function VerifyPage() {
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(videoRef.current, 0, 0);
-      const dataUri = canvas.toDataURL('image/jpeg');
+      const dataUri = canvas.toDataURL('image/jpeg', 0.8);
       setCapturedImage(dataUri);
       
       setIsVerifying(true);
       try {
         const result = await verifyFace({ photoDataUri: dataUri });
+        
         if (result.isVerified) {
+          // LOG THE SUCCESSFUL VERIFICATION
+          const verificationsRef = collection(firestore, 'verifications');
+          const verificationData = {
+            userId: user.id,
+            userName: user.name,
+            userSystemId: user.systemId,
+            photoUrl: dataUri,
+            timestamp: serverTimestamp(),
+            isVerified: true,
+            confidence: result.confidence
+          };
+
+          addDoc(verificationsRef, verificationData).catch(async (err) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: verificationsRef.path,
+              operation: 'create',
+              requestResourceData: verificationData
+            }));
+          });
+
           toast({
             title: "Identity Verified",
             description: result.message,

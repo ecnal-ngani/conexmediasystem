@@ -63,23 +63,21 @@
         "systemId"
       ]
     },
-    "Role": {
+    "VerificationLog": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Role",
+      "title": "VerificationLog",
       "type": "object",
-      "description": "Defines a role within the system.",
+      "description": "Stores biometric verification attempts for WFH compliance.",
       "properties": {
-        "id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        }
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userSystemId": { "type": "string" },
+        "photoUrl": { "type": "string", "description": "Base64 data URI of the captured photo." },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "isVerified": { "type": "boolean" }
       },
-      "required": ["id", "name"]
+      "required": ["userId", "photoUrl", "timestamp"]
     }
   },
   "auth": {
@@ -97,13 +95,17 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores individual user profiles. Document ID is either the Firebase UID or an auto-generated ID for mock-auth.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            }
-          ]
+          "description": "Stores individual user profiles."
+        }
+      },
+      {
+        "path": "/verifications/{logId}",
+        "definition": {
+          "entityName": "VerificationLog",
+          "schema": {
+            "$ref": "#/backend/entities/VerificationLog"
+          },
+          "description": "Stores all biometric check-in attempts."
         }
       }
     ]
