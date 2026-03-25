@@ -15,7 +15,6 @@ import {
   ChevronRight,
   Star,
   Shield,
-  Flashlight,
   Camera,
   Scissors,
   Lightbulb,
@@ -303,7 +302,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-bold text-slate-900">{user.school || 'University of Santo Tomas'}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px) font-black uppercase tracking-widest text-slate-400">Start Date</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Start Date</p>
                     <p className="text-sm font-bold text-slate-900">{user.startDate || 'November 1, 2025'}</p>
                   </div>
                 </div>

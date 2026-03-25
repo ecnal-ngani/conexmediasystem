@@ -379,7 +379,7 @@ export default function CalendarPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[10px) font-black uppercase tracking-widest text-slate-500">Location</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</Label>
                         <Input 
                           placeholder="Studio A / Site" 
                           value={eventLocation} 
