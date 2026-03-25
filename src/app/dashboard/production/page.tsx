@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -36,7 +37,9 @@ import {
   Lightbulb,
   Loader2,
   XCircle,
-  Save
+  Save,
+  Tag,
+  Settings2
 } from 'lucide-react';
 import {
   Dialog,
@@ -60,6 +63,7 @@ import { useAuth } from '@/components/auth-context';
 export default function ProductionPage() {
   const { user } = useAuth();
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [isManageBrandsOpen, setIsManageBrandsOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -74,7 +78,7 @@ export default function ProductionPage() {
 
   // New Project Form State
   const [fileCode, setFileCode] = useState('');
-  const [brand, setBrand] = useState('');
+  const [selectedBrandId, setSelectedBrandId] = useState('');
   const [contentIdea, setContentIdea] = useState('');
   const [status, setStatus] = useState('In Production');
   const [priority, setPriority] = useState('REGULAR');
@@ -85,12 +89,34 @@ export default function ProductionPage() {
   const [bm, setBm] = useState('');
   const [canvasLink, setCanvasLink] = useState('');
 
+  // New Brand Form State
+  const [newBrandName, setNewBrandName] = useState('');
+  const [newBrandPrefix, setNewBrandPrefix] = useState('');
+
   // Real-time listener for projects
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
   }, [firestore]);
   const { data: projects, loading } = useCollection<any>(projectsQuery);
+
+  // Real-time listener for brands
+  const brandsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'brands'), orderBy('name', 'asc'));
+  }, [firestore]);
+  const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
+
+  // Auto-generate file code prefix when brand changes
+  useEffect(() => {
+    if (selectedBrandId && brands) {
+      const brand = brands.find(b => b.id === selectedBrandId);
+      if (brand) {
+        const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+        setFileCode(`${brand.prefix}-${dateStr}-01`);
+      }
+    }
+  }, [selectedBrandId, brands]);
 
   // Advanced Filtering Logic
   const filteredProjects = useMemo(() => {
@@ -141,19 +167,23 @@ export default function ProductionPage() {
   };
 
   const handleAddProject = () => {
-    if (!firestore || !fileCode || !brand) {
+    if (!firestore || !fileCode || !selectedBrandId) {
       toast({
         variant: "destructive",
         title: "Missing Information",
-        description: "File Code and Company Brand Name are required."
+        description: "File Code and Authorized Brand are required."
       });
       return;
     }
 
+    const brand = brands?.find(b => b.id === selectedBrandId);
+    if (!brand) return;
+
     const projectsRef = collection(firestore, 'projects');
     const projectData = {
       fileCode,
-      brand,
+      brand: brand.name,
+      brandId: selectedBrandId,
       contentIdea,
       status,
       priority,
@@ -182,7 +212,33 @@ export default function ProductionPage() {
     
     setIsAddProjectOpen(false);
     // Reset form
-    setFileCode(''); setBrand(''); setContentIdea(''); setArtist(''); setDueDate(''); setCanvasLink('');
+    setFileCode(''); setSelectedBrandId(''); setContentIdea(''); setArtist(''); setDueDate(''); setCanvasLink('');
+  };
+
+  const handleAddBrand = () => {
+    if (!firestore || !newBrandName || !newBrandPrefix) {
+      toast({ variant: "destructive", title: "Missing Fields", description: "Name and Prefix (3 chars) are required." });
+      return;
+    }
+
+    const brandsRef = collection(firestore, 'brands');
+    const brandData = {
+      name: newBrandName,
+      prefix: newBrandPrefix.toUpperCase().slice(0, 3),
+      createdAt: serverTimestamp()
+    };
+
+    addDoc(brandsRef, brandData).catch(async (e) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: brandsRef.path,
+        operation: 'create',
+        requestResourceData: brandData
+      }));
+    });
+
+    toast({ title: "Brand Registered", description: `${newBrandName} is now an authorized client.` });
+    setNewBrandName('');
+    setNewBrandPrefix('');
   };
 
   const handleUpdateLink = () => {
@@ -223,8 +279,8 @@ export default function ProductionPage() {
 
       {/* Action & Filter Bar */}
       <div className="flex flex-col gap-4 bg-white p-4 rounded-2xl border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          <div className="relative group col-span-1 md:col-span-1 lg:col-span-1">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="relative group col-span-1 md:col-span-1 lg:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input 
               placeholder="Search code, brand, artist..." 
@@ -264,226 +320,266 @@ export default function ProductionPage() {
             </SelectContent>
           </Select>
 
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="h-10 shadow-none border-slate-200 text-xs font-medium">
-              <div className="flex items-center gap-2">
-                <Layers className="w-3.5 h-3.5 text-slate-400" />
-                <SelectValue placeholder="Type" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="Video">Video</SelectItem>
-              <SelectItem value="Graphic Design">Graphic Design</SelectItem>
-              <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
-              <SelectItem value="Photography">Photography</SelectItem>
-            </SelectContent>
-          </Select>
-
           {canCreateProjects && (
-            <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
-              <DialogTrigger asChild>
-                <Button className="h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs text-white w-full">
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  New Project
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[540px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
-                <ScrollArea className="max-h-[90vh]">
-                  <div className="p-6 md:p-8 space-y-6">
-                    <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
-                      <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
-                        <Plus className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle>
-                        <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the hub.</DialogDescription>
-                      </div>
+            <div className="flex gap-2 lg:col-span-2">
+              <Dialog open={isManageBrandsOpen} onOpenChange={setIsManageBrandsOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-10 font-bold border-slate-200 text-xs text-slate-600 flex-1">
+                    <Tag className="w-4 h-4 mr-1.5" />
+                    Brands
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[440px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+                  <div className="p-8 space-y-6">
+                    <DialogHeader className="space-y-2">
+                      <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Brand Management</DialogTitle>
+                      <DialogDescription className="text-sm text-slate-500 font-medium">Register client brands and tactical prefixes.</DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <FileText className="w-3 h-3 text-primary" />
-                            File Code
-                          </Label>
-                          <Input 
-                            placeholder="VLM-260120-01" 
-                            value={fileCode}
-                            onChange={(e) => setFileCode(e.target.value)}
-                            className="h-12 border-slate-200 rounded-xl" 
-                          />
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2 space-y-1.5">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Brand Name</Label>
+                          <Input placeholder="e.g. CJC Eco Bag" value={newBrandName} onChange={(e) => setNewBrandName(e.target.value)} />
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <Briefcase className="w-3 h-3 text-primary" />
-                            Brand Name
-                          </Label>
-                          <Input 
-                            placeholder="CJC Eco Bag" 
-                            value={brand}
-                            onChange={(e) => setBrand(e.target.value)}
-                            className="h-12 border-slate-200 rounded-xl" 
-                          />
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Prefix</Label>
+                          <Input placeholder="CJC" maxLength={3} value={newBrandPrefix} onChange={(e) => setNewBrandPrefix(e.target.value.toUpperCase())} />
                         </div>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                          <Lightbulb className="w-3 h-3 text-primary" />
-                          Content Idea
-                        </Label>
-                        <Input 
-                          placeholder="Product showcase reel" 
-                          value={contentIdea}
-                          onChange={(e) => setContentIdea(e.target.value)}
-                          className="h-12 border-slate-200 rounded-xl" 
-                          />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <CheckCircle2 className="w-3 h-3 text-primary" />
-                            Status
-                          </Label>
-                          <Select value={status} onValueChange={setStatus}>
-                            <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="In Production">In Production</SelectItem>
-                              <SelectItem value="For QA">For QA</SelectItem>
-                              <SelectItem value="Approved">Approved</SelectItem>
-                              <SelectItem value="Client Revision">Client Revision</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <Zap className="w-3 h-3 text-primary" />
-                            Priority
-                          </Label>
-                          <Select value={priority} onValueChange={setPriority}>
-                            <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="REGULAR">REGULAR</SelectItem>
-                              <SelectItem value="RUSH">RUSH</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <User className="w-3 h-3 text-primary" />
-                            Artist
-                          </Label>
-                          <Input 
-                            placeholder="Jhon Lester Nolial" 
-                            value={artist}
-                            onChange={(e) => setArtist(e.target.value)}
-                            className="h-12 border-slate-200 rounded-xl" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <Layers className="w-3 h-3 text-primary" />
-                            Type
-                          </Label>
-                          <Select value={type} onValueChange={setType}>
-                            <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Video">Video</SelectItem>
-                              <SelectItem value="Graphic Design">Graphic Design</SelectItem>
-                              <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
-                              <SelectItem value="Photography">Photography</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <Share2 className="w-3 h-3 text-primary" />
-                            Platform
-                          </Label>
-                          <Select value={platform} onValueChange={setPlatform}>
-                            <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Instagram">Instagram</SelectItem>
-                              <SelectItem value="TikTok">TikTok</SelectItem>
-                              <SelectItem value="Facebook">Facebook</SelectItem>
-                              <SelectItem value="YouTube">YouTube</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <Calendar className="w-3 h-3 text-primary" />
-                            Due Date
-                          </Label>
-                          <Input 
-                            type="date" 
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            className="h-12 border-slate-200 rounded-xl" 
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <User className="w-3 h-3 text-primary" />
-                            Brand Manager (BM)
-                          </Label>
-                          <Input 
-                            placeholder="Clark" 
-                            value={bm}
-                            onChange={(e) => setBm(e.target.value)}
-                            className="h-12 border-slate-200 rounded-xl" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                            <LinkIcon className="w-3 h-3 text-primary" />
-                            Canvas Link
-                          </Label>
-                          <Input 
-                            placeholder="https://..." 
-                            value={canvasLink}
-                            onChange={(e) => setCanvasLink(e.target.value)}
-                            className="h-12 border-slate-200 rounded-xl" 
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                      <DialogClose asChild>
-                        <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
-                      </DialogClose>
-                      <Button 
-                        onClick={handleAddProject}
-                        className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
-                      >
-                        Add to Hub
+                      <Button onClick={handleAddBrand} className="w-full bg-slate-900 text-white font-bold h-11 rounded-xl">
+                        Register Brand
                       </Button>
                     </div>
+
+                    <div className="pt-4 border-t space-y-3">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Authorized Brands</Label>
+                      <ScrollArea className="h-[200px] pr-2">
+                        <div className="space-y-2">
+                          {bLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto text-slate-300" /> : 
+                           !brands || brands.length === 0 ? <p className="text-xs text-slate-400 text-center py-4">No brands registered.</p> :
+                           brands.map((b: any) => (
+                             <div key={b.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                               <span className="text-xs font-bold text-slate-700">{b.name}</span>
+                               <Badge className="bg-white border-slate-200 text-primary font-mono text-[10px]">{b.prefix}</Badge>
+                             </div>
+                           ))
+                          }
+                        </div>
+                      </ScrollArea>
+                    </div>
                   </div>
-                </ScrollArea>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
+                <DialogTrigger asChild>
+                  <Button className="h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs text-white flex-1">
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    New Project
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[540px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+                  <ScrollArea className="max-h-[90vh]">
+                    <div className="p-6 md:p-8 space-y-6">
+                      <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+                        <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
+                          <Plus className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle>
+                          <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the hub.</DialogDescription>
+                        </div>
+                      </DialogHeader>
+
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <Briefcase className="w-3 h-3 text-primary" />
+                              Brand Selection
+                            </Label>
+                            <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                              <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                                <SelectValue placeholder="Select Brand" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {brands?.map((b: any) => (
+                                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <FileText className="w-3 h-3 text-primary" />
+                              File Code
+                            </Label>
+                            <Input 
+                              placeholder="Generated automatically..." 
+                              value={fileCode}
+                              onChange={(e) => setFileCode(e.target.value)}
+                              className="h-12 border-slate-200 rounded-xl bg-slate-50 font-mono text-xs" 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <Lightbulb className="w-3 h-3 text-primary" />
+                            Content Idea
+                          </Label>
+                          <Input 
+                            placeholder="Product showcase reel" 
+                            value={contentIdea}
+                            onChange={(e) => setContentIdea(e.target.value)}
+                            className="h-12 border-slate-200 rounded-xl" 
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <CheckCircle2 className="w-3 h-3 text-primary" />
+                              Status
+                            </Label>
+                            <Select value={status} onValueChange={setStatus}>
+                              <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="In Production">In Production</SelectItem>
+                                <SelectItem value="For QA">For QA</SelectItem>
+                                <SelectItem value="Approved">Approved</SelectItem>
+                                <SelectItem value="Client Revision">Client Revision</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <Zap className="w-3 h-3 text-primary" />
+                              Priority
+                            </Label>
+                            <Select value={priority} onValueChange={setPriority}>
+                              <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="REGULAR">REGULAR</SelectItem>
+                                <SelectItem value="RUSH">RUSH</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <User className="w-3 h-3 text-primary" />
+                              Artist
+                            </Label>
+                            <Input 
+                              placeholder="Jhon Lester Nolial" 
+                              value={artist}
+                              onChange={(e) => setArtist(e.target.value)}
+                              className="h-12 border-slate-200 rounded-xl" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <Layers className="w-3 h-3 text-primary" />
+                              Type
+                            </Label>
+                            <Select value={type} onValueChange={setType}>
+                              <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Video">Video</SelectItem>
+                                <SelectItem value="Graphic Design">Graphic Design</SelectItem>
+                                <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
+                                <SelectItem value="Photography">Photography</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <Share2 className="w-3 h-3 text-primary" />
+                              Platform
+                            </Label>
+                            <Select value={platform} onValueChange={setPlatform}>
+                              <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Instagram">Instagram</SelectItem>
+                                <SelectItem value="TikTok">TikTok</SelectItem>
+                                <SelectItem value="Facebook">Facebook</SelectItem>
+                                <SelectItem value="YouTube">YouTube</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <Calendar className="w-3 h-3 text-primary" />
+                              Due Date
+                            </Label>
+                            <Input 
+                              type="date" 
+                              value={dueDate}
+                              onChange={(e) => setDueDate(e.target.value)}
+                              className="h-12 border-slate-200 rounded-xl" 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <User className="w-3 h-3 text-primary" />
+                              Brand Manager (BM)
+                            </Label>
+                            <Input 
+                              placeholder="Clark" 
+                              value={bm}
+                              onChange={(e) => setBm(e.target.value)}
+                              className="h-12 border-slate-200 rounded-xl" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <LinkIcon className="w-3 h-3 text-primary" />
+                              Canvas Link
+                            </Label>
+                            <Input 
+                              placeholder="https://..." 
+                              value={canvasLink}
+                              onChange={(e) => setCanvasLink(e.target.value)}
+                              className="h-12 border-slate-200 rounded-xl" 
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 pt-4">
+                        <DialogClose asChild>
+                          <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
+                        </DialogClose>
+                        <Button 
+                          onClick={handleAddProject}
+                          className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
+                        >
+                          Add to Hub
+                        </Button>
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
+            </div>
           )}
         </div>
       </div>

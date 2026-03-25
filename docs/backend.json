@@ -91,6 +91,19 @@
         "isVerified": { "type": "boolean" }
       },
       "required": ["userId", "photoUrl", "timestamp"]
+    },
+    "Brand": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Brand",
+      "type": "object",
+      "description": "Authorized client brand metadata.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "prefix": { "type": "string", "description": "3-letter prefix for file codes (e.g., CJC)." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "prefix"]
     }
   },
   "auth": {
@@ -119,6 +132,16 @@
             "$ref": "#/backend/entities/VerificationLog"
           },
           "description": "Stores all biometric check-in attempts."
+        }
+      },
+      {
+        "path": "/brands/{brandId}",
+        "definition": {
+          "entityName": "Brand",
+          "schema": {
+            "$ref": "#/backend/entities/Brand"
+          },
+          "description": "Stores client brand metadata for project generation."
         }
       }
     ]
