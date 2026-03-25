@@ -24,7 +24,8 @@ import {
   Zap,
   Trash2,
   ShieldAlert,
-  Save
+  Save,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -78,7 +79,7 @@ export default function CalendarPage() {
   // New Event Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
   const [eventPriority, setEventPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
-  const [eventClient, setEventClient] = useState('');
+  const [selectedBrandId, setSelectedBrandId] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('');
   const [eventNotes, setEventNotes] = useState('');
@@ -111,6 +112,12 @@ export default function CalendarPage() {
   }, [firestore]);
   const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
 
+  const brandsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'brands'), orderBy('name', 'asc'));
+  }, [firestore]);
+  const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
+
   const nextMonth = () => setViewDate(prev => addMonths(prev, 1));
   const prevMonth = () => setViewDate(prev => subMonths(prev, 1));
 
@@ -132,21 +139,25 @@ export default function CalendarPage() {
   }, [schedules, projects, tasks]);
 
   const handleCreateEvent = () => {
-    if (!firestore || !eventClient || !eventDate) {
+    if (!firestore || !selectedBrandId || !eventDate) {
       toast({
         variant: "destructive",
         title: "Incomplete Intel",
-        description: "Client/Project name and Date are required for command synchronization."
+        description: "Brand Selection and Date are required for command synchronization."
       });
       return;
     }
 
+    const brand = brands?.find(b => b.id === selectedBrandId);
+    if (!brand) return;
+
     const schedulesRef = collection(firestore, 'schedules');
     const scheduleData = {
-      title: `${eventType}: ${eventClient}`,
+      title: `${eventType}: ${brand.name}`,
       type: eventType,
       priority: eventPriority,
-      client: eventClient,
+      client: brand.name,
+      brandId: selectedBrandId,
       date: eventDate,
       location: eventLocation,
       notes: eventNotes,
@@ -164,11 +175,11 @@ export default function CalendarPage() {
 
     toast({
       title: "Event Synchronized",
-      description: `${eventClient} has been added to the master calendar.`
+      description: `${brand.name} has been added to the master calendar.`
     });
 
     setIsAddEventOpen(false);
-    setEventClient('');
+    setSelectedBrandId('');
     setEventDate('');
     setEventLocation('');
     setEventNotes('');
@@ -341,13 +352,20 @@ export default function CalendarPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Client / Project Name</Label>
-                      <Input 
-                        placeholder="e.g. CJC Eco Bag" 
-                        value={eventClient} 
-                        onChange={(e) => setEventClient(e.target.value)}
-                        className="h-11 rounded-xl"
-                      />
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                        <Building2 className="w-3 h-3 text-primary" />
+                        Authorized Brand
+                      </Label>
+                      <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                        <SelectTrigger className="h-11 rounded-xl">
+                          <SelectValue placeholder="Select authorized client" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {brands?.map((b: any) => (
+                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
