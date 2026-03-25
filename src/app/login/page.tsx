@@ -60,11 +60,9 @@ export default function LoginPage() {
 
   const handleRoleSelect = (roleId: RoleId) => {
     setSelectedRole(roleId);
-    // Auto-fill demo emails based on role
-    if (roleId === 'admin') setEmail('admin@conex.private');
-    else if (roleId === 'employee') setEmail('employee@conex.private');
-    else if (roleId === 'intern') setEmail('intern@conex.private');
-    
+    // Removed auto-filling of demo emails to prevent unintended "auto-login" feel
+    setEmail(''); 
+    setPassword('');
     setView('login');
   };
 
@@ -191,6 +189,7 @@ export default function LoginPage() {
                 <Input 
                   id="password" 
                   type="password" 
+                  placeholder="••••••••"
                   required 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -231,8 +230,7 @@ export default function LoginPage() {
               <Alert className="bg-slate-50 border-dashed border-slate-200">
                 <Info className="h-4 w-4 text-slate-400" />
                 <AlertDescription className="text-[10px] leading-tight text-slate-500">
-                  <strong>DEMO CREDENTIALS:</strong><br />
-                  {email} (Selected Role: {selectedRoleData?.title})
+                  <strong>DEMO ACCESS:</strong> Use <code>admin@conex.private</code>, <code>employee@conex.private</code>, or <code>intern@conex.private</code>.
                 </AlertDescription>
               </Alert>
 

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for verifying user identity via photo for WFH compliance.
@@ -37,12 +38,15 @@ const faceVerificationPrompt = ai.definePrompt({
   prompt: `You are a high-security biometric analysis agent for CONEX MEDIA. 
 Analyze the provided photo taken during a WFH (Work From Home) login attempt.
 
-Verify if the photo contains a clear, visible human face suitable for identification. 
-Do not allow photos of screens, inanimate objects, or obscured faces.
+STRICT PROTOCOLS:
+1. Verify if the photo contains a clear, visible human face.
+2. Ensure the face is NOT a photograph of a screen, a mask, or an inanimate object.
+3. Reject if the face is obscured by heavy shadows, masks (non-medical), or filters.
+4. The output must indicate if the individual is authorized based on visual clarity and presence of a real person.
 
 Photo: {{media url=photoDataUri}}
 
-Output the verification status, a confidence score, and a short status message indicating access to the media system.`,
+Output the verification status, a confidence score (be conservative), and a short status message indicating access to the media system.`,
 });
 
 const faceVerificationFlow = ai.defineFlow(
@@ -53,6 +57,7 @@ const faceVerificationFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await faceVerificationPrompt(input);
-    return output!;
+    if (!output) throw new Error("Biometric analysis failed to generate output.");
+    return output;
   }
 );

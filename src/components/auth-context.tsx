@@ -31,13 +31,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedUser = localStorage.getItem('conex_session');
     const storedWfh = localStorage.getItem('conex_wfh') === 'true';
-    const storedVerified = localStorage.getItem('conex_verified') === 'true';
     
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
         setIsWfh(storedWfh);
-        setIsVerified(storedVerified);
+        // Force re-verification for WFH users on every new app initialization
+        // Only Office users (non-WFH) are considered pre-verified
+        setIsVerified(!storedWfh);
       } catch (e) {
         console.error('Failed to parse session', e);
       }
@@ -123,12 +125,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(foundUser);
       setIsWfh(wfhStatus);
+      // Biometric check is required if WFH is enabled
       const verifiedStatus = !wfhStatus;
       setIsVerified(verifiedStatus);
       
       localStorage.setItem('conex_session', JSON.stringify(foundUser));
       localStorage.setItem('conex_wfh', wfhStatus.toString());
-      localStorage.setItem('conex_verified', verifiedStatus.toString());
+      // We no longer persist 'isVerified' to local storage to ensure fresh checks
       
       if (wfhStatus) {
         router.push('/verify');
@@ -155,7 +158,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setVerified = (status: boolean) => {
     setIsVerified(status);
-    localStorage.setItem('conex_verified', status.toString());
   };
 
   const logout = () => {
@@ -164,12 +166,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsVerified(false);
     localStorage.removeItem('conex_session');
     localStorage.removeItem('conex_wfh');
-    localStorage.removeItem('conex_verified');
     router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, iWfh: isWfh, iVerified: isVerified, setVerified, updateUser }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, isWfh, isVerified, setVerified, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
