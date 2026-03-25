@@ -109,14 +109,29 @@ export default function ProductionPage() {
 
   // Auto-generate file code prefix when brand changes
   useEffect(() => {
-    if (selectedBrandId && brands) {
+    if (selectedBrandId && brands && projects) {
       const brand = brands.find(b => b.id === selectedBrandId);
       if (brand) {
         const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-        setFileCode(`${brand.prefix}-${dateStr}-01`);
+        const prefix = `${brand.prefix}-${dateStr}-`;
+        
+        // Find existing projects for this brand on this day
+        const dayProjects = projects.filter((p: any) => p.fileCode?.startsWith(prefix));
+        
+        let nextNum = 1;
+        if (dayProjects.length > 0) {
+          const numbers = dayProjects.map((p: any) => {
+            const parts = p.fileCode.split('-');
+            const lastPart = parts[parts.length - 1];
+            return parseInt(lastPart, 10) || 0;
+          });
+          nextNum = Math.max(...numbers) + 1;
+        }
+        
+        setFileCode(`${prefix}${nextNum.toString().padStart(2, '0')}`);
       }
     }
-  }, [selectedBrandId, brands]);
+  }, [selectedBrandId, brands, projects]);
 
   // Advanced Filtering Logic
   const filteredProjects = useMemo(() => {
