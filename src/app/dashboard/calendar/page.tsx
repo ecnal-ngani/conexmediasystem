@@ -23,11 +23,12 @@ import {
   Lightbulb,
   Zap,
   Trash2,
-  ShieldAlert
+  ShieldAlert,
+  Save
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { 
   format, 
   addMonths, 
@@ -71,6 +72,9 @@ export default function CalendarPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
+  // Editing State
+  const [editingDate, setEditingDate] = useState('');
+
   // New Event Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
   const [eventPriority, setEventPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
@@ -82,6 +86,12 @@ export default function CalendarPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (selectedEvent) {
+      setEditingDate(selectedEvent.date || selectedEvent.dueDate || '');
+    }
+  }, [selectedEvent]);
 
   const schedulesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -162,6 +172,38 @@ export default function CalendarPage() {
     setEventDate('');
     setEventLocation('');
     setEventNotes('');
+  };
+
+  const handleUpdateEventDate = () => {
+    if (!firestore || !selectedEvent || !editingDate) return;
+
+    let collectionName = '';
+    let fieldName = 'date';
+    switch (selectedEvent.source) {
+      case 'schedule': collectionName = 'schedules'; break;
+      case 'production': collectionName = 'projects'; fieldName = 'dueDate'; break;
+      case 'task': collectionName = 'tasks'; fieldName = 'dueDate'; break;
+      default: return;
+    }
+
+    const docRef = doc(firestore, collectionName, selectedEvent.id);
+    const updateData = { [fieldName]: editingDate };
+
+    updateDoc(docRef, updateData)
+      .then(() => {
+        toast({
+          title: "Event Rescheduled",
+          description: "The deployment timeline has been updated."
+        });
+        setSelectedEvent(null);
+      })
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: updateData
+        }));
+      });
   };
 
   const handleDeleteEvent = () => {
@@ -319,7 +361,7 @@ export default function CalendarPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</Label>
+                        <Label className="text-[10px) font-black uppercase tracking-widest text-slate-500">Location</Label>
                         <Input 
                           placeholder="Studio A / Site" 
                           value={eventLocation} 
@@ -443,7 +485,16 @@ export default function CalendarPage() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] uppercase font-black text-slate-400">Date</p>
-                  <p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p>
+                  {isAdmin ? (
+                    <Input 
+                      type="date" 
+                      value={editingDate} 
+                      onChange={(e) => setEditingDate(e.target.value)} 
+                      className="h-8 text-xs font-bold border-slate-200 mt-1"
+                    />
+                  ) : (
+                    <p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p>
+                  )}
                 </div>
                 {selectedEvent.location && (
                   <div className="space-y-1 col-span-2">
@@ -467,6 +518,16 @@ export default function CalendarPage() {
               
               {/* ADMIN ACTION ZONE */}
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
+                {isAdmin && (
+                  <Button 
+                    onClick={handleUpdateEventDate} 
+                    className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100"
+                  >
+                    <Save className="w-4 h-4" />
+                    Save Deployment Update
+                  </Button>
+                )}
+
                 <Button onClick={() => setSelectedEvent(null)} variant="outline" className="w-full h-12 font-bold rounded-xl">
                   Close Briefing
                 </Button>
