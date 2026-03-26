@@ -359,11 +359,13 @@ export function QuickActions() {
         <Sheet onOpenChange={(open) => {
           if (!open) {
             // Optional: Mark all as read when sheet is closed
-            // handleMarkAllRead();
           }
         }}>
           <SheetTrigger asChild>
-            <button className="pointer-events-auto relative w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform active:scale-95 group">
+            <button className={cn(
+              "pointer-events-auto relative w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-all active:scale-95 group",
+              unreadCount > 0 && "animate-pulse shadow-[0_0_20px_rgba(225,29,72,0.5)]"
+            )}>
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-800 border-2 border-white text-[9px] font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce shadow-lg">
