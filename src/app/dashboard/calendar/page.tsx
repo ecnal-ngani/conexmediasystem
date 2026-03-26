@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -75,10 +74,8 @@ export default function CalendarPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Editing State
   const [editingDate, setEditingDate] = useState('');
 
-  // New Event Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
   const [eventPriority, setEventPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [selectedBrandId, setSelectedBrandId] = useState('');
@@ -200,7 +197,7 @@ export default function CalendarPage() {
     }
 
     const docRef = doc(firestore, collectionName, selectedEvent.id);
-    const updateData = { [fieldName]: editingDate };
+    const updateData = { [fieldName]: editingDate, updatedAt: serverTimestamp() };
 
     updateDoc(docRef, updateData)
       .then(() => {
@@ -222,7 +219,10 @@ export default function CalendarPage() {
   const handleCompleteTask = (taskId: string, title: string) => {
     if (!firestore) return;
     const taskRef = doc(firestore, 'tasks', taskId);
-    const updateData = { status: 'completed' };
+    const updateData = { 
+      status: 'completed',
+      updatedAt: serverTimestamp()
+    };
 
     updateDoc(taskRef, updateData)
       .then(() => {
@@ -557,12 +557,6 @@ export default function CalendarPage() {
                     </Badge>
                   </div>
                 )}
-                {selectedEvent.contentIdea && (
-                  <div className="space-y-1 col-span-2">
-                    <p className="text-[10px] uppercase font-black text-slate-400">Content Idea</p>
-                    <p className="text-xs font-bold text-slate-700">{selectedEvent.contentIdea}</p>
-                  </div>
-                )}
                 {selectedEvent.notes && (
                   <div className="space-y-1 col-span-2">
                     <p className="text-[10px] uppercase font-black text-slate-400">Operational Notes</p>
@@ -571,7 +565,6 @@ export default function CalendarPage() {
                 )}
               </div>
               
-              {/* ACTION ZONE */}
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
                 {selectedEvent.source === 'task' && selectedEvent.status !== 'completed' && (
                   <Button 

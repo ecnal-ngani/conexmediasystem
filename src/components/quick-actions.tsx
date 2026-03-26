@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -185,19 +184,19 @@ export function QuickActions() {
       time: s.createdAt?.toDate ? formatDistanceToNow(s.createdAt.toDate(), { addSuffix: true }) : 'Just now',
       priority: s.priority || 'NORMAL',
       icon: Calendar,
-      rawTime: s.createdAt?.seconds || Math.floor(Date.now() / 1000),
+      rawTime: s.updatedAt?.seconds || s.createdAt?.seconds || Math.floor(Date.now() / 1000),
       type: 'SCHEDULE'
     }));
 
     recentTasks?.forEach(t => items.push({
       id: `t-${t.id}`,
-      title: 'Task Assigned',
+      title: t.status === 'completed' ? 'Task Completed ✅' : 'Task Assigned',
       description: t.title,
       details: `Due: ${t.dueDate || 'No date'} • ${t.category || 'Ops'}`,
-      time: t.createdAt?.toDate ? formatDistanceToNow(t.createdAt.toDate(), { addSuffix: true }) : 'Just now',
-      priority: t.priority || 'NORMAL',
-      icon: ListTodo,
-      rawTime: t.createdAt?.seconds || Math.floor(Date.now() / 1000),
+      time: (t.updatedAt || t.createdAt)?.toDate ? formatDistanceToNow((t.updatedAt || t.createdAt).toDate(), { addSuffix: true }) : 'Just now',
+      priority: t.status === 'completed' ? 'DONE' : (t.priority || 'NORMAL'),
+      icon: t.status === 'completed' ? CheckCircle2 : ListTodo,
+      rawTime: t.updatedAt?.seconds || t.createdAt?.seconds || Math.floor(Date.now() / 1000),
       type: 'TASK'
     }));
 
@@ -209,7 +208,7 @@ export function QuickActions() {
       time: p.createdAt?.toDate ? formatDistanceToNow(p.createdAt.toDate(), { addSuffix: true }) : 'Just now',
       priority: p.priority === 'RUSH' ? 'URGENT' : (p.priority || 'REGULAR'),
       icon: Layers,
-      rawTime: p.createdAt?.seconds || Math.floor(Date.now() / 1000),
+      rawTime: p.updatedAt?.seconds || p.createdAt?.seconds || Math.floor(Date.now() / 1000),
       type: 'PRODUCTION'
     }));
 
@@ -333,6 +332,8 @@ export function QuickActions() {
       case 'NORMAL':
       case 'REGULAR':
         return "bg-blue-100 text-blue-700 border-blue-200";
+      case 'DONE':
+        return "bg-green-100 text-green-700 border-green-200";
       default:
         return "bg-slate-100 text-slate-600 border-slate-200";
     }
@@ -393,7 +394,8 @@ export function QuickActions() {
                         <div key={notif.id} className={cn(
                           "p-5 rounded-2xl border-2 transition-all hover:shadow-md relative overflow-hidden",
                           isUnread ? "bg-white border-primary/20 shadow-sm" : "bg-slate-50/50 border-slate-100",
-                          (notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH') && "border-l-4 border-l-red-500"
+                          (notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH') && "border-l-4 border-l-red-500",
+                          notif.priority === 'DONE' && "border-l-4 border-l-green-500"
                         )}>
                           {isUnread && (
                             <div className="absolute top-0 right-0">
@@ -405,6 +407,8 @@ export function QuickActions() {
                               "w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2",
                               notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH'
                                 ? "bg-red-500 border-red-200 text-white" 
+                                : notif.priority === 'DONE'
+                                ? "bg-green-500 border-green-200 text-white"
                                 : "bg-white border-slate-100 text-slate-600 shadow-sm"
                             )}>
                               {notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH' ? <ShieldAlert className="w-5 h-5" /> : <notif.icon className="w-5 h-5" />}

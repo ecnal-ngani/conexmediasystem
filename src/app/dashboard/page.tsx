@@ -37,7 +37,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { 
@@ -84,8 +84,6 @@ export default function DashboardPage() {
 
   const tasksQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // For interns, filter by their specific ID. 
-    // We remove the complex orderBy here to avoid missing index errors during the onboarding phase.
     if (user.role === 'INTERN') {
       return query(
         collection(firestore, 'tasks'), 
@@ -93,7 +91,6 @@ export default function DashboardPage() {
         limit(10)
       );
     }
-    // For other roles, show all tasks
     return query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(10));
   }, [firestore, user]);
 
@@ -104,7 +101,10 @@ export default function DashboardPage() {
   const handleCompleteTask = (taskId: string, title: string) => {
     if (!firestore) return;
     const taskRef = doc(firestore, 'tasks', taskId);
-    const updateData = { status: 'completed' };
+    const updateData = { 
+      status: 'completed', 
+      updatedAt: serverTimestamp() 
+    };
 
     updateDoc(taskRef, updateData)
       .then(() => {
@@ -202,7 +202,6 @@ export default function DashboardPage() {
           <ChevronRight className="w-4 h-4 text-primary" />
         </div>
 
-        {/* Intern Hero with Circular Progress */}
         <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
           <CardContent className="p-12 flex flex-col items-center justify-center text-center space-y-6">
             <div className="relative w-48 h-48 flex items-center justify-center">
@@ -242,7 +241,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* KPI Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {roleConfig.stats.map((stat, i) => (
             <Card key={i} className="border shadow-none rounded-xl bg-white hover:border-primary/20 transition-all group">
@@ -262,7 +260,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Recent Tasks Table */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-slate-900 px-1">Recent Assignments</h3>
           <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
@@ -344,7 +341,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="border shadow-none rounded-xl bg-white p-6 hover:border-primary/20 transition-all cursor-pointer group">
             <h4 className="font-bold text-slate-900 mb-1 group-hover:text-primary transition-colors">Request Day Off</h4>
@@ -356,7 +352,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Internship Details Section */}
         <div className="space-y-4">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Internship Details</h3>
           <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
