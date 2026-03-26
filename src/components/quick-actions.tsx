@@ -192,7 +192,7 @@ export function QuickActions() {
       id: `t-${t.id}`,
       title: t.status === 'completed' ? 'Task Completed ✅' : 'Task Assigned',
       description: t.title,
-      details: `Due: ${t.dueDate || 'No date'} • ${t.category || 'Ops'}`,
+      details: `By: ${t.assignedByName || 'Command'} • Due: ${t.dueDate || 'No date'}`,
       time: (t.updatedAt || t.createdAt)?.toDate ? formatDistanceToNow((t.updatedAt || t.createdAt).toDate(), { addSuffix: true }) : 'Just now',
       priority: t.status === 'completed' ? 'DONE' : (t.priority || 'NORMAL'),
       icon: t.status === 'completed' ? CheckCircle2 : ListTodo,
@@ -267,7 +267,8 @@ export function QuickActions() {
       location, 
       staff: selectedStaffIds, 
       notes, 
-      createdAt: serverTimestamp() 
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     };
     addDoc(ref, data).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data }));
@@ -298,7 +299,8 @@ export function QuickActions() {
       assignedToName: assignee.name,
       assignedById: user.id,
       assignedByName: user.name,
-      createdAt: serverTimestamp() 
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     };
     addDoc(ref, data).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data }));
@@ -313,7 +315,19 @@ export function QuickActions() {
   const handleCreateProject = () => {
     if (!firestore || !fileCode || !brand) return;
     const ref = collection(firestore, 'projects');
-    const data = { fileCode, brand, contentIdea, status: projectStatus, priority: projectPriority, artist, type, platform, dueDate: projectDueDate, createdAt: serverTimestamp() };
+    const data = { 
+      fileCode, 
+      brand, 
+      contentIdea, 
+      status: projectStatus, 
+      priority: projectPriority, 
+      artist, 
+      type, 
+      platform, 
+      dueDate: projectDueDate, 
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
     addDoc(ref, data).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data }));
     });
