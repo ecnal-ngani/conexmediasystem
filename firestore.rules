@@ -1,41 +1,41 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
      * CONEX Gateway Security Rules
-     * Updated: Synchronized for Tasks and Brands access.
+     * Updated: Authorized read/write for tasks and users with identity check.
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Allow users to look up their email during mock login
+    // Allow users to look up their email during mock login and sync profiles
     match /users/{userId} {
       allow read: if true; 
-      allow write: if true; 
+      allow write: if isSignedIn(); 
     }
 
     match /schedules/{scheduleId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
     match /tasks/{taskId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
     match /projects/{projectId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
     match /verifications/{logId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
     match /brands/{brandId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isSignedIn();
     }
 
     match /roles/{roleId} {

@@ -1,11 +1,11 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Role } from '@/lib/mock-data';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
 import { collection, query, where, getDocs, limit, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isVerified, setIsVerified] = useState(false);
   const router = useRouter();
   const firestore = useFirestore();
+  const firebaseAuth = useFirebaseAuth();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('conex_session');
@@ -37,23 +38,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
         setIsWfh(storedWfh);
-        // Force re-verification for WFH users on every new app initialization
-        // Only Office users (non-WFH) are considered pre-verified
         setIsVerified(!storedWfh);
+        
+        // Ensure Firebase Auth is signed in for existing sessions
+        if (firebaseAuth && !firebaseAuth.currentUser) {
+          signInAnonymously(firebaseAuth).catch(console.error);
+        }
       } catch (e) {
         console.error('Failed to parse session', e);
       }
     }
     setIsLoading(false);
-  }, []);
+  }, [firebaseAuth]);
 
   const login = async (email: string, wfhStatus: boolean, roleId?: string) => {
-    if (!firestore) {
+    if (!firestore || !firebaseAuth) {
       throw new Error('Database not initialized. Please try again in a few seconds.');
     }
     
     setIsLoading(true);
     try {
+      // Step 1: Sign in anonymously to Firebase Auth to establish a secure session
+      await signInAnonymously(firebaseAuth);
+
+      // Step 2: Proceed with mock data lookup
       const usersRef = collection(firestore, 'users');
       const q = query(usersRef, where('email', '==', email.toLowerCase()), limit(1));
       const querySnapshot = await getDocs(q);
@@ -118,20 +126,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!foundUser) throw new Error('Authentication failed.');
 
-      // Access Control validation
       if (roleId === 'admin' && foundUser.role !== 'ADMIN') {
         throw new Error('This account does not have Administrator clearance.');
       }
 
       setUser(foundUser);
       setIsWfh(wfhStatus);
-      // Biometric check is required if WFH is enabled
       const verifiedStatus = !wfhStatus;
       setIsVerified(verifiedStatus);
       
       localStorage.setItem('conex_session', JSON.stringify(foundUser));
       localStorage.setItem('conex_wfh', wfhStatus.toString());
-      // We no longer persist 'isVerified' to local storage to ensure fresh checks
       
       if (wfhStatus) {
         router.push('/verify');
@@ -151,7 +156,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(updatedUser);
     localStorage.setItem('conex_session', JSON.stringify(updatedUser));
     
-    // Sync to Firestore
     const userRef = doc(firestore, 'users', user.id);
     updateDoc(userRef, updates).catch(e => console.error('Failed to sync profile:', e));
   };

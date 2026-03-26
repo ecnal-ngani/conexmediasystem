@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/components/auth-context';
@@ -85,9 +84,14 @@ export default function DashboardPage() {
 
   const tasksQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // For interns, only show tasks assigned to them
+    // For interns, filter by their specific ID. 
+    // We remove the complex orderBy here to avoid missing index errors during the onboarding phase.
     if (user.role === 'INTERN') {
-      return query(collection(firestore, 'tasks'), where('assignedToId', '==', user.id), orderBy('createdAt', 'desc'), limit(10));
+      return query(
+        collection(firestore, 'tasks'), 
+        where('assignedToId', '==', user.id), 
+        limit(10)
+      );
     }
     // For other roles, show all tasks
     return query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(10));
