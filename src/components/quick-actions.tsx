@@ -143,7 +143,7 @@ export function QuickActions() {
 
   const tasksQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return query(collection(firestore, 'tasks'), orderBy('updatedAt', 'desc'), limit(15));
+    return query(collection(firestore, 'tasks'), orderBy('updatedAt', 'desc'), limit(50));
   }, [firestore, user]);
 
   const projectsQuery = useMemoFirebase(() => {
@@ -175,6 +175,13 @@ export function QuickActions() {
 
   const notifications = useMemo(() => {
     const items: any[] = [];
+    if (!user) return items;
+
+    // Filter tasks based on privacy requirements:
+    // Only see tasks assigned TO you or tasks issued BY you.
+    const filteredTasks = recentTasks?.filter(t => 
+      t.assignedToId === user.id || t.assignedById === user.id
+    ) || [];
 
     recentSchedules?.forEach(s => items.push({
       id: `s-${s.id}`,
@@ -188,7 +195,7 @@ export function QuickActions() {
       type: 'SCHEDULE'
     }));
 
-    recentTasks?.forEach(t => items.push({
+    filteredTasks.forEach(t => items.push({
       id: `t-${t.id}`,
       title: t.status === 'completed' ? 'Task Completed ✅' : 'Task Assigned',
       description: t.title,
@@ -213,7 +220,7 @@ export function QuickActions() {
     }));
 
     return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 45);
-  }, [recentSchedules, recentTasks, recentProjects]);
+  }, [recentSchedules, recentTasks, recentProjects, user]);
 
   const unreadCount = useMemo(() => {
     return notifications.filter(n => n.rawTime > lastReadTime).length;
@@ -452,7 +459,7 @@ export function QuickActions() {
                                   <Clock className="w-3 h-3" />
                                   {notif.time}
                                 </span>
-                                <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">
+                                <span className="text-9px font-black text-slate-300 uppercase tracking-tighter">
                                   {notif.type}
                                 </span>
                               </div>

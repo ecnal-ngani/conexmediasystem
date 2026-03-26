@@ -109,13 +109,22 @@ export default function CalendarPage() {
     if (!firestore) return null;
     return query(collection(firestore, 'tasks'), orderBy('dueDate', 'asc'));
   }, [firestore]);
-  const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
+  const { data: allTasks, loading: tLoading } = useCollection<any>(tasksQuery);
 
   const brandsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'brands'), orderBy('name', 'asc'));
   }, [firestore]);
   const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
+
+  // Filter tasks for privacy: Only show tasks assigned to the current user or given by them (if Admin/BM)
+  const tasks = useMemo(() => {
+    if (!allTasks || !user) return [];
+    if (user.role === 'ADMIN' || user.role === 'BRAND_MANAGER') {
+      return allTasks.filter(t => t.assignedToId === user.id || t.assignedById === user.id);
+    }
+    return allTasks.filter(t => t.assignedToId === user.id);
+  }, [allTasks, user]);
 
   const nextMonth = () => setViewDate(prev => addMonths(prev, 1));
   const prevMonth = () => setViewDate(prev => subMonths(prev, 1));

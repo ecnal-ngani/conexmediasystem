@@ -82,16 +82,14 @@ export default function DashboardPage() {
     return query(collection(firestore, 'projects'));
   }, [firestore]);
 
+  // Restrict task visibility to ONLY the user's tasks
   const tasksQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    if (user.role === 'INTERN') {
-      return query(
-        collection(firestore, 'tasks'), 
-        where('assignedToId', '==', user.id), 
-        limit(10)
-      );
-    }
-    return query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(10));
+    return query(
+      collection(firestore, 'tasks'), 
+      where('assignedToId', '==', user.id), 
+      limit(20)
+    );
   }, [firestore, user]);
 
   const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
@@ -261,7 +259,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900 px-1">Recent Assignments</h3>
+          <h3 className="text-lg font-bold text-slate-900 px-1">My Assignments</h3>
           <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
              <Table>
                 <TableHeader className="bg-slate-50/50">
@@ -284,7 +282,7 @@ export default function DashboardPage() {
                   ) : tasks?.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium">
-                        No tactical directives assigned yet.
+                        No tactical directives assigned to you.
                       </TableCell>
                     </TableRow>
                   ) : (
