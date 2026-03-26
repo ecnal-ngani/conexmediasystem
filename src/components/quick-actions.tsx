@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -26,7 +27,8 @@ import {
   User,
   Info,
   CheckCheck,
-  Timer
+  Timer,
+  ChevronRight
 } from 'lucide-react';
 import {
   Dialog,
@@ -137,14 +139,16 @@ export function QuickActions() {
     if (stored) setLastReadTime(parseInt(stored));
   }, []);
 
-  // Listeners for Notifications
+  // Listeners for Notifications & Data
   const schedulesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(15)) : null, [firestore]);
   const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(15)) : null, [firestore]);
   const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(15)) : null, [firestore]);
+  const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users'), orderBy('name', 'asc')) : null, [firestore]);
 
   const { data: recentSchedules } = useCollection<any>(schedulesQuery);
   const { data: recentTasks } = useCollection<any>(tasksQuery);
   const { data: recentProjects } = useCollection<any>(projectsQuery);
+  const { data: staffList } = useCollection<any>(usersQuery);
 
   // Filter actions based on role
   const filteredActions = useMemo(() => {
@@ -225,7 +229,7 @@ export function QuickActions() {
   const [callTime, setCallTime] = useState('09:00');
   const [wrapTime, setWrapTime] = useState('17:00');
   const [location, setLocation] = useState('');
-  const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
   // Task Form State
@@ -234,6 +238,7 @@ export function QuickActions() {
   const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [taskDueDate, setTaskDueDate] = useState('');
   const [taskHours, setTaskHours] = useState('');
+  const [assignedToId, setAssignedToId] = useState('');
 
   // Project Form State
   const [fileCode, setFileCode] = useState('');
@@ -249,7 +254,19 @@ export function QuickActions() {
   const handleConfirmSchedule = () => {
     if (!firestore || !date || !client) return;
     const ref = collection(firestore, 'schedules');
-    const data = { title: `${eventType}: ${client}`, type: eventType, priority: schedulePriority, client, date, callTime, wrapTime, location, staff: selectedStaff, notes, createdAt: serverTimestamp() };
+    const data = { 
+      title: `${eventType}: ${client}`, 
+      type: eventType, 
+      priority: schedulePriority, 
+      client, 
+      date, 
+      callTime, 
+      wrapTime, 
+      location, 
+      staff: selectedStaffIds, 
+      notes, 
+      createdAt: serverTimestamp() 
+    };
     addDoc(ref, data).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data }));
     });
@@ -259,7 +276,14 @@ export function QuickActions() {
   };
 
   const handleCreateTask = () => {
-    if (!firestore || !taskTitle || !taskDueDate) return;
+    if (!firestore || !taskTitle || !taskDueDate || !assignedToId || !user) {
+      toast({ variant: "destructive", title: "Missing Information", description: "Title, Due Date, and Assignee are required." });
+      return;
+    }
+    
+    const assignee = staffList?.find(s => s.id === assignedToId);
+    if (!assignee) return;
+
     const ref = collection(firestore, 'tasks');
     const data = { 
       title: taskTitle, 
@@ -268,15 +292,20 @@ export function QuickActions() {
       dueDate: taskDueDate, 
       hours: taskHours || '0h',
       status: 'pending', 
+      assignedToId: assignedToId,
+      assignedToName: assignee.name,
+      assignedById: user.id,
+      assignedByName: user.name,
       createdAt: serverTimestamp() 
     };
     addDoc(ref, data).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data }));
     });
-    toast({ title: "Task Assigned", description: `"${taskTitle}" added to company list.` });
+    toast({ title: "Task Assigned", description: `"${taskTitle}" deployed to ${assignee.name}.` });
     setIsTaskOpen(false);
     setTaskTitle('');
     setTaskHours('');
+    setAssignedToId('');
   };
 
   const handleCreateProject = () => {
@@ -406,16 +435,6 @@ export function QuickActions() {
                   )}
                 </div>
               </ScrollArea>
-              <div className="p-6 border-t bg-slate-50/50">
-                <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-200">
-                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                    <Check className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                    All Nodes Synchronized
-                  </div>
-                </div>
-              </div>
             </div>
           </SheetContent>
         </Sheet>
@@ -523,13 +542,26 @@ export function QuickActions() {
               </div>
               <div>
                 <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Internal Task</DialogTitle>
-                <DialogDescription className="text-slate-400 font-medium">Deploy a deliverable to the internal team.</DialogDescription>
+                <DialogDescription className="text-slate-400 font-medium">Deploy a deliverable to a specific team member.</DialogDescription>
               </div>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Task Title</Label>
                 <Input placeholder="Deliverable name..." value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Assigned Personnel</Label>
+                <Select value={assignedToId} onValueChange={setAssignedToId}>
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <SelectValue placeholder="Select team member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {staffList?.map((staff: any) => (
+                      <SelectItem key={staff.id} value={staff.id}>{staff.name} ({staff.role})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">

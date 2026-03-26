@@ -76,6 +76,27 @@
         "systemId"
       ]
     },
+    "Task": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Task",
+      "type": "object",
+      "description": "Represents a tactical directive or internal task.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "priority": { "type": "string", "enum": ["URGENT", "HIGH", "NORMAL"] },
+        "dueDate": { "type": "string" },
+        "hours": { "type": "string" },
+        "status": { "type": "string" },
+        "assignedToId": { "type": "string" },
+        "assignedToName": { "type": "string" },
+        "assignedById": { "type": "string" },
+        "assignedByName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "assignedToId", "assignedById"]
+    },
     "VerificationLog": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "VerificationLog",
@@ -122,6 +143,16 @@
             "$ref": "#/backend/entities/UserProfile"
           },
           "description": "Stores individual user profiles."
+        }
+      },
+      {
+        "path": "/tasks/{taskId}",
+        "definition": {
+          "entityName": "Task",
+          "schema": {
+            "$ref": "#/backend/entities/Task"
+          },
+          "description": "Stores tactical directives assigned to personnel."
         }
       },
       {

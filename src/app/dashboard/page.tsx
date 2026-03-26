@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/components/auth-context';
@@ -23,7 +24,8 @@ import {
   HardDrive,
   BookOpen,
   Award,
-  Calendar
+  Calendar,
+  User as UserIcon
 } from 'lucide-react';
 import { 
   Table, 
@@ -34,7 +36,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { 
@@ -75,9 +77,14 @@ export default function DashboardPage() {
   }, [firestore]);
 
   const tasksQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
+    // For interns, only show tasks assigned to them
+    if (user.role === 'INTERN') {
+      return query(collection(firestore, 'tasks'), where('assignedToId', '==', user.id), orderBy('createdAt', 'desc'), limit(10));
+    }
+    // For other roles, show all tasks
     return query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(10));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
   const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
@@ -225,13 +232,14 @@ export default function DashboardPage() {
 
         {/* Recent Tasks Table */}
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900 px-1">Recent Tasks</h3>
+          <h3 className="text-lg font-bold text-slate-900 px-1">Recent Assignments</h3>
           <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
              <Table>
                 <TableHeader className="bg-slate-50/50">
                   <TableRow className="hover:bg-transparent border-0">
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-6">Task</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-6">Directive</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Hours</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Command Node</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Status</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pr-6">Date</TableHead>
                   </TableRow>
@@ -239,14 +247,14 @@ export default function DashboardPage() {
                 <TableBody>
                   {tLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-40 text-center">
+                      <TableCell colSpan={5} className="h-40 text-center">
                         <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                       </TableCell>
                     </TableRow>
                   ) : tasks?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-40 text-center text-slate-400 font-medium">
-                        No orders assigned yet.
+                      <TableCell colSpan={5} className="h-40 text-center text-slate-400 font-medium">
+                        No tactical directives assigned yet.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -259,6 +267,14 @@ export default function DashboardPage() {
                           </div>
                         </TableCell>
                         <TableCell className="py-4 text-slate-500 text-sm font-medium">{t.hours || '0h'}</TableCell>
+                        <TableCell className="py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                              <UserIcon className="w-3 h-3 text-primary" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-700">{t.assignedByName || 'System'}</span>
+                          </div>
+                        </TableCell>
                         <TableCell className="py-4">
                           <Badge className={cn(
                             "text-[9px] font-bold px-2 py-0.5 border-none",
