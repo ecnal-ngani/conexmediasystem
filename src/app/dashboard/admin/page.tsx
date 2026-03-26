@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
-  Download, 
   UserPlus, 
   Trophy, 
   Zap,
@@ -17,9 +16,11 @@ import {
   ShieldCheck,
   Camera,
   Calendar,
-  Trash2,
   UserMinus,
-  AlertTriangle
+  AlertTriangle,
+  ClipboardList,
+  Timer,
+  Check
 } from 'lucide-react';
 import { 
   Table, 
@@ -36,6 +37,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -64,6 +66,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useAuth } from '@/components/auth-context';
 
 const ROLE_MAPPINGS: Record<string, string> = {
   "ADMIN": "AD",
@@ -74,11 +77,22 @@ const ROLE_MAPPINGS: Record<string, string> = {
 };
 
 export default function AdminPage() {
+  const { user: currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState('EDITOR');
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
+  
+  // Task state
+  const [isTaskOpen, setIsTaskOpen] = useState(false);
+  const [taskTarget, setTaskTarget] = useState<any>(null);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
+  const [taskCategory, setTaskCategory] = useState('Operations');
+  const [taskDueDate, setTaskDueDate] = useState('');
+  const [taskHours, setTaskHours] = useState('');
+
   const { toast } = useToast();
   const firestore = useFirestore();
 
@@ -149,6 +163,43 @@ export default function AdminPage() {
     setIsGenerateOpen(false);
     setNewUserName('');
     setNewUserEmail('');
+  };
+
+  const handleCreateTask = () => {
+    if (!firestore || !taskTarget || !taskTitle || !taskDueDate || !currentUser) return;
+
+    const tasksRef = collection(firestore, 'tasks');
+    const taskData = {
+      title: taskTitle,
+      category: taskCategory,
+      priority: taskPriority,
+      dueDate: taskDueDate,
+      hours: taskHours || '0h',
+      status: 'pending',
+      assignedToId: taskTarget.id,
+      assignedToName: taskTarget.name,
+      assignedById: currentUser.id,
+      assignedByName: currentUser.name,
+      createdAt: serverTimestamp()
+    };
+
+    addDoc(tasksRef, taskData).catch(async (e) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: tasksRef.path,
+        operation: 'create',
+        requestResourceData: taskData
+      }));
+    });
+
+    toast({
+      title: "Directive Deployed",
+      description: `Task assigned to ${taskTarget.name} with command priority ${taskPriority}.`,
+    });
+
+    setIsTaskOpen(false);
+    setTaskTitle('');
+    setTaskHours('');
+    setTaskTarget(null);
   };
 
   const handleDeleteUser = (userId: string, userName: string) => {
@@ -342,34 +393,48 @@ export default function AdminPage() {
                           </div>
                         </TableCell>
                         <TableCell className="py-4 text-right pr-6 whitespace-nowrap">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50">
-                                <UserMinus className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
-                              <AlertDialogHeader>
-                                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4 text-red-600">
-                                  <AlertTriangle className="w-6 h-6" />
-                                </div>
-                                <AlertDialogTitle className="text-xl font-black text-slate-900">Terminate Personnel?</AlertDialogTitle>
-                                <AlertDialogDescription className="text-slate-500">
-                                  You are about to remove <strong>{emp.name}</strong> ({emp.systemId}) from the CONEX MEDIA secure database. 
-                                  This action will immediately revoke all network privileges and cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter className="gap-2 sm:gap-0">
-                                <AlertDialogCancel className="rounded-xl h-11 border-slate-200">Cancel Protocol</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleDeleteUser(emp.id, emp.name)}
-                                  className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl h-11"
-                                >
-                                  Confirm Termination
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/5"
+                              onClick={() => {
+                                setTaskTarget(emp);
+                                setIsTaskOpen(true);
+                              }}
+                            >
+                              <ClipboardList className="w-4 h-4" />
+                            </Button>
+
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50">
+                                  <UserMinus className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
+                                <AlertDialogHeader>
+                                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4 text-red-600">
+                                    <AlertTriangle className="w-6 h-6" />
+                                  </div>
+                                  <AlertDialogTitle className="text-xl font-black text-slate-900">Terminate Personnel?</AlertDialogTitle>
+                                  <AlertDialogDescription className="text-slate-500">
+                                    You are about to remove <strong>{emp.name}</strong> ({emp.systemId}) from the CONEX MEDIA secure database. 
+                                    This action will immediately revoke all network privileges and cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="gap-2 sm:gap-0">
+                                  <AlertDialogCancel className="rounded-xl h-11 border-slate-200">Cancel Protocol</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteUser(emp.id, emp.name)}
+                                    className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl h-11"
+                                  >
+                                    Confirm Termination
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -431,6 +496,100 @@ export default function AdminPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* CONTEXTUAL TASK DIALOG */}
+      <Dialog open={isTaskOpen} onOpenChange={setIsTaskOpen}>
+        <DialogContent className="max-w-[440px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+          {taskTarget && (
+            <div className="p-8 space-y-6">
+              <DialogHeader className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-100">
+                    <ClipboardList className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Assign Task</DialogTitle>
+                    <DialogDescription className="text-sm text-slate-500 font-medium">Issuing directive to {taskTarget.name}.</DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Directive Title</Label>
+                  <Input 
+                    placeholder="Enter mission objective" 
+                    value={taskTitle} 
+                    onChange={(e) => setTaskTitle(e.target.value)} 
+                    className="h-11 rounded-xl" 
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Command Priority</Label>
+                    <Select value={taskPriority} onValueChange={(val: any) => setTaskPriority(val)}>
+                      <SelectTrigger className="h-11 rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="URGENT">URGENT</SelectItem>
+                        <SelectItem value="HIGH">HIGH</SelectItem>
+                        <SelectItem value="NORMAL">NORMAL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Category</Label>
+                    <Select value={taskCategory} onValueChange={setTaskCategory}>
+                      <SelectTrigger className="h-11 rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Operations">Operations</SelectItem>
+                        <SelectItem value="Post-Production">Post-Production</SelectItem>
+                        <SelectItem value="Field Shoot">Field Shoot</SelectItem>
+                        <SelectItem value="Internal Support">Internal Support</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Due Date</Label>
+                    <Input 
+                      type="date" 
+                      value={taskDueDate} 
+                      onChange={(e) => setTaskDueDate(e.target.value)} 
+                      className="h-11 rounded-xl" 
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                      <Timer className="w-3 h-3 text-primary" />
+                      Hours
+                    </Label>
+                    <Input 
+                      placeholder="e.g. 3h" 
+                      value={taskHours} 
+                      onChange={(e) => setTaskHours(e.target.value)} 
+                      className="h-11 rounded-xl" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-4">
+                <Button variant="outline" onClick={() => setIsTaskOpen(false)} className="h-12 font-bold rounded-xl border-slate-200">Cancel</Button>
+                <Button onClick={handleCreateTask} className="h-12 bg-primary hover:bg-primary/90 font-bold rounded-xl text-white shadow-lg shadow-red-100">
+                  Deploy Directive
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
