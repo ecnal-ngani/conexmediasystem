@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -128,45 +129,51 @@ export function QuickActions() {
   const [isProjectOpen, setIsProjectOpen] = useState(false);
   const [lastReadTime, setLastReadTime] = useState<number>(0);
   
-  // Firestore
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Load last read time from storage
   useEffect(() => {
     const stored = localStorage.getItem('conex_last_notif_read');
     if (stored) setLastReadTime(parseInt(stored));
   }, []);
 
-  // Listeners for Notifications & Data
-  const schedulesQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(15)) : null, [firestore]);
-  const tasksQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(15)) : null, [firestore]);
-  const projectsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(15)) : null, [firestore]);
-  const usersQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'users'), orderBy('name', 'asc')) : null, [firestore]);
+  const schedulesQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(15));
+  }, [firestore, user]);
+
+  const tasksQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(15));
+  }, [firestore, user]);
+
+  const projectsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(15));
+  }, [firestore, user]);
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'users'), orderBy('name', 'asc'));
+  }, [firestore, user]);
 
   const { data: recentSchedules } = useCollection<any>(schedulesQuery);
   const { data: recentTasks } = useCollection<any>(tasksQuery);
   const { data: recentProjects } = useCollection<any>(projectsQuery);
   const { data: staffList } = useCollection<any>(usersQuery);
 
-  // Filter actions based on role
   const filteredActions = useMemo(() => {
     return QUICK_ACTIONS.filter(action => {
-      // Admin only filtering
       if (action.adminOnly && user?.role !== 'ADMIN') return false;
-      
-      // Intern restrictions: Cannot create projects, schedules, or tasks
       if (user?.role === 'INTERN') {
         if (action.action === 'project' || action.action === 'schedule' || action.action === 'task') {
           return false;
         }
       }
-      
       return true;
     });
   }, [user]);
 
-  // Combine and format notifications
   const notifications = useMemo(() => {
     const items: any[] = [];
 
@@ -220,7 +227,6 @@ export function QuickActions() {
     toast({ title: "Intelligence Cleared", description: "All command updates marked as read." });
   };
 
-  // Schedule Form State
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
   const [schedulePriority, setSchedulePriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [client, setClient] = useState('');
@@ -231,7 +237,6 @@ export function QuickActions() {
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
-  // Task Form State
   const [taskTitle, setTaskTitle] = useState('');
   const [taskCategory, setTaskCategory] = useState('Operations');
   const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
@@ -239,7 +244,6 @@ export function QuickActions() {
   const [taskHours, setTaskHours] = useState('');
   const [assignedToId, setAssignedToId] = useState('');
 
-  // Project Form State
   const [fileCode, setFileCode] = useState('');
   const [brand, setBrand] = useState('');
   const [contentIdea, setContentIdea] = useState('');
@@ -482,7 +486,6 @@ export function QuickActions() {
         </Dialog>
       </div>
 
-      {/* NEW PROJECT DIALOG */}
       <Dialog open={isProjectOpen} onOpenChange={setIsProjectOpen}>
         <DialogContent className="max-w-[540px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
           <ScrollArea className="max-h-[90vh]">
@@ -531,7 +534,6 @@ export function QuickActions() {
         </DialogContent>
       </Dialog>
 
-      {/* NEW TASK DIALOG */}
       <Dialog open={isTaskOpen} onOpenChange={setIsTaskOpen}>
         <DialogContent className="max-w-[440px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
           <div className="p-6 md:p-8 space-y-6">
@@ -588,7 +590,6 @@ export function QuickActions() {
         </DialogContent>
       </Dialog>
 
-      {/* NEW SCHEDULE DIALOG */}
       <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
         <DialogContent className="max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
           <ScrollArea className="max-h-[90vh]">
