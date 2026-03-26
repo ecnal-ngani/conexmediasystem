@@ -143,7 +143,7 @@ export function QuickActions() {
 
   const tasksQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return query(collection(firestore, 'tasks'), orderBy('createdAt', 'desc'), limit(15));
+    return query(collection(firestore, 'tasks'), orderBy('updatedAt', 'desc'), limit(15));
   }, [firestore, user]);
 
   const projectsQuery = useMemoFirebase(() => {
@@ -192,7 +192,7 @@ export function QuickActions() {
       id: `t-${t.id}`,
       title: t.status === 'completed' ? 'Task Completed ✅' : 'Task Assigned',
       description: t.title,
-      details: `By: ${t.assignedByName || 'Command'} • Due: ${t.dueDate || 'No date'}`,
+      details: `By: ${t.assignedByName || 'Command'} • Assignee: ${t.assignedToName || 'Personnel'}`,
       time: (t.updatedAt || t.createdAt)?.toDate ? formatDistanceToNow((t.updatedAt || t.createdAt).toDate(), { addSuffix: true }) : 'Just now',
       priority: t.status === 'completed' ? 'DONE' : (t.priority || 'NORMAL'),
       icon: t.status === 'completed' ? CheckCircle2 : ListTodo,
@@ -347,7 +347,7 @@ export function QuickActions() {
       case 'REGULAR':
         return "bg-blue-100 text-blue-700 border-blue-200";
       case 'DONE':
-        return "bg-green-100 text-green-700 border-green-200";
+        return "bg-green-600 text-white border-green-700 shadow-sm";
       default:
         return "bg-slate-100 text-slate-600 border-slate-200";
     }
@@ -356,7 +356,12 @@ export function QuickActions() {
   return (
     <>
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-30 pointer-events-none">
-        <Sheet>
+        <Sheet onOpenChange={(open) => {
+          if (!open) {
+            // Optional: Mark all as read when sheet is closed
+            // handleMarkAllRead();
+          }
+        }}>
           <SheetTrigger asChild>
             <button className="pointer-events-auto relative w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform active:scale-95 group">
               <Bell className="w-5 h-5" />
@@ -409,7 +414,7 @@ export function QuickActions() {
                           "p-5 rounded-2xl border-2 transition-all hover:shadow-md relative overflow-hidden",
                           isUnread ? "bg-white border-primary/20 shadow-sm" : "bg-slate-50/50 border-slate-100",
                           (notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH') && "border-l-4 border-l-red-500",
-                          notif.priority === 'DONE' && "border-l-4 border-l-green-500"
+                          notif.priority === 'DONE' && "border-l-4 border-l-green-600 bg-green-50/30"
                         )}>
                           {isUnread && (
                             <div className="absolute top-0 right-0">
@@ -422,10 +427,11 @@ export function QuickActions() {
                               notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH'
                                 ? "bg-red-500 border-red-200 text-white" 
                                 : notif.priority === 'DONE'
-                                ? "bg-green-500 border-green-200 text-white"
+                                ? "bg-green-600 border-green-200 text-white"
                                 : "bg-white border-slate-100 text-slate-600 shadow-sm"
                             )}>
-                              {notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH' ? <ShieldAlert className="w-5 h-5" /> : <notif.icon className="w-5 h-5" />}
+                              {notif.priority === 'DONE' ? <CheckCircle2 className="w-5 h-5" /> : 
+                               (notif.priority === 'URGENT' || notif.priority === 'HIGH' || notif.priority === 'RUSH' ? <ShieldAlert className="w-5 h-5" /> : <notif.icon className="w-5 h-5" />)}
                             </div>
                             <div className="flex-1 space-y-1">
                               <div className="flex items-center justify-between">
