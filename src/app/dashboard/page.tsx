@@ -287,10 +287,13 @@ export default function DashboardPage() {
                     </TableRow>
                   ) : (
                     tasks?.map((t: any, idx: number) => (
-                      <TableRow key={t.id || idx} className="border-slate-50 hover:bg-slate-50/30 transition-colors group">
+                      <TableRow key={t.id || idx} className={cn(
+                        "border-slate-50 transition-colors group",
+                        t.status === 'completed' ? "bg-green-50/30 hover:bg-green-50/50" : "hover:bg-slate-50/30"
+                      )}>
                         <TableCell className="py-4 pl-6">
                           <div className="flex flex-col">
-                            <span className="font-bold text-slate-900">{t.title}</span>
+                            <span className={cn("font-bold", t.status === 'completed' ? "text-green-800" : "text-slate-900")}>{t.title}</span>
                             <span className="text-[9px] uppercase font-black text-slate-400 tracking-widest">{t.category}</span>
                           </div>
                         </TableCell>
@@ -306,7 +309,7 @@ export default function DashboardPage() {
                         <TableCell className="py-4">
                           <Badge className={cn(
                             "text-[9px] font-bold px-2 py-0.5 border-none",
-                            t.status === 'completed' || t.status === 'Approved' ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"
+                            t.status === 'completed' || t.status === 'Approved' ? "bg-green-600 text-white" : "bg-orange-50 text-orange-600"
                           )}>
                             {t.status?.toUpperCase() || 'PENDING'}
                           </Badge>
