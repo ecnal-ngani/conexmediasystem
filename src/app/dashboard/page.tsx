@@ -25,7 +25,9 @@ import {
   BookOpen,
   Award,
   Calendar,
-  User as UserIcon
+  User as UserIcon,
+  Check,
+  MoreHorizontal
 } from 'lucide-react';
 import { 
   Table, 
@@ -36,7 +38,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where, doc, updateDoc } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { 
@@ -52,6 +54,10 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { EMPLOYEES } from '@/lib/mock-data';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const performanceData = [
   { name: 'Jan', efficiency: 82, projects: 45 },
@@ -65,6 +71,7 @@ const performanceData = [
 export default function DashboardPage() {
   const { user } = useAuth();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -89,6 +96,27 @@ export default function DashboardPage() {
   const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
   const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
   const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
+
+  const handleCompleteTask = (taskId: string, title: string) => {
+    if (!firestore) return;
+    const taskRef = doc(firestore, 'tasks', taskId);
+    const updateData = { status: 'completed' };
+
+    updateDoc(taskRef, updateData)
+      .then(() => {
+        toast({
+          title: "Directive Completed",
+          description: `"${title}" has been successfully synchronized as completed.`,
+        });
+      })
+      .catch(async (e) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: taskRef.path,
+          operation: 'update',
+          requestResourceData: updateData
+        }));
+      });
+  };
 
   const roleConfig = useMemo(() => {
     const role = user?.role || 'EDITOR';
@@ -241,25 +269,26 @@ export default function DashboardPage() {
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Hours</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Command Node</TableHead>
                     <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Status</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pr-6">Date</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Date</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pr-6 text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {tLoading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-40 text-center">
+                      <TableCell colSpan={6} className="h-40 text-center">
                         <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                       </TableCell>
                     </TableRow>
                   ) : tasks?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-40 text-center text-slate-400 font-medium">
+                      <TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium">
                         No tactical directives assigned yet.
                       </TableCell>
                     </TableRow>
                   ) : (
                     tasks?.map((t: any, idx: number) => (
-                      <TableRow key={t.id || idx} className="border-slate-50 hover:bg-slate-50/30 transition-colors">
+                      <TableRow key={t.id || idx} className="border-slate-50 hover:bg-slate-50/30 transition-colors group">
                         <TableCell className="py-4 pl-6">
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-900">{t.title}</span>
@@ -283,8 +312,25 @@ export default function DashboardPage() {
                             {t.status?.toUpperCase() || 'PENDING'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="py-4 pr-6 text-slate-400 text-xs font-medium">
+                        <TableCell className="py-4 text-slate-400 text-xs font-medium">
                           {t.createdAt?.toDate ? format(t.createdAt.toDate(), 'MMM d') : 'Recent'}
+                        </TableCell>
+                        <TableCell className="py-4 pr-6 text-right">
+                          {t.status !== 'completed' ? (
+                            <Button 
+                              onClick={() => handleCompleteTask(t.id, t.title)}
+                              size="sm" 
+                              className="bg-primary hover:bg-primary/90 text-white font-bold h-8 px-3 rounded-lg shadow-lg shadow-red-100 group-hover:scale-105 transition-transform"
+                            >
+                              <Check className="w-3 h-3 mr-1.5" />
+                              DONE
+                            </Button>
+                          ) : (
+                            <div className="flex items-center justify-end text-green-600 gap-1.5 font-bold text-[10px] uppercase tracking-widest">
+                              <CheckCircle2 className="w-4 h-4" />
+                              Synchronized
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

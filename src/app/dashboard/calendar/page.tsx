@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -25,7 +26,8 @@ import {
   Trash2,
   ShieldAlert,
   Save,
-  Building2
+  Building2,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -211,6 +213,28 @@ export default function CalendarPage() {
       .catch(async (err) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: docRef.path,
+          operation: 'update',
+          requestResourceData: updateData
+        }));
+      });
+  };
+
+  const handleCompleteTask = (taskId: string, title: string) => {
+    if (!firestore) return;
+    const taskRef = doc(firestore, 'tasks', taskId);
+    const updateData = { status: 'completed' };
+
+    updateDoc(taskRef, updateData)
+      .then(() => {
+        toast({
+          title: "Directive Completed",
+          description: `"${title}" has been successfully synchronized as completed.`,
+        });
+        setSelectedEvent(null);
+      })
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: taskRef.path,
           operation: 'update',
           requestResourceData: updateData
         }));
@@ -419,25 +443,27 @@ export default function CalendarPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        <Card className="xl:col-span-3 border-none shadow-none bg-transparent">
-          <CardHeader className="flex flex-row items-center justify-between bg-white border rounded-t-xl py-4 px-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <CalendarIcon className="w-5 h-5 text-primary" />
-              <CardTitle className="text-lg font-bold">{mounted ? format(viewDate, 'MMMM yyyy') : 'Loading...'}</CardTitle>
-              {(sLoading || pLoading || tLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
-            </div>
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
-              <Button variant="ghost" size="icon" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
-            </div>
-          </CardHeader>
-          <CardContent className="bg-white border-x border-b rounded-b-xl p-6 shadow-sm">
-            <div className="grid grid-cols-7 gap-4 text-center mb-6">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <span key={d} className="text-[10px] font-black uppercase tracking-widest text-slate-400">{d}</span>)}
-            </div>
-            <div className="grid grid-cols-7 gap-4">{renderCalendarDays()}</div>
-          </CardContent>
-        </Card>
+        <div className="xl:col-span-3">
+          <Card className="border-none shadow-none bg-transparent">
+            <CardHeader className="flex flex-row items-center justify-between bg-white border rounded-t-xl py-4 px-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <CalendarIcon className="w-5 h-5 text-primary" />
+                <CardTitle className="text-lg font-bold">{mounted ? format(viewDate, 'MMMM yyyy') : 'Loading...'}</CardTitle>
+                {(sLoading || pLoading || tLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+              </div>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
+              </div>
+            </CardHeader>
+            <CardContent className="bg-white border-x border-b rounded-b-xl p-6 shadow-sm">
+              <div className="grid grid-cols-7 gap-4 text-center mb-6">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <span key={d} className="text-[10px] font-black uppercase tracking-widest text-slate-400">{d}</span>)}
+              </div>
+              <div className="grid grid-cols-7 gap-4">{renderCalendarDays()}</div>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card className="border shadow-none rounded-xl bg-white overflow-hidden flex flex-col h-fit">
           <CardHeader className="border-b bg-slate-50/30"><CardTitle className="text-base font-bold text-slate-800">Command-Wide Matrix</CardTitle></CardHeader>
@@ -455,7 +481,10 @@ export default function CalendarPage() {
                       <h4 className="text-xs font-bold text-slate-800 group-hover:text-primary truncate max-w-[70%]">{task.title}</h4>
                       <Badge variant="outline" className={cn("text-[8px]", task.priority === 'URGENT' ? "text-red-600" : "text-blue-600")}>{task.priority}</Badge>
                     </div>
-                    <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span>TASK</span><span>{task.dueDate}</span></div>
+                    <div className="flex justify-between mt-4 text-[10px] text-slate-400">
+                      <span>{task.status === 'completed' ? '✓ DONE' : 'TASK'}</span>
+                      <span>{task.dueDate}</span>
+                    </div>
                   </div>
                 ))}
                 {projects?.filter(p => p.status !== 'Approved').map((p: any) => (
@@ -520,6 +549,14 @@ export default function CalendarPage() {
                     <p className="text-xs font-bold text-slate-700">{selectedEvent.location}</p>
                   </div>
                 )}
+                {selectedEvent.status && (
+                  <div className="space-y-1 col-span-2">
+                    <p className="text-[10px] uppercase font-black text-slate-400">Status</p>
+                    <Badge variant="secondary" className="bg-slate-100 text-slate-700 uppercase font-black text-[10px]">
+                      {selectedEvent.status}
+                    </Badge>
+                  </div>
+                )}
                 {selectedEvent.contentIdea && (
                   <div className="space-y-1 col-span-2">
                     <p className="text-[10px] uppercase font-black text-slate-400">Content Idea</p>
@@ -534,12 +571,22 @@ export default function CalendarPage() {
                 )}
               </div>
               
-              {/* ADMIN ACTION ZONE */}
+              {/* ACTION ZONE */}
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
+                {selectedEvent.source === 'task' && selectedEvent.status !== 'completed' && (
+                  <Button 
+                    onClick={() => handleCompleteTask(selectedEvent.id, selectedEvent.title)} 
+                    className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100"
+                  >
+                    <Check className="w-4 h-4" />
+                    MARK AS DONE
+                  </Button>
+                )}
+
                 {isAdmin && (
                   <Button 
                     onClick={handleUpdateEventDate} 
-                    className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100"
+                    className="w-full h-12 font-bold rounded-xl gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-100"
                   >
                     <Save className="w-4 h-4" />
                     Save Deployment Update
