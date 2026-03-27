@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -14,7 +13,6 @@ import {
   Loader2, 
   Home, 
   Building2, 
-  Info, 
   ShieldCheck, 
   User as UserIcon, 
   GraduationCap, 
@@ -22,7 +20,6 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 type RoleId = 'admin' | 'employee' | 'intern';
 
@@ -60,7 +57,6 @@ export default function LoginPage() {
 
   const handleRoleSelect = (roleId: RoleId) => {
     setSelectedRole(roleId);
-    // Removed auto-filling of demo emails to prevent unintended "auto-login" feel
     setEmail(''); 
     setPassword('');
     setView('login');
@@ -227,13 +223,6 @@ export default function LoginPage() {
                 )}
               </Button>
               
-              <Alert className="bg-slate-50 border-dashed border-slate-200">
-                <Info className="h-4 w-4 text-slate-400" />
-                <AlertDescription className="text-[10px] leading-tight text-slate-500">
-                  <strong>DEMO ACCESS:</strong> Use <code>admin@conex.private</code>, <code>employee@conex.private</code>, or <code>intern@conex.private</code>.
-                </AlertDescription>
-              </Alert>
-
               <p className="text-[10px] text-center text-slate-400 px-6 font-medium">
                 By signing in, you agree to the <span className="underline cursor-pointer hover:text-primary transition-colors">Classified Media Policy</span>.
               </p>

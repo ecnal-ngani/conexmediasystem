@@ -51,7 +51,4 @@ If you get an error when running `npm install` saying scripts are disabled:
 - [x] Browser opens to `localhost:9002`.
 
 ## Security Notice
-This is a private network prototype. Authorized personnel credentials:
-- `admin@conex.private`
-- `employee@conex.private`
-- `intern@conex.private`
+This is a private network prototype. Access is restricted to authorized personnel registered in the secure Firestore database. Default demo accounts have been decommissioned for production readiness.

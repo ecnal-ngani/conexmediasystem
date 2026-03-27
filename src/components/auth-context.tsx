@@ -2,9 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Role } from '@/lib/mock-data';
+import { User } from '@/lib/mock-data';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
-import { collection, query, where, getDocs, limit, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -42,7 +42,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsWfh(storedWfh);
         setIsVerified(!storedWfh);
         
-        // Ensure Firebase Auth is signed in for existing sessions
         if (firebaseAuth && !firebaseAuth.currentUser) {
           signInAnonymously(firebaseAuth).catch(console.error);
         }
@@ -55,78 +54,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, wfhStatus: boolean, roleId?: string) => {
     if (!firestore || !firebaseAuth) {
-      throw new Error('Database not initialized. Please try again in a few seconds.');
+      throw new Error('Security node not synchronized. Please retry.');
     }
     
     setIsLoading(true);
     try {
-      // Step 1: Sign in anonymously to Firebase Auth to establish a secure session
       await signInAnonymously(firebaseAuth);
 
-      // Step 2: Proceed with mock data lookup
       const usersRef = collection(firestore, 'users');
       const q = query(usersRef, where('email', '==', email.toLowerCase()), limit(1));
       const querySnapshot = await getDocs(q);
       
-      let foundUser: User | null = null;
-
       if (querySnapshot.empty) {
-        // AUTO-PROVISIONING LOGIC FOR DEMO ACCOUNTS
-        const normalizedEmail = email.toLowerCase();
-        let provisionedData = null;
-
-        if (normalizedEmail === 'admin@conex.private') {
-          provisionedData = {
-            systemId: 'CX-AD-01',
-            name: 'Command Administrator',
-            email: normalizedEmail,
-            role: 'ADMIN',
-            status: 'Office',
-            badges: ['🛡️'],
-            avatarUrl: 'https://picsum.photos/seed/admin-master/200/200'
-          };
-        } else if (normalizedEmail === 'employee@conex.private') {
-          provisionedData = {
-            systemId: 'CX-ED-01',
-            name: 'Production Editor',
-            email: normalizedEmail,
-            role: 'EDITOR',
-            status: 'Office',
-            points: 500,
-            xp: 2500,
-            badges: ['⚡'],
-            avatarUrl: 'https://picsum.photos/seed/employee-lead/200/200'
-          };
-        } else if (normalizedEmail === 'intern@conex.private') {
-          provisionedData = {
-            systemId: 'CX-IN-01',
-            name: 'Creative Intern',
-            email: normalizedEmail,
-            role: 'INTERN',
-            status: 'Office',
-            points: 100,
-            xp: 500,
-            badges: [],
-            avatarUrl: 'https://picsum.photos/seed/intern-user/200/200',
-            school: 'University of Santo Tomas',
-            course: 'BS Multimedia Arts',
-            startDate: '2025-11-01',
-            expectedCompletionDate: '2026-03-15'
-          };
-        }
-
-        if (provisionedData) {
-          const docRef = await addDoc(usersRef, { ...provisionedData, createdAt: serverTimestamp() });
-          foundUser = { id: docRef.id, ...provisionedData } as any;
-        } else {
-          throw new Error('Invalid credentials. Identity not found in secure database.');
-        }
-      } else {
-        const userDoc = querySnapshot.docs[0];
-        foundUser = { id: userDoc.id, ...userDoc.data() } as User;
+        throw new Error('Access Denied. Identity not found in secure database.');
       }
 
-      if (!foundUser) throw new Error('Authentication failed.');
+      const userDoc = querySnapshot.docs[0];
+      const foundUser = { id: userDoc.id, ...userDoc.data() } as User;
 
       if (roleId === 'admin' && foundUser.role !== 'ADMIN') {
         throw new Error('This account does not have Administrator clearance.');
@@ -155,7 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateUser = (updates: Partial<User>) => {
     if (!user || !firestore) return;
 
-    // Filter out undefined values as Firestore doesn't support them
     const sanitizedUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     );
@@ -167,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('conex_session', JSON.stringify(updatedUser));
     
     const userRef = doc(firestore, 'users', user.id);
-    updateDoc(userRef, sanitizedUpdates).catch(async (e) => {
+    updateDoc(userRef, { ...sanitizedUpdates, updatedAt: serverTimestamp() }).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: userRef.path,
         operation: 'update',
