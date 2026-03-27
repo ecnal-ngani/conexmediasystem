@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -15,242 +16,107 @@
           "description": "The user's primary email address, often used as a unique identifier for contact purposes.",
           "format": "email"
         },
-        "firstName": {
+        "name": {
           "type": "string",
-          "description": "The first name of the user."
+          "description": "The full name of the user."
         },
-        "lastName": {
+        "systemId": {
           "type": "string",
-          "description": "The last name of the user."
+          "description": "The tactical system ID (e.g., CX-AD-01)."
         },
-        "lastLoginAt": {
+        "role": {
           "type": "string",
-          "description": "Timestamp indicating the user's most recent successful login.",
-          "format": "date-time"
+          "description": "The primary role assigned to this user.",
+          "enum": ["ADMIN", "BRAND_MANAGER", "VIDEOGRAPHER", "EDITOR", "INTERN"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Current operational status.",
+          "enum": ["Office", "WFH", "Offline"]
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp indicating when the user account was created in the system.",
+          "description": "Timestamp indicating when the user account was created.",
           "format": "date-time"
         },
         "updatedAt": {
           "type": "string",
-          "description": "Timestamp indicating when the user's profile information was last updated.",
+          "description": "Timestamp indicating when the profile was last updated.",
           "format": "date-time"
-        },
-        "roleIds": {
-          "type": "array",
-          "description": "References to the roles assigned to this user, determining their access levels. (Relationship: User N:N Role)",
-          "items": {
-            "type": "string"
-          }
         }
       },
       "required": [
         "id",
         "email",
-        "firstName",
-        "lastName",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
-    "Role": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Role",
-      "type": "object",
-      "description": "Defines a specific role within the CONEX Gateway, used for Role-Based Access Control (RBAC) to manage user permissions and content visibility.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Role entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the role (e.g., 'Administrator', 'Content Editor', 'Viewer'). This name should be unique."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief explanation of the role's purpose, responsibilities, and general permissions."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the role was created in the system.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the role's definition was last updated.",
-          "format": "date-time"
-        },
-        "userIds": {
-          "type": "array",
-          "description": "References to users who have been assigned this role. (Relationship: Role N:N User)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "contentAccessIds": {
-          "type": "array",
-          "description": "References to content items that are accessible by users with this role. (Relationship: Role N:N Content)",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
         "name",
-        "description",
+        "systemId",
+        "role",
         "createdAt",
         "updatedAt"
       ]
     },
-    "Content": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Content",
+    "Verification": {
+      "title": "Verification",
       "type": "object",
-      "description": "Represents a piece of exclusive media or resource available within the CONEX Gateway, subject to role-based access control.",
+      "description": "Biometric verification log for WFH compliance.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Content entity."
-        },
-        "title": {
-          "type": "string",
-          "description": "The primary title of the content item."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief summary or overview of the content's subject matter or purpose."
-        },
-        "contentBody": {
-          "type": "string",
-          "description": "The main body of the content. This could be plain text, HTML, a markdown string, or a URL pointing to the actual media file (e.g., video, image)."
-        },
-        "contentType": {
-          "type": "string",
-          "description": "The categorization of the content (e.g., 'Document', 'Article', 'Video', 'Image', 'Resource Link')."
-        },
-        "authorId": {
-          "type": "string",
-          "description": "Reference to the User who originally created or uploaded this content. (Relationship: User 1:N Content)"
-        },
-        "publishedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the content was officially published or made available to authorized users.",
-          "format": "date-time"
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the content record was first created in the system.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the content record was last updated.",
-          "format": "date-time"
-        },
-        "accessibleByRoleIds": {
-          "type": "array",
-          "description": "References to roles that are authorized to view or access this specific content item. (Relationship: Content N:N Role)",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "contentBody",
-        "contentType",
-        "authorId",
-        "createdAt",
-        "updatedAt"
-      ]
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userSystemId": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "isVerified": { "type": "boolean" },
+        "confidence": { "type": "number" }
+      }
     },
-    "UserPreference": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserPreference",
+    "Task": {
+      "title": "Task",
       "type": "object",
-      "description": "Stores individual user preferences, which are utilized by the AI-Powered Content Curator Tool to generate personalized content suggestions.",
+      "description": "Tactical directive assigned to personnel.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserPreference entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the User to whom this preference belongs. (Relationship: User 1:N UserPreference)"
-        },
-        "preferenceType": {
-          "type": "string",
-          "description": "The category or type of preference being stored (e.g., 'preferredTopic', 'contentFormat', 'favoriteAuthor')."
-        },
-        "preferenceValue": {
-          "type": "string",
-          "description": "The specific value associated with the preference type (e.g., 'Cybersecurity', 'Video', 'John Doe')."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when this user preference was first recorded.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when this user preference was last modified.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "preferenceType",
-        "preferenceValue",
-        "createdAt",
-        "updatedAt"
-      ]
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "priority": { "type": "string", "enum": ["URGENT", "HIGH", "NORMAL"] },
+        "dueDate": { "type": "string" },
+        "status": { "type": "string" },
+        "assignedToId": { "type": "string" },
+        "assignedToName": { "type": "string" },
+        "assignedById": { "type": "string" },
+        "assignedByName": { "type": "string" }
+      }
     },
-    "Recommendation": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Recommendation",
+    "Project": {
+      "title": "Project",
       "type": "object",
-      "description": "Represents an AI-generated content recommendation for a specific user, based on content analysis and user preferences.",
+      "description": "Production item in the hub.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Recommendation entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the User for whom this content is recommended. (Relationship: User 1:N Recommendation)"
-        },
-        "contentId": {
-          "type": "string",
-          "description": "Reference to the Content item that is being recommended. (Relationship: Content 1:N Recommendation)"
-        },
-        "score": {
-          "type": "number",
-          "description": "A numerical score indicating the relevance or confidence level of the recommendation (e.g., a value between 0 and 1)."
-        },
-        "recommendedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when this recommendation was generated by the AI system.",
-          "format": "date-time"
-        },
-        "modelVersion": {
-          "type": "string",
-          "description": "Identifies the specific version of the AI model that generated this recommendation, useful for tracking performance and updates."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "contentId",
-        "score",
-        "recommendedAt",
-        "modelVersion"
-      ]
+        "fileCode": { "type": "string" },
+        "brand": { "type": "string" },
+        "status": { "type": "string" },
+        "priority": { "type": "string" },
+        "artist": { "type": "string" },
+        "dueDate": { "type": "string" }
+      }
+    },
+    "Brand": {
+      "title": "Brand",
+      "type": "object",
+      "description": "Authorized client brand.",
+      "properties": {
+        "name": { "type": "string" },
+        "prefix": { "type": "string" }
+      }
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "type": "object",
+      "description": "Calendar event or shoot.",
+      "properties": {
+        "title": { "type": "string" },
+        "type": { "type": "string" },
+        "date": { "type": "string" },
+        "location": { "type": "string" }
+      }
     }
   },
   "auth": {
@@ -265,127 +131,50 @@
         "path": "/users/{userId}",
         "definition": {
           "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores individual user profiles. Access is path-based, restricted to the authenticated user. Includes a denormalized 'roleIds' array for backend function processing.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user, matching request.auth.uid."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Primary user profiles."
         }
       },
       {
-        "path": "/system_roles_admin/{adminId}",
+        "path": "/verifications/{id}",
         "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Placeholder documents (e.g., just an ID) indicating users with system-wide administrative privileges. Used for 'existence' checks in security rules to grant admin permissions. The entity is 'User' as it refers to a user ID.",
-          "params": [
-            {
-              "name": "adminId",
-              "description": "The unique identifier of a user who holds a system administration role."
-            }
-          ]
+          "entityName": "Verification",
+          "schema": { "$ref": "#/backend/entities/Verification" },
+          "description": "Biometric logs."
         }
       },
       {
-        "path": "/roles/{roleId}",
+        "path": "/tasks/{id}",
         "definition": {
-          "entityName": "Role",
-          "schema": {
-            "$ref": "#/backend/entities/Role"
-          },
-          "description": "Defines system roles, including their descriptions and lists of associated 'userIds' and 'contentAccessIds'. Write access is restricted to system administrators. Read access is available for backend functions and potentially authenticated users for display, but not for direct content access authorization in rules.",
-          "params": [
-            {
-              "name": "roleId",
-              "description": "The unique identifier for a specific role."
-            }
-          ]
+          "entityName": "Task",
+          "schema": { "$ref": "#/backend/entities/Task" },
+          "description": "Assigned internal tasks."
         }
       },
       {
-        "path": "/content/{contentId}",
+        "path": "/projects/{id}",
         "definition": {
-          "entityName": "Content",
-          "schema": {
-            "$ref": "#/backend/entities/Content"
-          },
-          "description": "Stores exclusive media and resources. Includes 'authorId' for ownership and 'accessibleByRoleIds' which are processed by backend functions to manage denormalized user-specific access. Read access is controlled via the '/user_content_access' collection, achieving authorization independence.",
-          "params": [
-            {
-              "name": "contentId",
-              "description": "The unique identifier for a specific content item."
-            }
-          ]
+          "entityName": "Project",
+          "schema": { "$ref": "#/backend/entities/Project" },
+          "description": "Production hub items."
         }
       },
       {
-        "path": "/user_content_access/{userId}/content/{contentId}",
+        "path": "/brands/{id}",
         "definition": {
-          "entityName": "Content",
-          "schema": {
-            "$ref": "#/backend/entities/Content"
-          },
-          "description": "CRITICAL FOR AUTHORIZATION INDEPENDENCE AND QAPs. This subcollection denormalizes content access. Each document indicates that the specific 'userId' is authorized to access the corresponding 'contentId'. Managed by Cloud Functions reacting to changes in Users, Roles, and Content. Provides a direct, queryable list for the 'Protected Content Dashboard' and enables atomic read rules for '/content/{contentId}'.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "contentId",
-              "description": "The unique identifier of the content item this user is authorized to access."
-            }
-          ]
+          "entityName": "Brand",
+          "schema": { "$ref": "#/backend/entities/Brand" },
+          "description": "Registered clients."
         }
       },
       {
-        "path": "/users/{userId}/preferences/{preferenceId}",
+        "path": "/schedules/{id}",
         "definition": {
-          "entityName": "UserPreference",
-          "schema": {
-            "$ref": "#/backend/entities/UserPreference"
-          },
-          "description": "Stores individual user preferences. This is a subcollection, ensuring path-based ownership where 'userId' matches the parent user and 'request.auth.uid'.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user to whom these preferences belong."
-            },
-            {
-              "name": "preferenceId",
-              "description": "The unique identifier for a specific user preference."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/recommendations/{recommendationId}",
-        "definition": {
-          "entityName": "Recommendation",
-          "schema": {
-            "$ref": "#/backend/entities/Recommendation"
-          },
-          "description": "Stores AI-generated content recommendations. This is a subcollection, ensuring path-based ownership where 'userId' matches the parent user and 'request.auth.uid'.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user for whom the recommendation is generated."
-            },
-            {
-              "name": "recommendationId",
-              "description": "The unique identifier for a specific content recommendation."
-            }
-          ]
+          "entityName": "Schedule",
+          "schema": { "$ref": "#/backend/entities/Schedule" },
+          "description": "Calendar events."
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed with a strong emphasis on Authorization Independence and Queryable Access Patterns (QAPs), as mandated by the core design principles. The primary strategy to achieve authorization independence, especially for content access in an RBAC system without custom claims, is through **denormalization managed by backend functions**.\n\n1.  **User Profiles (`/users/{userId}`):** User profiles are stored in a top-level collection, with `userId` directly mapping to `request.auth.uid`. This ensures that each user owns and can manage their profile (User Profile Management feature). The `roleIds` field within the user document is the source of truth for a user's roles.\n\n2.  **System Administrator Roles (`/system_roles_admin/{adminId}`):** A dedicated top-level collection is used for system-wide administrative roles. This follows the 'Existence over Content' principle for global roles, allowing for simple `exists()` checks in security rules to grant administrative privileges for actions like managing roles or publishing content. This makes admin checks atomic and independent.\n\n3.  **Roles Definitions (`/roles/{roleId}`):** This collection stores the definitions of roles (e.g., 'Administrator', 'Viewer') and includes lists of `userIds` and `contentAccessIds` to define the N:N relationships between Users, Roles, and Content. Access to this collection is restricted to system administrators for write operations, while it's generally readable by authenticated users (or by backend functions) to facilitate rule evaluation. However, for critical content access, this collection isn't directly `get()`'d by rules.\n\n4.  **Content Items (`/content/{contentId}`):** This collection stores the actual exclusive media and resources. It includes `authorId` for ownership and `accessibleByRoleIds` to indicate which roles can access this content. \n\n    *   **Authorization Independence for Reads (CRITICAL):** To avoid `get()` calls in security rules for checking `Content` read access, and to enable robust QAPs, a dedicated denormalized collection, `/user_content_access/{userId}/content/{contentId}`, is introduced. The read rule for `/content/{contentId}` explicitly checks for the existence of a corresponding document in this denormalized collection: `allow read: if exists(/user_content_access/$(request.auth.uid)/content/$(contentId))`. This ensures that the security decision for a `Content` document is self-contained and does not rely on `get()` calls to other documents (like the user's roles or the role definitions themselves).\n\n    *   **QAPs for Content Listing:** The `/user_content_access/{userId}/content/{contentId}` collection directly supports the 'Protected Content Dashboard' feature. A user can query their subcollection (`/user_content_access/{request.auth.uid}/content`) to efficiently retrieve a list of all content items they are authorized to view. This prevents rules from acting as filters, as the result set is pre-filtered by the structure.\n\n    *   **Backend Management:** The population and updates of the `/user_content_access` collection are handled by Cloud Functions. These functions listen for changes in `users/{userId}.roleIds`, `roles/{roleId}.userIds`, `roles/{roleId}.contentAccessIds`, and `content/{contentId}.accessibleByRoleIds`. When any of these change, the functions recalculate and update the relevant `user_content_access` documents, ensuring data consistency and real-time access control.\n\n5.  **User Preferences (`/users/{userId}/preferences/{preferenceId}`):** User preferences are stored as a subcollection under the respective user's profile. This maintains strong path-based ownership, making security rules simple (e.g., `request.auth.uid == userId`).\n\n6.  **AI-Generated Recommendations (`/users/{userId}/recommendations/{recommendationId}`):** Similar to user preferences, AI recommendations are stored as a subcollection under the user's profile. This also ensures path-based ownership and simplified security rules for accessing personalized recommendations.\n\nThis design prioritizes authorization independence by denormalizing access decisions to a per-user, per-content level, which is managed by backend logic. This allows Firestore rules to remain simple, explicit, and performant, avoiding problematic `get()` operations for core authorization checks and facilitating efficient QAPs for listing content."
+    ]
   }
 }
