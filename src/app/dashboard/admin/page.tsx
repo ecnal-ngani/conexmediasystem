@@ -20,7 +20,8 @@ import {
   AlertTriangle,
   ClipboardList,
   Timer,
-  Check
+  History,
+  Clock
 } from 'lucide-react';
 import { 
   Table, 
@@ -180,7 +181,8 @@ export default function AdminPage() {
       assignedToName: taskTarget.name,
       assignedById: currentUser.id,
       assignedByName: currentUser.name,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     };
 
     addDoc(tasksRef, taskData).catch(async (e) => {
@@ -318,6 +320,10 @@ export default function AdminPage() {
             <Users className="w-4 h-4 mr-2" />
             Staff Management
           </TabsTrigger>
+          <TabsTrigger value="attendance" className="rounded-lg font-bold text-xs h-10 px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <History className="w-4 h-4 mr-2" />
+            Attendance History
+          </TabsTrigger>
           <TabsTrigger value="biometric" className="rounded-lg font-bold text-xs h-10 px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm">
             <Camera className="w-4 h-4 mr-2" />
             Biometric Logs
@@ -442,6 +448,52 @@ export default function AdminPage() {
                 </TableBody>
               </Table>
             </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="attendance" className="space-y-6">
+          <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader className="bg-slate-50/50">
+                <TableRow className="border-0">
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 pl-6">Personnel</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5">System ID</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5">Timestamp</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5">Method</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 text-center">Status</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 text-right pr-6">Confidence</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vLoading ? (
+                  <TableRow><TableCell colSpan={6} className="h-40 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : !verifications || verifications.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium">No attendance records found.</TableCell></TableRow>
+                ) : (
+                  verifications.map((log) => (
+                    <TableRow key={log.id} className="border-0 hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="py-4 pl-6 font-bold text-slate-900">{log.userName}</TableCell>
+                      <TableCell className="py-4 font-mono text-[10px] font-bold text-slate-500">{log.userSystemId}</TableCell>
+                      <TableCell className="py-4 text-xs text-slate-600">
+                        {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'PP p') : 'Recent'}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
+                          <Camera className="w-3 h-3" />
+                          BIOMETRIC
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4 text-center">
+                        <Badge className="bg-green-50 text-green-600 border-none font-bold text-[9px] uppercase">Verified</Badge>
+                      </TableCell>
+                      <TableCell className="py-4 text-right pr-6 font-mono text-[10px] text-slate-400">
+                        {(log.confidence * 100).toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </TabsContent>
 
