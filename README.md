@@ -20,17 +20,15 @@ To run this project on your local machine using VSCode, follow these steps:
    ```bash
    npm install
    ```
-5. **Configure Environment Variables**:
-   Create a `.env` file in the root directory (if not already present) and add your configuration:
-   ```env
-   GEMINI_API_KEY=your_api_key_here
-   ```
-6. **Start the Development Server**:
+   *Note: If you see "vulnerabilities" or "deprecated" warnings, you can safely ignore them. This is normal.*
+
+5. **Start the Development Server**:
+   In the terminal, run:
    ```bash
    npm run dev
    ```
-7. **View the App**:
-   Open [http://localhost:9002](http://localhost:9002) in your browser.
+6. **View the App**:
+   Once the terminal says "Ready", open [http://localhost:9002](http://localhost:9002) in your browser.
 
 ## Troubleshooting
 
@@ -45,13 +43,10 @@ If you get an error when running `npm install` saying scripts are disabled:
    - Type `Y` and press Enter.
    - Restart VSCode.
 
-## Features
-- **Secure Authentication**: Multi-role access (Admin, Brand Manager, Editor, Intern).
-- **WFH Biometric Sync**: GenAI-powered face verification for remote access.
-- **Production Hub**: Real-time project tracking with automated file coding.
-- **Task Management Matrix**: Direct assignments with privacy filtering.
-- **AI Content Curator**: GenAI-driven resource recommendations.
-- **Operations Calendar**: Synchronized shoot and meeting scheduling.
+## Success Checklist
+- [x] `npm install` finished (Warnings are okay!).
+- [x] `npm run dev` shows "Ready in ...s".
+- [x] Browser opens to `localhost:9002`.
 
 ## Security Notice
 This is a private network prototype. Authorized personnel credentials:
