@@ -57,7 +57,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/select";
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
@@ -126,12 +126,14 @@ export function QuickActions() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [isProjectOpen, setIsProjectOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [lastReadTime, setLastReadTime] = useState<number>(0);
   
   const firestore = useFirestore();
   const { toast } = useToast();
 
   useEffect(() => {
+    setIsMounted(true);
     const stored = localStorage.getItem('conex_last_notif_read');
     if (stored) setLastReadTime(parseInt(stored));
   }, []);
@@ -175,10 +177,9 @@ export function QuickActions() {
 
   const notifications = useMemo(() => {
     const items: any[] = [];
-    if (!user) return items;
+    if (!user || !isMounted) return items;
 
-    // Filter tasks based on privacy requirements:
-    // Only see tasks assigned TO you or tasks issued BY you.
+    // Filter tasks based on privacy requirements
     const filteredTasks = recentTasks?.filter(t => 
       t.assignedToId === user.id || t.assignedById === user.id
     ) || [];
@@ -220,7 +221,7 @@ export function QuickActions() {
     }));
 
     return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 45);
-  }, [recentSchedules, recentTasks, recentProjects, user]);
+  }, [recentSchedules, recentTasks, recentProjects, user, isMounted]);
 
   const unreadCount = useMemo(() => {
     return notifications.filter(n => n.rawTime > lastReadTime).length;
@@ -360,14 +361,12 @@ export function QuickActions() {
     }
   };
 
+  if (!isMounted) return null;
+
   return (
     <>
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-30 pointer-events-none">
-        <Sheet onOpenChange={(open) => {
-          if (!open) {
-            // Optional: Mark all as read when sheet is closed
-          }
-        }}>
+        <Sheet>
           <SheetTrigger asChild>
             <button className={cn(
               "pointer-events-auto relative w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-all active:scale-95 group",

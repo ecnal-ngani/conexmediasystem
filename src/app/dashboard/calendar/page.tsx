@@ -58,7 +58,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/select";
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -67,7 +67,7 @@ import { useAuth } from '@/components/auth-context';
 export default function CalendarPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [viewDate, setViewDate] = useState(new Date());
+  const [viewDate, setViewDate] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
@@ -85,6 +85,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     setMounted(true);
+    setViewDate(new Date());
   }, []);
 
   useEffect(() => {
@@ -126,8 +127,12 @@ export default function CalendarPage() {
     return allTasks.filter(t => t.assignedToId === user.id);
   }, [allTasks, user]);
 
-  const nextMonth = () => setViewDate(prev => addMonths(prev, 1));
-  const prevMonth = () => setViewDate(prev => subMonths(prev, 1));
+  const nextMonth = () => {
+    if (viewDate) setViewDate(addMonths(viewDate, 1));
+  };
+  const prevMonth = () => {
+    if (viewDate) setViewDate(subMonths(viewDate, 1));
+  };
 
   const matrixData = useMemo(() => {
     const activeProjects = projects?.filter(p => p.status !== 'Approved') || [];
@@ -288,7 +293,7 @@ export default function CalendarPage() {
   };
 
   const renderCalendarDays = () => {
-    if (!mounted) return null;
+    if (!mounted || !viewDate) return null;
     const days = [];
     const daysCount = getDaysInMonth(viewDate);
     const startOffset = getDay(startOfMonth(viewDate));
@@ -333,6 +338,8 @@ export default function CalendarPage() {
 
   const isAdmin = user?.role === 'ADMIN';
   const canCreateEvents = user?.role !== 'INTERN';
+
+  if (!mounted) return null;
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
@@ -466,7 +473,7 @@ export default function CalendarPage() {
             <CardHeader className="flex flex-row items-center justify-between bg-white border rounded-t-xl py-4 px-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <CalendarIcon className="w-5 h-5 text-primary" />
-                <CardTitle className="text-lg font-bold">{mounted ? format(viewDate, 'MMMM yyyy') : 'Loading...'}</CardTitle>
+                <CardTitle className="text-lg font-bold">{viewDate ? format(viewDate, 'MMMM yyyy') : 'Loading...'}</CardTitle>
                 {(sLoading || pLoading || tLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
               </div>
               <div className="flex gap-1">

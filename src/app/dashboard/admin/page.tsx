@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -57,7 +57,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/select";
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
@@ -68,6 +68,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useAuth } from '@/components/auth-context';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const ROLE_MAPPINGS: Record<string, string> = {
   "ADMIN": "AD",
@@ -84,6 +85,7 @@ export default function AdminPage() {
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
   
   // Task state
   const [isTaskOpen, setIsTaskOpen] = useState(false);
@@ -96,6 +98,10 @@ export default function AdminPage() {
 
   const { toast } = useToast();
   const firestore = useFirestore();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Users Query
   const usersQuery = useMemoFirebase(() => {
@@ -134,6 +140,8 @@ export default function AdminPage() {
       return;
     }
 
+    const avatarPlaceholder = PlaceHolderImages.find(img => img.id === 'avatar-user')?.imageUrl || '';
+
     const usersRef = collection(firestore, 'users');
     const userData = {
       systemId: generatedId,
@@ -145,7 +153,7 @@ export default function AdminPage() {
       xp: 0,
       badges: [],
       createdAt: serverTimestamp(),
-      avatarUrl: `https://picsum.photos/seed/${generatedId}/200/200`
+      avatarUrl: avatarPlaceholder
     };
 
     addDoc(usersRef, userData).catch(async (e) => {
@@ -230,6 +238,8 @@ export default function AdminPage() {
       active: staff.filter((s: any) => s.status !== 'Offline').length
     };
   }, [staff]);
+
+  if (!isMounted) return null;
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">

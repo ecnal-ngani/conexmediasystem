@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/table';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { 
   LineChart, 
@@ -71,6 +71,11 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -191,6 +196,8 @@ export default function DashboardPage() {
         };
     }
   }, [user, staff, projects]);
+
+  if (!isMounted) return null;
 
   if (user?.role === 'INTERN') {
     return (
