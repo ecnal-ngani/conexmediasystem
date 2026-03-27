@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { User } from '@/lib/mock-data';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
 import { collection, query, where, getDocs, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { signInAnonymously } from 'firebase/auth';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -42,14 +42,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsWfh(storedWfh);
         setIsVerified(!storedWfh);
         
-        if (firebaseAuth && !firebaseAuth.currentUser) {
-          signInAnonymously(firebaseAuth).catch(console.error);
+        if (firebaseAuth) {
+          // Robust session restoration: wait for auth state before allowing component render
+          const unsubscribe = onAuthStateChanged(firebaseAuth, (fbUser) => {
+            if (fbUser) {
+              setIsLoading(false);
+            } else {
+              signInAnonymously(firebaseAuth).catch((e) => {
+                console.error("Critical: Auth node unreachable", e);
+                setIsLoading(false);
+              });
+            }
+          });
+          return () => unsubscribe();
         }
       } catch (e) {
         console.error('Failed to parse session', e);
+        setIsLoading(false);
       }
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [firebaseAuth]);
 
   const login = async (email: string, wfhStatus: boolean, roleId?: string) => {
@@ -99,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateUser = (updates: Partial<User>) => {
     if (!user || !firestore) return;
 
+    // Filter out undefined values to satisfy Firestore update constraints
     const sanitizedUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     );

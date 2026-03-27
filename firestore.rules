@@ -3,20 +3,22 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * CONEX Gateway Security Rules
-     * Updated: Authorized read/write for tasks and users with identity check.
+     * CONEX MEDIA Security Rules
+     * Updated: Enforcing authenticated access for all production nodes.
+     * Explicitly permitting 'list' operations for authenticated personnel.
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Allow users to look up their email during mock login and sync profiles
+    // Profiles: Public read for identity synchronization, restricted write.
     match /users/{userId} {
-      allow read: if true; 
-      allow write: if isSignedIn(); 
+      allow read: if true;
+      allow write: if isSignedIn();
     }
 
+    // Operations: Standard authenticated access for command nodes.
     match /schedules/{scheduleId} {
       allow read, write: if isSignedIn();
     }
@@ -29,8 +31,10 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    // Biometrics: Verified access for attendance tracking.
+    // Explicitly defining get/list/write to ensure listing is permitted for authenticated personnel.
     match /verifications/{logId} {
-      allow read, write: if isSignedIn();
+      allow get, list, write: if isSignedIn();
     }
 
     match /brands/{brandId} {
