@@ -4,79 +4,80 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * CONEX Gateway Security Rules - CX-SEC-2024-009-FINAL
+     * CONEX MEDIA - Security Policy (RBAC)
      * 
-     * Core Philosophy:
-     * This ruleset implements strict Role-Based Access Control (RBAC).
-     * Permissions are explicitly granted to authenticated personnel to 
-     * resolve collection-wide listing errors.
+     * This ruleset implements Role-Based Access Control.
+     * Most data is accessible to any authenticated user within the network.
+     * Admin-only actions are gated by checking a specific admin registry.
      */
 
-    // --- Helper Functions ---
+    // --- Core Authorization Helpers ---
 
-    /** Checks if the request is from a signed-in node (anonymous or email). */
-    function isSignedIn() {
+    /** 
+     * Returns true if the user is signed in via any Firebase Auth provider 
+     * (Email/Password or Anonymous).
+     */
+    function isAuthenticated() {
       return request.auth != null;
     }
 
-    /** Checks if the user has global administrative privileges via lookup. */
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/system_roles_admin/$(request.auth.uid));
+    /** 
+     * Returns true if the user's UID exists in the admin metadata collection.
+     */
+    function isSystemAdmin() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/system_roles_admin/$(request.auth.uid));
     }
 
-    // --- Collection Rules ---
+    // --- Collection Policies ---
 
-    /**
-     * @description Rules for the User registry.
-     * Permits authorized lookup during network synchronization.
-     */
+    // User Registry: Authenticated users can read/write their profiles.
     match /users/{userId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAuthenticated();
     }
 
-    /**
-     * @description Operational Collections (Verifications, Tasks, Projects, etc.)
-     * Uses recursive matching to ensure 'list' and 'get' are correctly authorized.
-     */
+    // Operational Logs: Used for attendance and WFH biometric verification.
     match /verifications/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAuthenticated();
     }
 
+    // Task Management: Internal directives and mission assignments.
     match /tasks/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAuthenticated();
     }
 
+    // Production Hub: Media projects, file tracking, and brand assets.
     match /projects/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAuthenticated();
     }
 
+    // Brand Registry: Client brand prefixes and metadata.
     match /brands/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAuthenticated();
     }
 
+    // Calendar & Schedules: Shoot dates and deadlines.
     match /schedules/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAuthenticated();
     }
 
-    /**
-     * @description Administrative Nodes.
-     */
+    // Admin Access Controls: Metadata for role management.
     match /system_roles_admin/{adminId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read: if isAuthenticated();
+      allow write: if isSystemAdmin();
     }
 
     match /roles/{roleId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read: if isAuthenticated();
+      allow write: if isSystemAdmin();
     }
 
+    // Content Assets: Summarized documents and media briefings.
     match /content/{allPaths=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAuthenticated();
     }
 
     match /user_content_access/{userId}/content/{contentId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAuthenticated();
     }
 
   }

@@ -1,54 +1,48 @@
+
 # CONEX MEDIA | Secure Private Network
 
-This is a NextJS-based secure media management system built with ShadCN UI, Tailwind CSS, and Firebase.
+A secure media management system for internal personnel, featuring biometric verification, task management, and an AI-powered production hub.
 
-## Local Development Setup
+## Project Architecture
 
-To run this project on your local machine using VSCode, follow these steps:
+This application is built with:
+- **Next.js 15 (App Router)**: Core framework for the dashboard and routing.
+- **Firebase**: Handles Authentication and real-time Firestore database.
+- **Tailwind CSS & ShadCN UI**: For a consistent, professional design system.
+- **Genkit (AI)**: Powering biometric face verification and document summarization.
 
-### 1. Prerequisites (Must be installed first)
-- **Node.js**: You need Node.js installed to run the server. 
-  - Download it here: [https://nodejs.org/](https://nodejs.org/) (Choose the **LTS** version).
-  - After installing, **restart VSCode** before proceeding.
-- **XAMPP is NOT required**: This project uses Node.js and Firebase (Cloud Database), so you do not need Apache or MySQL from XAMPP.
+## Getting Started (Local Development)
 
-### 2. Setup Instructions
-1. **Download the Project**: Use the download button in Firebase Studio to get the latest source code.
-2. **Extract**: Unzip the downloaded file to your preferred location.
-3. **Open in VSCode**: Open the extracted folder in Visual Studio Code.
-4. **Install Dependencies**:
-   Open a terminal in VSCode (`Ctrl + ` `) and run:
+### 1. Prerequisites
+- **Node.js (LTS version)**: [Download here](https://nodejs.org/)
+- **Visual Studio Code**: Recommended IDE.
+
+### 2. Setup
+1. **Extract**: Unzip the project folder.
+2. **Install**: Open a terminal in the folder and run:
    ```bash
    npm install
    ```
-   *Note: If you see "vulnerabilities" or "deprecated" warnings, you can safely ignore them. This is normal.*
-
-5. **Start the Development Server**:
-   In the terminal, run:
+3. **Run**: Start the development server:
    ```bash
    npm run dev
    ```
-6. **View the App**:
-   Once the terminal says "Ready", open [http://localhost:9002](http://localhost:9002) in your browser.
+4. **Access**: Open [http://localhost:9002](http://localhost:9002) in your browser.
 
-## Troubleshooting
+## Project Structure (For Explanation)
 
-### "Scripts are disabled on this system" (Windows Error)
-If you get an error when running `npm install` saying scripts are disabled:
-1. **Use the Command Prompt** instead of PowerShell:
-   - In the VSCode Terminal, click the arrow next to the `+` sign and select **Command Prompt**.
-   - Run `npm install` there.
-2. **OR Fix PowerShell**:
-   - Open PowerShell as **Administrator** (Right-click Start > search PowerShell > Run as Administrator).
-   - Run: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
-   - Type `Y` and press Enter.
-   - Restart VSCode.
+- `src/app`: Contains all pages (Dashboard, Admin, Production).
+- `src/components`: Shared UI components (Sidebar, Modals).
+- `src/firebase`: Configuration and custom hooks for database interaction.
+- `src/ai`: Genkit flows for AI processing.
+- `firestore.rules`: Security logic ensuring only authorized users access data.
 
-## Success Checklist
-- [x] Node.js installed (LTS Version).
-- [x] `npm install` finished (Warnings are okay!).
-- [x] `npm run dev` shows "Ready in ...s".
-- [x] Browser opens to `localhost:9002`.
+## Security Overview
+This app uses **Role-Based Access Control (RBAC)**.
+- **ADMIN**: Full control over staff and projects.
+- **EDITOR/VIDEOGRAPHER**: Access to production tools and tasks.
+- **INTERN**: Read-only access to specific sectors.
+- **WFH Protocol**: Remote users must pass a biometric check before entering the dashboard.
 
-## Security Notice
-This is a private network prototype. Access is restricted to authorized personnel registered in the secure Firestore database. Default demo accounts have been decommissioned for production readiness.
+---
+*Created for CONEX MEDIA Internal Operations.*

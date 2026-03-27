@@ -1,4 +1,15 @@
+
 'use client';
+
+/**
+ * Authentication Context Provider
+ * 
+ * This file manages the user session, handling:
+ * 1. Firebase Anonymous sign-in as a baseline.
+ * 2. Lookup of authorized user profiles from Firestore.
+ * 3. Session persistence using LocalStorage.
+ * 4. Biometric verification gating for WFH users.
+ */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -34,9 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!firebaseAuth) return;
 
+    // Restore session from localStorage on initial load
     const storedUser = localStorage.getItem('conex_session');
     const storedWfh = localStorage.getItem('conex_wfh') === 'true';
     
+    // Listen for Firebase Auth state changes (anonymous or email)
     const unsubscribe = onAuthStateChanged(firebaseAuth, (fbUser) => {
       if (fbUser) {
         if (storedUser) {
@@ -44,15 +57,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             setIsWfh(storedWfh);
-            setIsVerified(!storedWfh);
+            setIsVerified(!storedWfh); // WFH users need secondary verification
           } catch (e) {
-            console.error('Session corruption detected', e);
+            console.error('Session restoration failed', e);
           }
         }
         setIsLoading(false);
       } else {
+        // Automatically sign in anonymously if no user is present
         signInAnonymously(firebaseAuth).catch((e) => {
-          console.error("Critical: Auth node unreachable", e);
+          console.error("Auth initialization error", e);
           setIsLoading(false);
         });
       }
@@ -61,28 +75,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [firebaseAuth]);
 
+  /**
+   * Validates credentials against the Firestore 'users' collection.
+   * If found, establishes a session and determines if WFH verification is needed.
+   */
   const login = async (email: string, wfhStatus: boolean) => {
     if (!firestore || !firebaseAuth) {
-      throw new Error('Security node not synchronized. Please retry.');
+      throw new Error('Database connection not established.');
     }
     
     setIsLoading(true);
     try {
+      // Ensure we have a Firebase Auth identity first
       if (!firebaseAuth.currentUser) {
         await signInAnonymously(firebaseAuth);
       }
 
+      // Query the authorized user registry
       const usersRef = collection(firestore, 'users');
       const q = query(usersRef, where('email', '==', email.toLowerCase()), limit(1));
       const querySnapshot = await getDocs(q);
       
       if (querySnapshot.empty) {
-        throw new Error('Access Denied. Identity not found in secure database.');
+        throw new Error('Unauthorized: Email not found in the staff registry.');
       }
 
       const userDoc = querySnapshot.docs[0];
       const foundUser = { id: userDoc.id, ...userDoc.data() } as User;
 
+      // Update state and persistence
       setUser(foundUser);
       setIsWfh(wfhStatus);
       const verifiedStatus = !wfhStatus;
@@ -91,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('conex_session', JSON.stringify(foundUser));
       localStorage.setItem('conex_wfh', wfhStatus.toString());
       
+      // Redirect based on WFH status
       if (wfhStatus) {
         router.push('/verify');
       } else {
@@ -103,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   };
 
+  /** Updates the user's profile locally and in Firestore */
   const updateUser = (updates: Partial<User>) => {
     if (!user || !firestore) return;
 
