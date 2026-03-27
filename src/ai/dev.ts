@@ -2,11 +2,11 @@ import { config } from 'dotenv';
 config();
 
 /**
- * Genkit Dev Synchronization
+ * Genkit Active Flows Registry
  * 
- * Active operational flows:
- * - document-summarization-flow
- * - face-verification-flow
+ * Registering active production flows:
+ * - document-summarization-flow: Summarizes project documents.
+ * - face-verification-flow: Handles biometric verification for remote login.
  */
 import '@/ai/flows/document-summarization-flow.ts';
 import '@/ai/flows/face-verification-flow.ts';
