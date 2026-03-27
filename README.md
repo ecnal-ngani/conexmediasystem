@@ -10,6 +10,7 @@ To run this project on your local machine using VSCode, follow these steps:
 - **Node.js**: You need Node.js installed to run the server. 
   - Download it here: [https://nodejs.org/](https://nodejs.org/) (Choose the **LTS** version).
   - After installing, **restart VSCode** before proceeding.
+- **XAMPP is NOT required**: This project uses Node.js and Firebase (Cloud Database), so you do not need Apache or MySQL from XAMPP.
 
 ### 2. Setup Instructions
 1. **Download the Project**: Use the download button in Firebase Studio to get the latest source code.
@@ -44,6 +45,7 @@ If you get an error when running `npm install` saying scripts are disabled:
    - Restart VSCode.
 
 ## Success Checklist
+- [x] Node.js installed (LTS Version).
 - [x] `npm install` finished (Warnings are okay!).
 - [x] `npm run dev` shows "Ready in ...s".
 - [x] Browser opens to `localhost:9002`.
