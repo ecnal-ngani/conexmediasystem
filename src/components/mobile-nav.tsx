@@ -7,7 +7,6 @@ import {
   Home, 
   Layers, 
   Calendar, 
-  User, 
   ShieldCheck 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,7 +17,6 @@ const navItems = [
   { title: 'Hub', url: '/dashboard/production', icon: Layers },
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
   { title: 'Admin', url: '/dashboard/admin', icon: ShieldCheck, adminOnly: true },
-  { title: 'Profile', url: '/dashboard/profile', icon: User },
 ];
 
 export function MobileNav() {

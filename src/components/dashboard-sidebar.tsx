@@ -40,7 +40,6 @@ const navItems = [
 const ConexLogo = ({ isCollapsed }: { isCollapsed: boolean }) => (
   <div className="flex items-center gap-2 overflow-hidden">
     <div className="bg-[#722F37] min-w-[36px] w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-md">
-      {/* Tactical SVG Logo Mark */}
       <svg viewBox="0 0 100 100" className="w-6 h-6 text-white" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M30 40C30 30 40 25 50 25C60 25 70 30 70 40V75M40 75V40C40 35 45 32 50 32C55 32 60 35 60 40V75" stroke="currentColor" strokeWidth="6" strokeLinecap="round"/>
         <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="opacity-30" />
@@ -64,7 +63,6 @@ export function DashboardSidebar() {
 
   if (!user) return null;
 
-  // Filter navigation items based on user role
   const filteredNavItems = navItems.filter(item => {
     if (item.adminOnly && user.role !== 'ADMIN') return false;
     return true;
@@ -97,52 +95,37 @@ export function DashboardSidebar() {
       
       <SidebarContent className="px-0 py-6 overflow-hidden">
         <ScrollArea className="h-full px-2">
-          {/* Centralized Profile Section */}
-          <SidebarMenu className="mb-8">
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                size="lg"
-                onClick={() => router.push('/dashboard/profile')}
-                className={cn(
-                  "h-auto py-2 transition-all duration-300 group hover:bg-slate-50 rounded-xl",
-                  isCollapsed ? "justify-center px-0" : "px-2"
-                )}
-              >
-                <div className="flex items-center gap-3 w-full">
-                  <div className="relative shrink-0 flex items-center justify-center">
-                    <Avatar className={cn(
-                      "border-2 border-white shadow-md transition-all duration-300",
-                      isCollapsed ? "w-10 h-10" : "w-12 h-12"
-                    )}>
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
-                      <AvatarFallback className="bg-primary text-white font-black text-xs">
-                        {user.name.substring(0, 1)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className={cn(
-                      "absolute bottom-0 right-0 bg-green-500 border-2 border-white rounded-full transition-all duration-300",
-                      isCollapsed ? "w-2 h-2" : "w-3 h-3"
-                    )}></span>
-                  </div>
-                  {!isCollapsed && (
-                    <div className="overflow-hidden animate-in slide-in-from-left-4 duration-500 flex-1">
-                      <p className="text-sm font-black leading-none mb-1.5 truncate group-hover:text-[#E11D48] transition-colors">{user.name}</p>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[9px] text-blue-600 font-mono font-bold bg-blue-50 px-1.5 py-0.5 rounded inline-block truncate w-fit max-w-full">
-                          {user.systemId}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded leading-none w-fit">
-                            In Office
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+          {/* Static Identity Preview (Disabled Profile Link) */}
+          <div className={cn(
+            "mb-8 flex items-center gap-3 w-full p-2 rounded-xl",
+            isCollapsed ? "justify-center" : "px-2"
+          )}>
+            <div className="relative shrink-0 flex items-center justify-center">
+              <Avatar className={cn(
+                "border-2 border-white shadow-md transition-all duration-300",
+                isCollapsed ? "w-10 h-10" : "w-12 h-12"
+              )}>
+                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                <AvatarFallback className="bg-primary text-white font-black text-xs">
+                  {user.name.substring(0, 1)}
+                </AvatarFallback>
+              </Avatar>
+              <span className={cn(
+                "absolute bottom-0 right-0 bg-green-500 border-2 border-white rounded-full transition-all duration-300",
+                isCollapsed ? "w-2 h-2" : "w-3 h-3"
+              )}></span>
+            </div>
+            {!isCollapsed && (
+              <div className="overflow-hidden flex-1">
+                <p className="text-sm font-black leading-none mb-1.5 truncate text-slate-900">{user.name}</p>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-blue-600 font-mono font-bold bg-blue-50 px-1.5 py-0.5 rounded inline-block truncate w-fit max-w-full">
+                    {user.systemId}
+                  </span>
                 </div>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+              </div>
+            )}
+          </div>
 
           <SidebarMenu>
             {filteredNavItems.map((item) => (
