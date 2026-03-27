@@ -4,25 +4,27 @@ service cloud.firestore {
 
     /**
      * CONEX MEDIA Security Rules
-     * Updated: Enforcing authenticated access for all production nodes.
-     * Synchronization ID: CX-SEC-2024-002
+     * Updated: Enforcing explicit permission nodes for all operational data.
+     * Deployment ID: CX-SEC-2024-005-STABLE
      */
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Profiles: Public read for identity synchronization, restricted write.
+    // Profiles: Shared read, restricted write.
     match /users/{userId} {
       allow read: if true;
       allow write: if isSignedIn();
     }
 
-    // Operations: Standard authenticated access for command nodes.
-    match /schedules/{scheduleId} {
-      allow read, write: if isSignedIn();
+    // Biometrics & Attendance: Explicitly allowing list and get for authorized personnel.
+    match /verifications/{logId} {
+      allow get, list, create: if isSignedIn();
+      allow update, delete: if isSignedIn();
     }
 
+    // Command Nodes: Authenticated access required for all records.
     match /tasks/{taskId} {
       allow read, write: if isSignedIn();
     }
@@ -31,20 +33,19 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
-    // Biometrics: Verified access for attendance tracking.
-    // Grouping get/list under 'read' for robust permission matching.
-    match /verifications/{logId} {
+    match /schedules/{scheduleId} {
       allow read, write: if isSignedIn();
     }
 
+    // External Brands: Read access for sync, restricted updates.
     match /brands/{brandId} {
       allow read: if true;
       allow write: if isSignedIn();
     }
 
-    match /roles/{roleId} {
-      allow read: if true;
-      allow write: if false;
+    // Default: Deny all other access.
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
