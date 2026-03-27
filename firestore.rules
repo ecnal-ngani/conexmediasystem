@@ -5,7 +5,7 @@ service cloud.firestore {
     /**
      * CONEX MEDIA Security Rules
      * Updated: Enforcing authenticated access for all production nodes.
-     * Explicitly permitting 'list' operations for authenticated personnel.
+     * Synchronization ID: CX-SEC-2024-002
      */
 
     function isSignedIn() {
@@ -32,9 +32,9 @@ service cloud.firestore {
     }
 
     // Biometrics: Verified access for attendance tracking.
-    // Explicitly defining get/list/write to ensure listing is permitted for authenticated personnel.
+    // Grouping get/list under 'read' for robust permission matching.
     match /verifications/{logId} {
-      allow get, list, write: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     match /brands/{brandId} {

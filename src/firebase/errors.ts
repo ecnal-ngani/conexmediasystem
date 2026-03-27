@@ -57,6 +57,7 @@ function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
         }
         return acc;
       }, {} as Record<string, string[]>),
+      // Improved identification for anonymous and custom providers
       sign_in_provider: currentUser.isAnonymous ? 'anonymous' : (currentUser.providerData[0]?.providerId || 'custom'),
       tenant: currentUser.tenantId,
     },

@@ -32,37 +32,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const firebaseAuth = useFirebaseAuth();
 
   useEffect(() => {
+    if (!firebaseAuth) return;
+
     const storedUser = localStorage.getItem('conex_session');
     const storedWfh = localStorage.getItem('conex_wfh') === 'true';
     
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsWfh(storedWfh);
-        setIsVerified(!storedWfh);
-        
-        if (firebaseAuth) {
-          // Robust session restoration: wait for auth state before allowing component render
-          const unsubscribe = onAuthStateChanged(firebaseAuth, (fbUser) => {
-            if (fbUser) {
-              setIsLoading(false);
-            } else {
-              signInAnonymously(firebaseAuth).catch((e) => {
-                console.error("Critical: Auth node unreachable", e);
-                setIsLoading(false);
-              });
-            }
-          });
-          return () => unsubscribe();
+    // Robust session restoration listener
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (fbUser) => {
+      if (fbUser) {
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            setIsWfh(storedWfh);
+            setIsVerified(!storedWfh);
+          } catch (e) {
+            console.error('Session corruption detected', e);
+          }
         }
-      } catch (e) {
-        console.error('Failed to parse session', e);
         setIsLoading(false);
+      } else {
+        // Automatically ensure an anonymous session is active if none exists
+        signInAnonymously(firebaseAuth).catch((e) => {
+          console.error("Critical: Auth node unreachable", e);
+          setIsLoading(false);
+        });
       }
-    } else {
-      setIsLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, [firebaseAuth]);
 
   const login = async (email: string, wfhStatus: boolean, roleId?: string) => {
@@ -72,7 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(true);
     try {
-      await signInAnonymously(firebaseAuth);
+      // Ensure we have a valid anonymous session before querying identity
+      if (!firebaseAuth.currentUser) {
+        await signInAnonymously(firebaseAuth);
+      }
 
       const usersRef = collection(firestore, 'users');
       const q = query(usersRef, where('email', '==', email.toLowerCase()), limit(1));
@@ -112,7 +113,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateUser = (updates: Partial<User>) => {
     if (!user || !firestore) return;
 
-    // Filter out undefined values to satisfy Firestore update constraints
     const sanitizedUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     );
