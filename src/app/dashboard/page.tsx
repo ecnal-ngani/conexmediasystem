@@ -1,8 +1,7 @@
 'use client';
 
 import { useAuth } from '@/components/auth-context';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { 
   Users, 
   Briefcase, 
@@ -23,19 +22,9 @@ import {
   HardDrive,
   BookOpen,
   Award,
-  Calendar,
   User as UserIcon,
-  Check,
-  MoreHorizontal
+  Check
 } from 'lucide-react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useMemo, useState, useEffect } from 'react';
@@ -50,8 +39,7 @@ import {
   ResponsiveContainer, 
   Legend 
 } from 'recharts';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { EMPLOYEES } from '@/lib/mock-data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -80,7 +68,7 @@ export default function DashboardPage() {
   // Gated queries
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return query(collection(firestore, 'users'));
+    return query(collection(firestore, 'users'), orderBy('name', 'asc'));
   }, [firestore, user]);
 
   const projectsQuery = useMemoFirebase(() => {
@@ -199,202 +187,8 @@ export default function DashboardPage() {
 
   if (!isMounted || !user) return null;
 
-  if (user?.role === 'INTERN') {
-    return (
-      <div className="space-y-8 max-w-[1600px] mx-auto pb-10 animate-in fade-in duration-700">
-        <div className="flex items-center gap-2 px-1">
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">Multimedia Intern Dashboard</h1>
-          <ChevronRight className="w-4 h-4 text-primary" />
-        </div>
-
-        <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
-          <CardContent className="p-12 flex flex-col items-center justify-center text-center space-y-6">
-            <div className="relative w-48 h-48 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle
-                  cx="96"
-                  cy="96"
-                  r="80"
-                  stroke="currentColor"
-                  strokeWidth="16"
-                  fill="transparent"
-                  className="text-slate-100"
-                />
-                <circle
-                  cx="96"
-                  cy="96"
-                  r="80"
-                  stroke="currentColor"
-                  strokeWidth="16"
-                  strokeDasharray={2 * Math.PI * 80}
-                  strokeDashoffset={2 * Math.PI * 80 * (1 - 140/300)}
-                  strokeLinecap="round"
-                  fill="transparent"
-                  className="text-primary"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-5xl font-black text-slate-900">140</span>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">of 300 hours</span>
-                <span className="text-xl font-black text-primary mt-1">47%</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Internship Progress</h2>
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">160 hours remaining</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {roleConfig.stats.map((stat, i) => (
-            <Card key={i} className="border shadow-none rounded-xl bg-white hover:border-primary/20 transition-all group">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className={cn("p-2.5 rounded-lg", stat.bg)}>
-                    <stat.icon className={cn("w-4 h-4", stat.color)} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</p>
-                  <h3 className="text-3xl font-bold text-slate-900">{stat.value}</h3>
-                  <p className={cn("text-[10px] font-bold", stat.subColor)}>{stat.sub}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900 px-1">My Assignments</h3>
-          <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
-             <Table>
-                <TableHeader className="bg-slate-50/50">
-                  <TableRow className="hover:bg-transparent border-0">
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-6">Directive</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Hours</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Command Node</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Status</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Date</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pr-6 text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-40 text-center">
-                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-                      </TableCell>
-                    </TableRow>
-                  ) : tasks?.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-40 text-center text-slate-400 font-medium">
-                        No tactical directives assigned to you.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    tasks?.map((t: any, idx: number) => (
-                      <TableRow key={t.id || idx} className={cn(
-                        "border-slate-50 transition-colors group",
-                        t.status === 'completed' ? "bg-green-50/30 hover:bg-green-50/50" : "hover:bg-slate-50/30"
-                      )}>
-                        <TableCell className="py-4 pl-6">
-                          <div className="flex flex-col">
-                            <span className={cn("font-bold", t.status === 'completed' ? "text-green-800" : "text-slate-900")}>{t.title}</span>
-                            <span className="text-[9px] uppercase font-black text-slate-400 tracking-widest">{t.category}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 text-slate-500 text-sm font-medium">{t.hours || '0h'}</TableCell>
-                        <TableCell className="py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                              <UserIcon className="w-3 h-3 text-primary" />
-                            </div>
-                            <span className="text-xs font-bold text-slate-700">{t.assignedByName || 'System'}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4">
-                          <Badge className={cn(
-                            "text-[9px] font-bold px-2 py-0.5 border-none",
-                            t.status === 'completed' || t.status === 'Approved' ? "bg-green-600 text-white" : "bg-orange-50 text-orange-600"
-                          )}>
-                            {t.status?.toUpperCase() || 'PENDING'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-4 text-slate-400 text-xs font-medium">
-                          {t.createdAt?.toDate ? format(t.createdAt.toDate(), 'MMM d') : 'Recent'}
-                        </TableCell>
-                        <TableCell className="py-4 pr-6 text-right">
-                          {t.status !== 'completed' ? (
-                            <Button 
-                              onClick={() => handleCompleteTask(t.id, t.title)}
-                              size="sm" 
-                              className="bg-primary hover:bg-primary/90 text-white font-bold h-8 px-3 rounded-lg shadow-lg shadow-red-100 group-hover:scale-105 transition-transform"
-                            >
-                              <Check className="w-3 h-3 mr-1.5" />
-                              DONE
-                            </Button>
-                          ) : (
-                            <div className="flex items-center justify-end text-green-600 gap-1.5 font-bold text-[10px] uppercase tracking-widest">
-                              <CheckCircle2 className="w-4 h-4" />
-                              Synchronized
-                            </div>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-             </Table>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="border shadow-none rounded-xl bg-white p-6 hover:border-primary/20 transition-all cursor-pointer group">
-            <h4 className="font-bold text-slate-900 mb-1 group-hover:text-primary transition-colors">Request Day Off</h4>
-            <p className="text-xs text-slate-400 font-medium">Submit a leave request</p>
-          </Card>
-          <Card className="border shadow-none rounded-xl bg-white p-6 hover:border-primary/20 transition-all cursor-pointer group">
-            <h4 className="font-bold text-slate-900 mb-1 group-hover:text-primary transition-colors">View Certificate Progress</h4>
-            <p className="text-xs text-slate-400 font-medium">Check completion requirements</p>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Internship Details</h3>
-          <Card className="border shadow-none rounded-xl bg-white overflow-hidden">
-            <CardContent className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">School</p>
-                    <p className="text-sm font-bold text-slate-900">{user.school || 'University of Santo Tomas'}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Start Date</p>
-                    <p className="text-sm font-bold text-slate-900">{user.startDate || 'November 1, 2025'}</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Course</p>
-                    <p className="text-sm font-bold text-slate-900">{user.course || 'BS Multimedia Arts'}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Expected Completion</p>
-                    <p className="text-sm font-bold text-slate-900">{user.expectedCompletionDate || 'March 15, 2026'}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8 max-w-[1600px] mx-auto pb-10">
+    <div className="space-y-8 max-w-[1600px] mx-auto pb-10 animate-in fade-in duration-700">
       <div className="flex items-center gap-2 px-1">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">{roleConfig.title}</h1>
         <ChevronRight className="w-4 h-4 text-primary" />
@@ -485,42 +279,40 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Active Personnel ({EMPLOYEES.filter(e => e.status !== 'Offline').length}/{EMPLOYEES.length} Online)
+              Active Personnel ({staff?.filter(e => e.status !== 'Offline').length || 0}/{staff?.length || 0} Online)
             </h3>
           </div>
           <Card className="border shadow-none rounded-none bg-white overflow-hidden">
             <CardContent className="p-0">
               <div className="divide-y divide-slate-50">
-                {EMPLOYEES.map((emp, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <Avatar className="w-8 h-8 rounded-full">
-                          <AvatarFallback className={cn(
-                            "text-[10px] font-bold text-white",
-                            i % 2 === 0 ? "bg-red-500" : "bg-slate-900"
-                          )}>
+                {sLoading ? (
+                  <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
+                ) : (
+                  staff?.map((emp, i) => (
+                    <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8 rounded-full border-2 border-white shadow-sm">
+                          <AvatarImage src={emp.avatarUrl} />
+                          <AvatarFallback className="bg-primary text-white text-[10px] font-bold">
                             {emp.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-slate-900">{emp.name}</span>
+                          <span className="text-[9px] uppercase font-black text-slate-400 tracking-tighter">{emp.role.replace('_', ' ')}</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-900">{emp.name}</span>
-                        {emp.icon === '⭐' && <Star className="w-3 h-3 text-orange-400 fill-orange-400" />}
-                        {emp.icon === '🛡️' && <ShieldCheck className="w-3 h-3 text-green-600" />}
-                        {emp.icon === '⚡' && <Zap className="w-3 h-3 text-red-500 fill-red-500" />}
+                        <div className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          emp.status === 'Office' ? "bg-green-500" : 
+                          emp.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
+                        )} />
+                        <span className="text-[10px] font-bold text-slate-400">{emp.status}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        emp.status === 'Office' ? "bg-green-500" : 
-                        emp.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
-                      )} />
-                      <span className="text-[10px] font-bold text-slate-400">{emp.status}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

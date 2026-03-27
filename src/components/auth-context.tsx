@@ -11,7 +11,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, isWfh: boolean, roleId?: string) => Promise<void>;
+  login: (email: string, isWfh: boolean) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   isWfh: boolean;
@@ -37,7 +37,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUser = localStorage.getItem('conex_session');
     const storedWfh = localStorage.getItem('conex_wfh') === 'true';
     
-    // Robust session restoration listener
     const unsubscribe = onAuthStateChanged(firebaseAuth, (fbUser) => {
       if (fbUser) {
         if (storedUser) {
@@ -52,7 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         setIsLoading(false);
       } else {
-        // Automatically ensure an anonymous session is active if none exists
         signInAnonymously(firebaseAuth).catch((e) => {
           console.error("Critical: Auth node unreachable", e);
           setIsLoading(false);
@@ -63,14 +61,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [firebaseAuth]);
 
-  const login = async (email: string, wfhStatus: boolean, roleId?: string) => {
+  const login = async (email: string, wfhStatus: boolean) => {
     if (!firestore || !firebaseAuth) {
       throw new Error('Security node not synchronized. Please retry.');
     }
     
     setIsLoading(true);
     try {
-      // Ensure we have a valid anonymous session before querying identity
       if (!firebaseAuth.currentUser) {
         await signInAnonymously(firebaseAuth);
       }
@@ -85,10 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userDoc = querySnapshot.docs[0];
       const foundUser = { id: userDoc.id, ...userDoc.data() } as User;
-
-      if (roleId === 'admin' && foundUser.role !== 'ADMIN') {
-        throw new Error('This account does not have Administrator clearance.');
-      }
 
       setUser(foundUser);
       setIsWfh(wfhStatus);
