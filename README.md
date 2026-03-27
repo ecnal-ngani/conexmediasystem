@@ -4,13 +4,19 @@ This is a NextJS-based secure media management system built with ShadCN UI, Tail
 
 ## Local Development Setup
 
-To run this project on your local machine using VSCode:
+To run this project on your local machine using VSCode, follow these steps:
 
+### 1. Prerequisites (Must be installed first)
+- **Node.js**: You need Node.js installed to run the server. 
+  - Download it here: [https://nodejs.org/](https://nodejs.org/) (Choose the **LTS** version).
+  - After installing, **restart VSCode** before proceeding.
+
+### 2. Setup Instructions
 1. **Download the Project**: Use the download button in Firebase Studio to get the latest source code.
 2. **Extract**: Unzip the downloaded file to your preferred location.
 3. **Open in VSCode**: Open the extracted folder in Visual Studio Code.
 4. **Install Dependencies**:
-   Open a terminal in VSCode and run:
+   Open a terminal in VSCode (`Ctrl + ` `) and run:
    ```bash
    npm install
    ```
