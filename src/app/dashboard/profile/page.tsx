@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -51,12 +50,20 @@ export default function ProfilePage() {
   if (!user) return null;
 
   const handleSave = () => {
-    updateUser({ 
+    const isIntern = user.role === 'INTERN';
+    
+    // Construct updates object carefully to avoid undefined fields
+    const updates: any = { 
       name, 
-      email, 
-      school: isIntern ? school : undefined, 
-      course: isIntern ? course : undefined 
-    });
+      email 
+    };
+
+    if (isIntern) {
+      updates.school = school;
+      updates.course = course;
+    }
+
+    updateUser(updates);
     setIsEditing(false);
     toast({
       title: "Identity Updated",
@@ -308,4 +315,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

@@ -6,6 +6,8 @@ import { User, Role } from '@/lib/mock-data';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
 import { collection, query, where, getDocs, limit, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface AuthContextType {
   user: User | null;
@@ -152,12 +154,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUser = (updates: Partial<User>) => {
     if (!user || !firestore) return;
-    const updatedUser = { ...user, ...updates };
+
+    // Filter out undefined values as Firestore doesn't support them
+    const sanitizedUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined)
+    );
+
+    if (Object.keys(sanitizedUpdates).length === 0) return;
+
+    const updatedUser = { ...user, ...sanitizedUpdates };
     setUser(updatedUser);
     localStorage.setItem('conex_session', JSON.stringify(updatedUser));
     
     const userRef = doc(firestore, 'users', user.id);
-    updateDoc(userRef, updates).catch(e => console.error('Failed to sync profile:', e));
+    updateDoc(userRef, sanitizedUpdates).catch(async (e) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: userRef.path,
+        operation: 'update',
+        requestResourceData: sanitizedUpdates
+      }));
+    });
   };
 
   const setVerified = (status: boolean) => {
