@@ -32,6 +32,19 @@ To run this project on your local machine using VSCode, follow these steps:
 7. **View the App**:
    Open [http://localhost:9002](http://localhost:9002) in your browser.
 
+## Troubleshooting
+
+### "Scripts are disabled on this system" (Windows Error)
+If you get an error when running `npm install` saying scripts are disabled:
+1. **Use the Command Prompt** instead of PowerShell:
+   - In the VSCode Terminal, click the arrow next to the `+` sign and select **Command Prompt**.
+   - Run `npm install` there.
+2. **OR Fix PowerShell**:
+   - Open PowerShell as **Administrator** (Right-click Start > search PowerShell > Run as Administrator).
+   - Run: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+   - Type `Y` and press Enter.
+   - Restart VSCode.
+
 ## Features
 - **Secure Authentication**: Multi-role access (Admin, Brand Manager, Editor, Intern).
 - **WFH Biometric Sync**: GenAI-powered face verification for remote access.
