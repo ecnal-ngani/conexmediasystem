@@ -489,6 +489,7 @@ export function QuickActions() {
                   </div>
                   <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Quick Actions</DialogTitle>
                 </div>
+                <DialogDescription className="sr-only">Choose a tactical action to perform within the network.</DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4">
                 {filteredActions.map((action, i) => (

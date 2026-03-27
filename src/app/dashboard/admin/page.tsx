@@ -258,7 +258,7 @@ export default function AdminPage() {
               <div className="p-8 space-y-6">
                 <DialogHeader className="space-y-2">
                   <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Personnel Enrollment</DialogTitle>
-                  <p className="text-sm text-slate-500">Assign clearance and system ID to new personnel.</p>
+                  <DialogDescription className="text-sm text-slate-500">Assign clearance and system ID to new personnel.</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
