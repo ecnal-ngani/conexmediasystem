@@ -57,7 +57,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/select";
+} from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
@@ -350,7 +350,7 @@ export function QuickActions() {
       case 'RUSH':
         return "bg-red-600 text-white border-red-700 shadow-sm";
       case 'HIGH':
-        return "bg-orange-500 text-white border-orange-600 shadow-sm";
+        return "bg-orange-50 text-white border-orange-600 shadow-sm";
       case 'NORMAL':
       case 'REGULAR':
         return "bg-blue-100 text-blue-700 border-blue-200";
