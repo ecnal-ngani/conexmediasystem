@@ -94,28 +94,29 @@ export default function CalendarPage() {
     }
   }, [selectedEvent]);
 
+  // Gated queries
   const schedulesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'schedules'), orderBy('date', 'asc'));
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: schedules, loading: sLoading } = useCollection<any>(schedulesQuery);
 
   const projectsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'projects'), orderBy('dueDate', 'asc'));
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
 
   const tasksQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'tasks'), orderBy('dueDate', 'asc'));
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: allTasks, loading: tLoading } = useCollection<any>(tasksQuery);
 
   const brandsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'brands'), orderBy('name', 'asc'));
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
 
   // Filter tasks for privacy: Only show tasks assigned to the current user or given by them (if Admin/BM)

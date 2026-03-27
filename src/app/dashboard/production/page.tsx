@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -93,18 +92,18 @@ export default function ProductionPage() {
   const [newBrandName, setNewBrandName] = useState('');
   const [newBrandPrefix, setNewBrandPrefix] = useState('');
 
-  // Real-time listener for projects
+  // Real-time listener for projects - Gated by user
   const projectsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: projects, loading } = useCollection<any>(projectsQuery);
 
-  // Real-time listener for brands
+  // Real-time listener for brands - Gated by user
   const brandsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'brands'), orderBy('name', 'asc'));
-  }, [firestore]);
+  }, [firestore, user]);
   const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
 
   // Auto-generate file code prefix when brand changes

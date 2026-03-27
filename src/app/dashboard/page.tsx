@@ -77,17 +77,17 @@ export default function DashboardPage() {
     setIsMounted(true);
   }, []);
 
+  // Gated queries
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'users'));
-  }, [firestore]);
+  }, [firestore, user]);
 
   const projectsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'projects'));
-  }, [firestore]);
+  }, [firestore, user]);
 
-  // Restrict task visibility to ONLY the user's tasks
   const tasksQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -197,7 +197,7 @@ export default function DashboardPage() {
     }
   }, [user, staff, projects]);
 
-  if (!isMounted) return null;
+  if (!isMounted || !user) return null;
 
   if (user?.role === 'INTERN') {
     return (

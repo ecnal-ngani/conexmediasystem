@@ -5,7 +5,7 @@ service cloud.firestore {
     /**
      * CONEX MEDIA Security Rules
      * Updated: Enforcing explicit permission nodes for all operational data.
-     * Deployment ID: CX-SEC-2024-005-STABLE
+     * Deployment ID: CX-SEC-2024-007-STABLE
      */
 
     function isSignedIn() {
@@ -18,9 +18,9 @@ service cloud.firestore {
       allow write: if isSignedIn();
     }
 
-    // Biometrics & Attendance: Explicitly allowing list and get for authorized personnel.
+    // Biometrics & Attendance: Authorized personnel access only.
     match /verifications/{logId} {
-      allow get, list, create: if isSignedIn();
+      allow read, create: if isSignedIn();
       allow update, delete: if isSignedIn();
     }
 

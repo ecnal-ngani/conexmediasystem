@@ -103,18 +103,18 @@ export default function AdminPage() {
     setIsMounted(true);
   }, []);
 
-  // Users Query
+  // Users Query - Gated by currentUser
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !currentUser) return null;
     return query(collection(firestore, 'users'), orderBy('systemId', 'asc'));
-  }, [firestore]);
+  }, [firestore, currentUser]);
   const { data: staff, loading } = useCollection<any>(usersQuery);
 
-  // Verifications Query
+  // Verifications Query - Gated by currentUser
   const verificationsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !currentUser) return null;
     return query(collection(firestore, 'verifications'), orderBy('timestamp', 'desc'));
-  }, [firestore]);
+  }, [firestore, currentUser]);
   const { data: verifications, loading: vLoading } = useCollection<any>(verificationsQuery);
 
   const filteredStaff = useMemo(() => {
@@ -471,7 +471,7 @@ export default function AdminPage() {
                   <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5">Timestamp</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5">Method</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 text-center">Status</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-5 text-right pr-6">Confidence</TableHead>
+                  <TableHead className="text-[10px) font-black uppercase tracking-wider text-slate-400 py-5 text-right pr-6">Confidence</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
