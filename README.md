@@ -1,48 +1,43 @@
+# CONEX MEDIA | Private Internal Network
 
-# CONEX MEDIA | Secure Private Network
+A professional media management system designed for internal staff. This dashboard facilitates production tracking, task assignments, and secure biometric verification for remote personnel.
 
-A secure media management system for internal personnel, featuring biometric verification, task management, and an AI-powered production hub.
+## Quick Start
 
-## Project Architecture
+### 1. Installation
+Open your terminal in the project folder and run:
+```bash
+npm install
+```
 
-This application is built with:
-- **Next.js 15 (App Router)**: Core framework for the dashboard and routing.
-- **Firebase**: Handles Authentication and real-time Firestore database.
-- **Tailwind CSS & ShadCN UI**: For a consistent, professional design system.
-- **Genkit (AI)**: Powering biometric face verification and document summarization.
+### 2. Launch Development Server
+```bash
+npm run dev
+```
+The application will be available at [http://localhost:9002](http://localhost:9002).
 
-## Getting Started (Local Development)
+## Mobile Access (Testing on your phone)
 
-### 1. Prerequisites
-- **Node.js (LTS version)**: [Download here](https://nodejs.org/)
-- **Visual Studio Code**: Recommended IDE.
+To view the application on your mobile device without a QR code:
 
-### 2. Setup
-1. **Extract**: Unzip the project folder.
-2. **Install**: Open a terminal in the folder and run:
-   ```bash
-   npm install
-   ```
-3. **Run**: Start the development server:
-   ```bash
-   npm run dev
-   ```
-4. **Access**: Open [http://localhost:9002](http://localhost:9002) in your browser.
+1. **Same Network**: Ensure your computer and phone are connected to the same Wi-Fi network.
+2. **Find Your IP**: 
+   - **Windows**: Open Command Prompt, type `ipconfig`, and find the `IPv4 Address` (e.g., `192.168.1.15`).
+   - **Mac**: Go to System Settings > Network > Wi-Fi > Details, and find your IP address.
+3. **Open Browser**: On your phone, open your browser and type `http://YOUR_IP_ADDRESS:9002` (e.g., `http://192.168.1.15:9002`).
 
-## Project Structure (For Explanation)
+## Project Structure
 
-- `src/app`: Contains all pages (Dashboard, Admin, Production).
-- `src/components`: Shared UI components (Sidebar, Modals).
-- `src/firebase`: Configuration and custom hooks for database interaction.
-- `src/ai`: Genkit flows for AI processing.
-- `firestore.rules`: Security logic ensuring only authorized users access data.
+- `src/app`: Page routes and core layouts.
+- `src/components`: Reusable UI components (Sidebar, Tables, Modals).
+- `src/firebase`: Database configuration and real-time data hooks.
+- `src/ai`: Genkit AI flows for biometric analysis and document processing.
 
-## Security Overview
-This app uses **Role-Based Access Control (RBAC)**.
-- **ADMIN**: Full control over staff and projects.
-- **EDITOR/VIDEOGRAPHER**: Access to production tools and tasks.
-- **INTERN**: Read-only access to specific sectors.
-- **WFH Protocol**: Remote users must pass a biometric check before entering the dashboard.
+## Tech Stack
+- **Framework**: Next.js 15 (App Router)
+- **Database/Auth**: Firebase
+- **Styling**: Tailwind CSS & ShadCN UI
+- **AI**: Genkit (Google Gemini)
 
 ---
-*Created for CONEX MEDIA Internal Operations.*
+*Confidential - Internal Use Only.*
