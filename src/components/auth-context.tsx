@@ -96,17 +96,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data();
-      const foundUser = { id: userDoc.id, ...userData } as User;
-
+      
       // AUTOMATIC STATUS SYNCHRONIZATION
       const userRef = doc(firestore, 'users', userDoc.id);
       const newStatus = wfhStatus ? 'WFH' : 'Office';
+      
+      // Perform Firestore update first to ensure global availability
       await updateDoc(userRef, { 
         status: newStatus,
         updatedAt: serverTimestamp() 
       });
 
-      const updatedUser = { ...foundUser, status: newStatus };
+      const updatedUser = { id: userDoc.id, ...userData, status: newStatus } as User;
 
       setUser(updatedUser);
       setIsWfh(wfhStatus);

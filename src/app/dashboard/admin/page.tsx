@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -31,7 +30,8 @@ import {
   ClipboardList,
   Timer,
   History,
-  Clock
+  Clock,
+  RefreshCcw
 } from 'lucide-react';
 import { 
   Table, 
@@ -114,7 +114,7 @@ export default function AdminPage() {
     setMounted(true);
   }, []);
 
-  // Fetch all users for the management list
+  // Fetch all users for the management list - uses real-time snapshot
   const staffQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
     return query(collection(firestore, 'users'), orderBy('systemId', 'asc'));
@@ -167,6 +167,7 @@ export default function AdminPage() {
       xp: 0,
       badges: [],
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
       avatarUrl: avatar
     };
 
@@ -245,7 +246,10 @@ export default function AdminPage() {
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto pb-10">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Staff Management</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Staff Management</h1>
+          {staffLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-300" />}
+        </div>
         
         <Dialog open={isEnrollModalOpen} onOpenChange={setIsEnrollModalOpen}>
           <DialogTrigger asChild>
@@ -299,14 +303,20 @@ export default function AdminPage() {
         </TabsList>
 
         <TabsContent value="staff" className="space-y-4">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input 
-              placeholder="Search directory..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex items-center justify-between">
+            <div className="relative max-w-sm flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input 
+                placeholder="Search directory..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-400 ml-4">
+              <RefreshCcw className={cn("w-3 h-3", staffLoading && "animate-spin")} />
+              REAL-TIME SYNC ACTIVE
+            </div>
           </div>
 
           <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
@@ -332,11 +342,18 @@ export default function AdminPage() {
                       <TableCell className="font-bold text-slate-900">{emp.name}</TableCell>
                       <TableCell className="text-xs text-slate-500">{emp.role}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn(
-                          "text-[9px] font-bold uppercase",
-                          emp.status === 'Office' ? "text-green-600 bg-green-50 border-green-200" :
-                          emp.status === 'WFH' ? "text-orange-600 bg-orange-50 border-orange-200" : "text-slate-400"
-                        )}>{emp.status}</Badge>
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            emp.status === 'Office' ? "bg-green-500" : 
+                            emp.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
+                          )} />
+                          <Badge variant="outline" className={cn(
+                            "text-[9px] font-bold uppercase",
+                            emp.status === 'Office' ? "text-green-600 bg-green-50 border-green-200" :
+                            emp.status === 'WFH' ? "text-orange-600 bg-orange-50 border-orange-200" : "text-slate-400"
+                          )}>{emp.status}</Badge>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
