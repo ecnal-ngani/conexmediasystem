@@ -35,6 +35,7 @@ Open your terminal in the project folder and run:
 ```bash
 npm install
 ```
+*Note: This creates the `node_modules` folder (the app's toolbox).*
 
 ### 2. Launch Development Server
 ```bash
