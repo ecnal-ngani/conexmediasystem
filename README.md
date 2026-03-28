@@ -1,8 +1,34 @@
-# CONEX MEDIA | Private Internal Network
+# CONEX MEDIA | Professional Internal Network
 
-A professional media management system designed for internal staff. This dashboard facilitates production tracking, task assignments, and secure biometric verification for remote personnel.
+A clean, professional media management system built for staff coordination and production tracking. This project uses a modern tech stack (Next.js, Firebase, and AI) to handle real-time data and security.
 
-## Quick Start
+## 📂 Project Structure (Human-Readable Map)
+
+### 1. The Core Application (`src/app`)
+- **`/login`**: The secure entry point for staff.
+- **`/verify`**: Where WFH (Work From Home) users perform a quick AI biometric check.
+- **`/dashboard`**: The main hub.
+  - **`/production`**: Tracks media projects, file codes, and artist assignments.
+  - **`/calendar`**: A master view of shoots, meetings, and deadlines.
+  - **`/admin`**: (Admin Only) For enrolling new staff and managing the team.
+
+### 2. UI Components (`src/components`)
+- **`DashboardSidebar`**: The main navigation menu on the left.
+- **`QuickActions`**: The "zap" button for fast access to common tasks.
+- **`ui/`**: A library of professional buttons, tables, and dialogs.
+
+### 3. Data & Security (`src/firebase`)
+- **`config.ts`**: Connects the app to our secure database.
+- **`AuthContext`**: Manages user sessions (stays logged in, handles WFH status).
+- **`firestore/`**: Real-time listeners that update the UI immediately when data changes.
+
+### 4. AI Operations (`src/ai`)
+- **`face-verification-flow`**: Uses Gemini AI to ensure a real person is logging in for WFH compliance.
+- **`document-summarization-flow`**: Helps staff quickly read long project briefs.
+
+---
+
+## 🛠 Quick Start
 
 ### 1. Installation
 Open your terminal in the project folder and run:
@@ -16,28 +42,12 @@ npm run dev
 ```
 The application will be available at [http://localhost:9002](http://localhost:9002).
 
-## Mobile Access (Testing on your phone)
-
-To view the application on your mobile device without a QR code:
-
-1. **Same Network**: Ensure your computer and phone are connected to the same Wi-Fi network.
+## 📱 Mobile Access (Testing on your phone)
+1. **Same Network**: Connect your phone and computer to the same Wi-Fi.
 2. **Find Your IP**: 
-   - **Windows**: Open Command Prompt, type `ipconfig`, and find the `IPv4 Address` (e.g., `192.168.1.15`).
-   - **Mac**: Go to System Settings > Network > Wi-Fi > Details, and find your IP address.
-3. **Open Browser**: On your phone, open your browser and type `http://YOUR_IP_ADDRESS:9002` (e.g., `http://192.168.1.15:9002`).
-
-## Project Structure
-
-- `src/app`: Page routes and core layouts.
-- `src/components`: Reusable UI components (Sidebar, Tables, Modals).
-- `src/firebase`: Database configuration and real-time data hooks.
-- `src/ai`: Genkit AI flows for biometric analysis and document processing.
-
-## Tech Stack
-- **Framework**: Next.js 15 (App Router)
-- **Database/Auth**: Firebase
-- **Styling**: Tailwind CSS & ShadCN UI
-- **AI**: Genkit (Google Gemini)
+   - **Windows**: Type `ipconfig` in Command Prompt. Look for `IPv4 Address`.
+   - **Mac**: Check System Settings > Network.
+3. **Open Browser**: Type `http://YOUR_IP_ADDRESS:9002` (e.g., `http://192.168.1.15:9002`) on your phone.
 
 ---
-*Confidential - Internal Use Only.*
+*Note: This codebase is designed for high readability and professional maintenance.*
