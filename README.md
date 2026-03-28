@@ -14,7 +14,9 @@ A clean, professional media management system built for staff coordination and p
 
 ### 2. UI Components (`src/components`)
 - **`DashboardSidebar`**: The main navigation menu on the left.
-- **`QuickActions`**: The "zap" button for fast access to common tasks.
+- **`QuickActions`**: The floating circular buttons (Bottom Right).
+  - **Bell Icon**: System notifications and activity feed.
+  - **Plus Icon**: Quick access to create projects, tasks, or events.
 - **`ui/`**: A library of professional buttons, tables, and dialogs.
 
 ### 3. Data & Security (`src/firebase`)
@@ -34,6 +36,9 @@ A clean, professional media management system built for staff coordination and p
 
 ## 💡 Frequently Asked Questions (For Explaining the Project)
 
+### Q: Why is there a floating button on the screen?
+**A:** This is our **Command Quick Actions** menu. The **Plus (+)** button allows staff to launch new projects or assign tasks instantly from any screen. The **Bell** icon provides real-time updates from other team members.
+
 ### Q: Where is the HTML?
 **A:** We use `.tsx` files. These are "Smart HTML" files. They look like HTML but allow us to add logic (like showing your name automatically) directly into the structure. The browser turns these into regular HTML when the page loads.
 
@@ -42,9 +47,6 @@ A clean, professional media management system built for staff coordination and p
 
 ### Q: What are Node Modules?
 **A:** This is the "App's Toolbox." It contains pre-written code for things like the Database and AI so we don't have to build them from scratch. We hide this folder because it's managed by the system.
-
-### Q: What is the `.next` folder?
-**A:** This is the "Build Cache." It's a temporary folder the computer creates to make the app run faster. It is automatically updated every time you save your code.
 
 ---
 
@@ -61,10 +63,6 @@ A clean, professional media management system built for staff coordination and p
 ### 3. Artificial Intelligence (AI)
 **Q: How does the AI Biometric Verification work?**
 *   **A:** We use a Genkit Flow that connects to Google's Gemini AI. When a WFH user takes a photo, the AI analyzes it in real-time to ensure it's a "Live" human face and not a photo of a screen or a mask.
-
-### 4. Data Management
-**Q: How does the app update the "Production Hub" without refreshing the page?**
-*   **A:** We use "Real-time Snapshots" (specifically the `onSnapshot` hook in our Firebase module). The app stays connected to the database; as soon as an artist updates a project status, the database "pushes" that change to all connected staff screens instantly.
 
 ---
 
@@ -87,7 +85,7 @@ The application will be available at [http://localhost:9002](http://localhost:90
 2. **Find Your IP Address**: 
    - **Windows**: Open **Command Prompt**, type `ipconfig`, and look for `IPv4 Address`.
    - **macOS (Visual)**: Go to **System Settings** > **Network** > Select your Wi-Fi > Click **Details...**. Your IP is listed there.
-   - **macOS (Terminal)**: Open **Terminal**, type `ipconfig getifaddr en0` (or `en1` for some Macs) and hit Enter.
+   - **macOS (Terminal)**: Open **Terminal**, type `ipconfig getifaddr en0` and hit Enter.
 3. **Open Browser**: Type `http://YOUR_IP_ADDRESS:9002` (e.g., `http://192.168.1.15:9002`) on your phone.
 
 ---

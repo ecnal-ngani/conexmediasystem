@@ -1,9 +1,8 @@
 rules_version = '2';
 
 /**
- * CONEX MEDIA - Standard Security Policy
+ * CONEX MEDIA - Secure Network Policy
  * 
- * This ruleset ensures that only authorized staff can access internal data.
  * Deployment ID: CX-SEC-2024-009-FINAL
  */
 
@@ -12,43 +11,40 @@ service cloud.firestore {
 
     // --- Core Authorization Helpers ---
 
-    // Returns true if the user has logged in via the app's secure gate.
     function isAuthenticated() {
       return request.auth != null;
     }
 
     // --- Collection Policies ---
 
-    // Staff Profiles: Authenticated staff can read/write their own profiles.
+    // Staff Registry: Access to names and roles for system synchronization.
     match /users/{userId} {
       allow read, write: if isAuthenticated();
     }
 
-    // Operational Data: Attendance logs, Tasks, Projects, and Calendars.
-    // These require a valid login to ensure internal data privacy.
-    match /verifications/{allPaths=**} {
+    // Attendance Verification: Crucial for WFH identity compliance.
+    match /verifications/{id} {
       allow read, write: if isAuthenticated();
     }
 
-    match /tasks/{allPaths=**} {
+    // Internal Tasks: Staff directives and deadlines.
+    match /tasks/{id} {
       allow read, write: if isAuthenticated();
     }
 
-    match /projects/{allPaths=**} {
+    // Production Hub: Active projects and file tracking.
+    match /projects/{id} {
       allow read, write: if isAuthenticated();
     }
 
-    match /brands/{allPaths=**} {
+    // Client Registry: Authorized brand list.
+    match /brands/{id} {
       allow read, write: if isAuthenticated();
     }
 
-    match /schedules/{allPaths=**} {
+    // Operations Calendar: Master shoot and meeting schedules.
+    match /schedules/{id} {
       allow read, write: if isAuthenticated();
-    }
-
-    // System Roles: Only verified administrators should touch these configurations.
-    match /system_roles_admin/{adminId} {
-      allow read: if isAuthenticated();
     }
 
   }

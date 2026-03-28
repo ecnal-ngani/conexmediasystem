@@ -4,11 +4,10 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Bell, 
-  Zap, 
+  Plus, 
   Calendar, 
   Users, 
   CheckCircle2, 
-  Clock, 
   Check, 
   ListTodo, 
   Layers,
@@ -45,8 +44,6 @@ import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/components/auth-context';
 
@@ -272,6 +269,7 @@ export function QuickActions() {
   return (
     <>
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-30 pointer-events-none">
+        {/* Notifications Trigger */}
         <Sheet>
           <SheetTrigger asChild>
             <button className={cn(
@@ -291,8 +289,8 @@ export function QuickActions() {
               <SheetHeader className="p-6 border-b bg-slate-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <SheetTitle className="text-xl font-bold">Notifications</SheetTitle>
-                    <SheetDescription>Recent project and task updates</SheetDescription>
+                    <SheetTitle className="text-xl font-bold">Updates & Activity</SheetTitle>
+                    <SheetDescription>Recent project and task milestones</SheetDescription>
                   </div>
                   {unreadCount > 0 && (
                     <Button variant="ghost" onClick={handleMarkAllRead} className="text-xs text-primary font-bold h-8 px-2">
@@ -306,7 +304,7 @@ export function QuickActions() {
                 <div className="p-4 space-y-3">
                   {notifications.length === 0 ? (
                     <div className="py-20 text-center text-slate-400">
-                      <p className="text-sm font-medium">No recent updates.</p>
+                      <p className="text-sm font-medium">System reports clear.</p>
                     </div>
                   ) : (
                     notifications.map((notif) => (
@@ -335,15 +333,17 @@ export function QuickActions() {
           </SheetContent>
         </Sheet>
 
+        {/* Command Quick Actions Trigger */}
         <Dialog open={isActionsOpen} onOpenChange={setIsActionsOpen}>
           <DialogTrigger asChild>
             <button className="pointer-events-auto w-12 h-12 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-all">
-              <Zap className="w-5 h-5" />
+              <Plus className="w-5 h-5" />
             </button>
           </DialogTrigger>
           <DialogContent className="max-w-md p-6 rounded-2xl">
             <DialogHeader className="mb-4">
               <DialogTitle className="text-lg font-bold">Quick Actions</DialogTitle>
+              <DialogDescription>Access common staff tools and creation menus.</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-3">
               {filteredActions.map((action, i) => (
@@ -370,7 +370,7 @@ export function QuickActions() {
         </Dialog>
       </div>
 
-      {/* Simplified Modal Forms */}
+      {/* Quick Action Dialogs */}
       <Dialog open={isProjectOpen} onOpenChange={setIsProjectOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>New Production Project</DialogTitle></DialogHeader>
