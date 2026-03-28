@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -9,6 +8,7 @@
  * 2. Lookup of authorized user profiles from Firestore.
  * 3. Session persistence using LocalStorage.
  * 4. Biometric verification gating for WFH users.
+ * 5. Automatic status synchronization (Office/WFH/Offline).
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -45,11 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!firebaseAuth) return;
 
-    // Restore session from localStorage on initial load
     const storedUser = localStorage.getItem('conex_session');
     const storedWfh = localStorage.getItem('conex_wfh') === 'true';
     
-    // Listen for Firebase Auth state changes (anonymous or email)
     const unsubscribe = onAuthStateChanged(firebaseAuth, (fbUser) => {
       if (fbUser) {
         if (storedUser) {
@@ -57,14 +55,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             setIsWfh(storedWfh);
-            setIsVerified(!storedWfh); // WFH users need secondary verification
+            setIsVerified(!storedWfh);
           } catch (e) {
             console.error('Session restoration failed', e);
           }
         }
         setIsLoading(false);
       } else {
-        // Automatically sign in anonymously if no user is present
         signInAnonymously(firebaseAuth).catch((e) => {
           console.error("Auth initialization error", e);
           setIsLoading(false);
@@ -76,8 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [firebaseAuth]);
 
   /**
-   * Validates credentials against the Firestore 'users' collection.
-   * If found, establishes a session and determines if WFH verification is needed.
+   * Validates credentials and automatically synchronizes operational status.
    */
   const login = async (email: string, wfhStatus: boolean) => {
     if (!firestore || !firebaseAuth) {
@@ -86,12 +82,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(true);
     try {
-      // Ensure we have a Firebase Auth identity first
       if (!firebaseAuth.currentUser) {
         await signInAnonymously(firebaseAuth);
       }
 
-      // Query the authorized user registry
       const usersRef = collection(firestore, 'users');
       const q = query(usersRef, where('email', '==', email.toLowerCase()), limit(1));
       const querySnapshot = await getDocs(q);
@@ -101,18 +95,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const userDoc = querySnapshot.docs[0];
-      const foundUser = { id: userDoc.id, ...userDoc.data() } as User;
+      const userData = userDoc.data();
+      const foundUser = { id: userDoc.id, ...userData } as User;
 
-      // Update state and persistence
-      setUser(foundUser);
+      // AUTOMATIC STATUS SYNCHRONIZATION
+      const userRef = doc(firestore, 'users', userDoc.id);
+      const newStatus = wfhStatus ? 'WFH' : 'Office';
+      await updateDoc(userRef, { 
+        status: newStatus,
+        updatedAt: serverTimestamp() 
+      });
+
+      const updatedUser = { ...foundUser, status: newStatus };
+
+      setUser(updatedUser);
       setIsWfh(wfhStatus);
       const verifiedStatus = !wfhStatus;
       setIsVerified(verifiedStatus);
       
-      localStorage.setItem('conex_session', JSON.stringify(foundUser));
+      localStorage.setItem('conex_session', JSON.stringify(updatedUser));
       localStorage.setItem('conex_wfh', wfhStatus.toString());
       
-      // Redirect based on WFH status
       if (wfhStatus) {
         router.push('/verify');
       } else {
@@ -125,7 +128,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   };
 
-  /** Updates the user's profile locally and in Firestore */
   const updateUser = (updates: Partial<User>) => {
     if (!user || !firestore) return;
 
@@ -153,7 +155,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsVerified(status);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Attempt to set user as Offline before clearing session
+    if (user && firestore) {
+      const userRef = doc(firestore, 'users', user.id);
+      try {
+        await updateDoc(userRef, { 
+          status: 'Offline',
+          updatedAt: serverTimestamp() 
+        });
+      } catch (e) {
+        console.error("Failed to sync offline status", e);
+      }
+    }
+
     setUser(null);
     setIsWfh(false);
     setIsVerified(false);
