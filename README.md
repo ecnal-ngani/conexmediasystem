@@ -32,6 +32,22 @@ A clean, professional media management system built for staff coordination and p
 
 ---
 
+## 💡 Frequently Asked Questions (For Explaining the Project)
+
+### Q: Where is the HTML?
+**A:** We use `.tsx` files. These are "Smart HTML" files. They look like HTML but allow us to add logic (like showing your name automatically) directly into the structure. The browser turns these into regular HTML when the page loads.
+
+### Q: What is TypeScript (TS)?
+**A:** It's like a "Safety Net" for JavaScript. It prevents us from making simple mistakes (like trying to add a number to a word) by checking our code as we write it.
+
+### Q: What are Node Modules?
+**A:** This is the "App's Toolbox." It contains pre-written code for things like the Database and AI so we don't have to build them from scratch. We hide this folder because it's managed by the system.
+
+### Q: What is the `.next` folder?
+**A:** This is the "Build Cache." It's a temporary folder the computer creates to make the app run faster. It is automatically updated every time you save your code.
+
+---
+
 ## 🛠 Quick Start
 
 ### 1. Installation
@@ -39,7 +55,7 @@ Open your terminal in the project folder and run:
 ```bash
 npm install
 ```
-*Note: This creates the `node_modules` folder (the app's toolbox). This folder is managed by the system and should not be edited manually.*
+*Note: This creates the `node_modules` folder. Do not edit this manually.*
 
 ### 2. Launch Development Server
 ```bash
