@@ -26,6 +26,9 @@ A clean, professional media management system built for staff coordination and p
 - **`face-verification-flow`**: Uses Gemini AI to ensure a real person is logging in for WFH compliance.
 - **`document-summarization-flow`**: Helps staff quickly read long project briefs.
 
+### 5. Custom Internal Modules (`src/lib`)
+- **`media-helpers.ts`**: A custom "local module" created for shared logic like URL generation and file size formatting. This keeps our pages clean and easy to maintain.
+
 ---
 
 ## 🛠 Quick Start
@@ -35,7 +38,7 @@ Open your terminal in the project folder and run:
 ```bash
 npm install
 ```
-*Note: This creates the `node_modules` folder (the app's toolbox).*
+*Note: This creates the `node_modules` folder (the app's toolbox). This folder is managed by the system and should not be edited manually.*
 
 ### 2. Launch Development Server
 ```bash

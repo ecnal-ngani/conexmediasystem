@@ -37,8 +37,7 @@ import {
   Loader2,
   XCircle,
   Save,
-  Tag,
-  Settings2
+  Tag
 } from 'lucide-react';
 import {
   Dialog,
@@ -58,6 +57,7 @@ import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useAuth } from '@/components/auth-context';
+import { createSlug } from '@/lib/media-helpers'; // IMPORTING OUR NEW MODULE
 
 export default function ProductionPage() {
   const { user } = useAuth();
@@ -72,10 +72,7 @@ export default function ProductionPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // Project Editing State
   const [editingLink, setEditingLink] = useState('');
-
-  // New Project Form State
   const [fileCode, setFileCode] = useState('');
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [contentIdea, setContentIdea] = useState('');
@@ -88,35 +85,28 @@ export default function ProductionPage() {
   const [bm, setBm] = useState('');
   const [canvasLink, setCanvasLink] = useState('');
 
-  // New Brand Form State
   const [newBrandName, setNewBrandName] = useState('');
   const [newBrandPrefix, setNewBrandPrefix] = useState('');
 
-  // Real-time listener for projects - Gated by user
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
   }, [firestore, user]);
   const { data: projects, loading } = useCollection<any>(projectsQuery);
 
-  // Real-time listener for brands - Gated by user
   const brandsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'brands'), orderBy('name', 'asc'));
   }, [firestore, user]);
   const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
 
-  // Auto-generate file code prefix when brand changes
   useEffect(() => {
     if (selectedBrandId && brands && projects) {
       const brand = brands.find(b => b.id === selectedBrandId);
       if (brand) {
         const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
         const prefix = `${brand.prefix}-${dateStr}-`;
-        
-        // Find existing projects for this brand on this day
         const dayProjects = projects.filter((p: any) => p.fileCode?.startsWith(prefix));
-        
         let nextNum = 1;
         if (dayProjects.length > 0) {
           const numbers = dayProjects.map((p: any) => {
@@ -126,27 +116,22 @@ export default function ProductionPage() {
           });
           nextNum = Math.max(...numbers) + 1;
         }
-        
         setFileCode(`${prefix}${nextNum.toString().padStart(2, '0')}`);
       }
     }
   }, [selectedBrandId, brands, projects]);
 
-  // Advanced Filtering Logic
   const filteredProjects = useMemo(() => {
     if (!projects) return [];
-    
     return projects.filter((project: any) => {
       const matchesSearch = 
         (project.fileCode?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (project.brand?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (project.artist?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (project.contentIdea?.toLowerCase() || '').includes(searchQuery.toLowerCase());
-        
       const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
       const matchesPriority = priorityFilter === 'all' || project.priority === priorityFilter;
       const matchesType = typeFilter === 'all' || project.type === typeFilter;
-      
       return matchesSearch && matchesStatus && matchesPriority && matchesType;
     });
   }, [projects, searchQuery, statusFilter, priorityFilter, typeFilter]);
@@ -158,41 +143,13 @@ export default function ProductionPage() {
     setTypeFilter('all');
   };
 
-  const getStatusStyles = (status: string) => {
-    switch (status) {
-      case 'In Production':
-        return 'bg-blue-50 text-blue-600 border-blue-200';
-      case 'For QA':
-        return 'bg-orange-50 text-orange-600 border-orange-200';
-      case 'Approved':
-        return 'bg-green-50 text-green-600 border-green-200';
-      case 'Client Revision':
-        return 'bg-pink-50 text-pink-600 border-pink-200';
-      default:
-        return 'bg-slate-50 text-slate-600';
-    }
-  };
-
-  const getPriorityStyles = (priority: string) => {
-    if (priority === 'RUSH') {
-      return 'text-red-600 bg-red-50 border-red-200 font-bold';
-    }
-    return 'text-slate-500 bg-slate-50 border-slate-200 font-medium';
-  };
-
   const handleAddProject = () => {
     if (!firestore || !fileCode || !selectedBrandId) {
-      toast({
-        variant: "destructive",
-        title: "Missing Information",
-        description: "File Code and Authorized Brand are required."
-      });
+      toast({ variant: "destructive", title: "Missing Information", description: "File Code and Authorized Brand are required." });
       return;
     }
-
     const brand = brands?.find(b => b.id === selectedBrandId);
     if (!brand) return;
-
     const projectsRef = collection(firestore, 'projects');
     const projectData = {
       fileCode,
@@ -209,23 +166,15 @@ export default function ProductionPage() {
       canvasLink,
       createdAt: serverTimestamp()
     };
-
-    addDoc(projectsRef, projectData)
-      .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: projectsRef.path,
-          operation: 'create',
-          requestResourceData: projectData
-        }));
-      });
-
-    toast({
-      title: "Project Initialized",
-      description: `${fileCode} has been added to the Production Hub.`
+    addDoc(projectsRef, projectData).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: projectsRef.path,
+        operation: 'create',
+        requestResourceData: projectData
+      }));
     });
-    
+    toast({ title: "Project Initialized", description: `${fileCode} has been added to the Production Hub.` });
     setIsAddProjectOpen(false);
-    // Reset form
     setFileCode(''); setSelectedBrandId(''); setContentIdea(''); setArtist(''); setDueDate(''); setCanvasLink('');
   };
 
@@ -234,14 +183,12 @@ export default function ProductionPage() {
       toast({ variant: "destructive", title: "Missing Fields", description: "Name and Prefix (3 chars) are required." });
       return;
     }
-
     const brandsRef = collection(firestore, 'brands');
     const brandData = {
       name: newBrandName,
       prefix: newBrandPrefix.toUpperCase().slice(0, 3),
       createdAt: serverTimestamp()
     };
-
     addDoc(brandsRef, brandData).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: brandsRef.path,
@@ -249,7 +196,6 @@ export default function ProductionPage() {
         requestResourceData: brandData
       }));
     });
-
     toast({ title: "Brand Registered", description: `${newBrandName} is now an authorized client.` });
     setNewBrandName('');
     setNewBrandPrefix('');
@@ -258,12 +204,8 @@ export default function ProductionPage() {
   const handleUpdateLink = () => {
     if (!firestore || !selectedProject || !editingLink) return;
     const projectRef = doc(firestore, 'projects', selectedProject.id);
-    
     updateDoc(projectRef, { canvasLink: editingLink }).then(() => {
-      toast({
-        title: "Asset Link Updated",
-        description: "The project's destination link has been synchronized."
-      });
+      toast({ title: "Asset Link Updated", description: "The project's destination link has been synchronized." });
       setSelectedProject({ ...selectedProject, canvasLink: editingLink });
     }).catch(async (err) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -291,7 +233,6 @@ export default function ProductionPage() {
         </div>
       </div>
 
-      {/* Action & Filter Bar */}
       <div className="flex flex-col gap-4 bg-white p-4 rounded-2xl border shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-3">
           <div className="relative group col-span-1 md:col-span-1 lg:col-span-2">
@@ -598,106 +539,77 @@ export default function ProductionPage() {
         </div>
       </div>
 
-      {/* Matrix Table */}
       <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow className="hover:bg-transparent border-0">
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-6 whitespace-nowrap">Action</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">File Code</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Brand</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap text-center">Status</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap text-center">Priority</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Type</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Artist</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 whitespace-nowrap">Due Date</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-6">Action</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">File Code</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Brand</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 text-center">Status</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 text-center">Priority</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Type</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Artist</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Due Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={8} className="h-32 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
               ) : filteredProjects.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <Filter className="w-8 h-8 text-slate-200" />
-                      <p className="text-sm font-medium text-slate-400">No production items match your intelligence query.</p>
+                      <p className="text-sm font-medium text-slate-400">No production items found.</p>
                       <Button variant="link" onClick={resetFilters} className="text-xs text-primary font-bold">Clear all filters</Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : filteredProjects.map((item: any) => (
                 <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors border-0 group">
-                  <TableCell className="py-4 pl-6 whitespace-nowrap">
+                  <TableCell className="py-4 pl-6">
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => {
-                          setSelectedProject(item);
-                          setEditingLink(item.canvasLink || '');
-                        }}
-                        className="text-primary hover:text-primary/80 hover:bg-primary/5 h-7 text-[10px] px-2 font-bold group"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => { setSelectedProject(item); setEditingLink(item.canvasLink || ''); }} className="text-primary hover:text-primary/80 hover:bg-primary/5 h-7 text-[10px] px-2 font-bold group">
                         <LinkIcon className="w-3 h-3 mr-1 transition-transform group-hover:scale-110" />
                         Link
                       </Button>
                       {item.canvasLink && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7 text-blue-600 hover:bg-blue-50"
-                          asChild
-                        >
-                          <a href={item.canvasLink} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600 hover:bg-blue-50" asChild>
+                          <a href={item.canvasLink} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3 h-3" /></a>
                         </Button>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-[10px] font-bold text-slate-500 py-4 whitespace-nowrap">{item.fileCode}</TableCell>
-                  <TableCell className="py-4 whitespace-nowrap">
+                  <TableCell className="font-mono text-[10px] font-bold text-slate-500 py-4">{item.fileCode}</TableCell>
+                  <TableCell className="py-4">
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-slate-800">{item.brand}</span>
-                      <span className="text-[9px] text-slate-400 truncate max-w-[150px]">{item.contentIdea}</span>
+                      <span className="text-[9px] text-slate-400 truncate max-w-[150px] font-mono italic">
+                        /{createSlug(item.brand)}
+                      </span>
                     </div>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-center">
-                    <Badge variant="outline" className={cn("text-[8px] font-bold px-2 py-0.5 rounded border leading-none inline-flex items-center justify-center min-w-[90px]", getStatusStyles(item.status))}>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className={cn("text-[8px] font-bold px-2 py-0.5 rounded border min-w-[90px]", 
+                      item.status === 'In Production' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                      item.status === 'For QA' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                      item.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-pink-50 text-pink-600 border-pink-200'
+                    )}>
                       {item.status.toUpperCase()}
                     </Badge>
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-center">
-                    <Badge variant="outline" className={cn("text-[8px] font-bold px-2 py-0.5 rounded border leading-none", getPriorityStyles(item.priority))}>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className={cn("text-[8px] font-bold px-2 py-0.5 rounded border", 
+                      item.priority === 'RUSH' ? 'text-red-600 bg-red-50 border-red-200' : 'text-slate-500 bg-slate-50 border-slate-200'
+                    )}>
                       {item.priority}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <Layers className="w-3 h-3 text-slate-400" />
-                      <span className="text-[10px] font-medium text-slate-600">{item.type}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500">
-                        {item.artist?.charAt(0) || 'U'}
-                      </div>
-                      <span className="text-[10px] font-medium text-slate-700">{item.artist}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4 whitespace-nowrap">
-                    <div className="flex flex-col items-end sm:items-start">
-                      <span className="text-[10px] font-bold text-slate-800">{item.dueDate}</span>
-                      <span className="text-[8px] text-slate-400 uppercase font-black">{item.platform}</span>
-                    </div>
-                  </TableCell>
+                  <TableCell className="py-4"><div className="flex items-center gap-1.5"><Layers className="w-3 h-3 text-slate-400" /><span className="text-[10px] font-medium text-slate-600">{item.type}</span></div></TableCell>
+                  <TableCell className="py-4"><div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500">{item.artist?.charAt(0) || 'U'}</div><span className="text-[10px] font-medium text-slate-700">{item.artist}</span></div></TableCell>
+                  <TableCell className="py-4"><div className="flex flex-col items-start"><span className="text-[10px] font-bold text-slate-800">{item.dueDate}</span><span className="text-[8px] text-slate-400 uppercase font-black">{item.platform}</span></div></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -711,69 +623,34 @@ export default function ProductionPage() {
             <div className="space-y-6">
               <DialogHeader>
                 <div className="flex items-center gap-4 mb-4">
-                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-100">
-                    <LinkIcon className="w-6 h-6 text-white" />
-                  </div>
+                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-100"><LinkIcon className="w-6 h-6 text-white" /></div>
                   <div>
                     <DialogTitle className="text-2xl font-black">{selectedProject.brand}</DialogTitle>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedProject.fileCode}</p>
                   </div>
                 </div>
               </DialogHeader>
-
               <div className="space-y-6 pt-4 border-t">
-                {/* Link Configuration */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Asset Link (Canvas/Reel)</Label>
-                  
                   {!isIntern ? (
                     <div className="flex gap-2">
-                      <Input 
-                        placeholder="https://link-to-asset.com" 
-                        value={editingLink}
-                        onChange={(e) => setEditingLink(e.target.value)}
-                        className="h-10 rounded-xl bg-slate-50 border-slate-200"
-                      />
-                      <Button 
-                        onClick={handleUpdateLink}
-                        className="bg-primary hover:bg-primary/90 text-white font-bold h-10 px-3 shrink-0 rounded-xl"
-                      >
-                        <Save className="w-4 h-4" />
-                      </Button>
+                      <Input placeholder="https://link-to-asset.com" value={editingLink} onChange={(e) => setEditingLink(e.target.value)} className="h-10 rounded-xl bg-slate-50 border-slate-200" />
+                      <Button onClick={handleUpdateLink} className="bg-primary hover:bg-primary/90 text-white font-bold h-10 px-3 shrink-0 rounded-xl"><Save className="w-4 h-4" /></Button>
                     </div>
-                  ) : (
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-mono break-all text-slate-600">
-                      {selectedProject.canvasLink || 'No link synchronized.'}
-                    </div>
-                  )}
-
+                  ) : <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-mono break-all text-slate-600">{selectedProject.canvasLink || 'No link synchronized.'}</div>}
                   {selectedProject.canvasLink && (
                     <Button variant="outline" className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/5 h-10 rounded-xl" asChild>
-                      <a href={selectedProject.canvasLink} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4" />
-                        Jump to Asset
-                      </a>
+                      <a href={selectedProject.canvasLink} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" />Jump to Asset</a>
                     </Button>
                   )}
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Type</p>
-                    <p className="font-bold">{selectedProject.type}</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Artist</p>
-                    <p className="font-bold">{selectedProject.artist}</p>
-                  </div>
+                  <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Type</p><p className="font-bold">{selectedProject.type}</p></div>
+                  <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Artist</p><p className="font-bold">{selectedProject.artist}</p></div>
                 </div>
               </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button onClick={() => setSelectedProject(null)} className="w-full h-12 rounded-xl font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-100">
-                  Close Link Details
-                </Button>
-              </div>
+              <div className="flex gap-3 pt-4"><Button onClick={() => setSelectedProject(null)} className="w-full h-12 rounded-xl font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-100">Close Link Details</Button></div>
             </div>
           )}
         </DialogContent>
