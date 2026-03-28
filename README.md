@@ -21,6 +21,7 @@ A clean, professional media management system built for staff coordination and p
 - **`config.ts`**: Connects the app to our secure database.
 - **`AuthContext`**: Manages user sessions (stays logged in, handles WFH status).
 - **`firestore/`**: Real-time listeners that update the UI immediately when data changes.
+- **`index.ts`**: The "Internal Gateway" that connects to the Firebase Node Module.
 
 ### 4. AI Operations (`src/ai`)
 - **`face-verification-flow`**: Uses Gemini AI to ensure a real person is logging in for WFH compliance.
