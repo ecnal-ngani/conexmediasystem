@@ -8,11 +8,10 @@ import {
   Users, 
   ChevronLeft,
   ChevronRight,
-  LogOut,
-  UserCircle
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 import {
@@ -31,11 +30,11 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
+// Navigation items - Profile removed as it is now integrated into the header summary
 const navItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
   { title: 'Production Hub', url: '/dashboard/production', icon: Layers },
   { title: 'Schedule', url: '/dashboard/calendar', icon: Calendar },
-  { title: 'Profile', url: '/dashboard/profile', icon: UserCircle },
   { title: 'Administration', url: '/dashboard/admin', icon: Users, adminOnly: true },
 ];
 
@@ -96,14 +95,14 @@ export function DashboardSidebar() {
       
       <SidebarContent className="px-0 py-6">
         <ScrollArea className="h-full px-2">
-          {/* User Profile Summary */}
+          {/* User Profile Summary - Now the primary gateway to the profile page */}
           <Link href="/dashboard/profile" className={cn(
-            "mb-8 flex items-center gap-3 w-full p-2 rounded-xl transition-colors hover:bg-slate-50",
+            "mb-8 flex items-center gap-3 w-full p-2 rounded-xl transition-all hover:bg-slate-50 active:scale-[0.98] group",
             isCollapsed ? "justify-center" : "px-2"
           )}>
             <div className="relative shrink-0">
               <Avatar className={cn(
-                "border-2 border-white shadow-sm",
+                "border-2 border-white shadow-sm ring-1 ring-slate-100",
                 isCollapsed ? "w-10 h-10" : "w-12 h-12"
               )}>
                 <AvatarImage src={user.avatarUrl} alt={user.name} />
@@ -112,16 +111,18 @@ export function DashboardSidebar() {
                 </AvatarFallback>
               </Avatar>
               <span className={cn(
-                "absolute bottom-0 right-0 bg-green-500 border-2 border-white rounded-full",
-                isCollapsed ? "w-2.5 h-2.5" : "w-3 h-3"
+                "absolute bottom-0.5 right-0.5 border-2 border-white rounded-full shadow-sm",
+                isCollapsed ? "w-2.5 h-2.5" : "w-3 h-3",
+                user.status === 'Office' ? "bg-green-500" : 
+                user.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
               )}></span>
             </div>
             {!isCollapsed && (
               <div className="overflow-hidden flex-1 text-left">
-                <p className="text-sm font-bold text-slate-900 truncate">{user.name}</p>
-                <span className="text-[10px] text-slate-500 font-medium">
+                <p className="text-[13px] font-bold text-slate-900 truncate leading-tight group-hover:text-primary transition-colors">{user.name}</p>
+                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 font-mono">
                   {user.systemId}
-                </span>
+                </p>
               </div>
             )}
           </Link>
