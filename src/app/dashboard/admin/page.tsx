@@ -449,7 +449,9 @@ export default function AdminPage() {
             </DialogHeader>
 
             <div className="aspect-video bg-black rounded-2xl overflow-hidden border-4 border-slate-50 relative">
-               <img src={selectedLogPhoto || ''} alt="Capture" className="w-full h-full object-cover" />
+               {selectedLogPhoto && (
+                 <img src={selectedLogPhoto} alt="Capture" className="w-full h-full object-cover" />
+               )}
                <div className="absolute bottom-4 left-4">
                   <Badge className="bg-green-600 text-white font-black text-[10px] px-3 gap-2">
                     <ShieldCheck className="w-3 h-3" />
