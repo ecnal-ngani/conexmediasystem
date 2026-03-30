@@ -57,7 +57,7 @@ import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useAuth } from '@/components/auth-context';
-import { createSlug } from '@/lib/media-helpers'; // IMPORTING OUR NEW MODULE
+import { createSlug } from '@/lib/media-helpers';
 
 export default function ProductionPage() {
   const { user } = useAuth();
@@ -143,6 +143,30 @@ export default function ProductionPage() {
     setTypeFilter('all');
   };
 
+  const handleUpdateStatus = (projectId: string, newStatus: string) => {
+    if (!firestore) return;
+    const projectRef = doc(firestore, 'projects', projectId);
+    const updateData = { 
+      status: newStatus, 
+      updatedAt: serverTimestamp() 
+    };
+
+    updateDoc(projectRef, updateData)
+      .then(() => {
+        toast({
+          title: "Status Synchronized",
+          description: `Asset status updated to ${newStatus}.`,
+        });
+      })
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: projectRef.path,
+          operation: 'update',
+          requestResourceData: updateData
+        }));
+      });
+  };
+
   const handleAddProject = () => {
     if (!firestore || !fileCode || !selectedBrandId) {
       toast({ variant: "destructive", title: "Missing Information", description: "File Code and Authorized Brand are required." });
@@ -217,7 +241,7 @@ export default function ProductionPage() {
   };
 
   const isIntern = user?.role === 'INTERN';
-  const canCreateProjects = !isIntern;
+  const canEditStatus = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-10 max-w-[1600px] mx-auto">
@@ -275,7 +299,7 @@ export default function ProductionPage() {
             </SelectContent>
           </Select>
 
-          {canCreateProjects && (
+          {!isIntern && (
             <div className="flex gap-2 lg:col-span-2">
               <Dialog open={isManageBrandsOpen} onOpenChange={setIsManageBrandsOpen}>
                 <DialogTrigger asChild>
@@ -592,13 +616,31 @@ export default function ProductionPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="outline" className={cn("text-[8px] font-bold px-2 py-0.5 rounded border min-w-[90px]", 
-                      item.status === 'In Production' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                      item.status === 'For QA' ? 'bg-orange-50 text-orange-600 border-orange-200' :
-                      item.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-pink-50 text-pink-600 border-pink-200'
-                    )}>
-                      {item.status.toUpperCase()}
-                    </Badge>
+                    {canEditStatus ? (
+                      <Select value={item.status} onValueChange={(val) => handleUpdateStatus(item.id, val)}>
+                        <SelectTrigger className={cn("h-7 text-[8px] font-black uppercase tracking-wider rounded border min-w-[110px] shadow-none focus:ring-0", 
+                          item.status === 'In Production' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                          item.status === 'For QA' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                          item.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-pink-50 text-pink-600 border-pink-200'
+                        )}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="In Production">IN PRODUCTION</SelectItem>
+                          <SelectItem value="For QA">FOR QA</SelectItem>
+                          <SelectItem value="Approved">APPROVED</SelectItem>
+                          <SelectItem value="Client Revision">CLIENT REVISION</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="outline" className={cn("text-[8px] font-bold px-2 py-0.5 rounded border min-w-[90px]", 
+                        item.status === 'In Production' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                        item.status === 'For QA' ? 'bg-orange-50 text-orange-600 border-orange-200' :
+                        item.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-pink-50 text-pink-600 border-pink-200'
+                      )}>
+                        {item.status.toUpperCase()}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge variant="outline" className={cn("text-[8px] font-bold px-2 py-0.5 rounded border", 
@@ -618,7 +660,7 @@ export default function ProductionPage() {
       </div>
 
       <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-        <DialogContent className="max-w-md p-8 rounded-3xl border-none shadow-2xl">
+        <DialogContent className="max-md p-8 rounded-3xl border-none shadow-2xl">
           {selectedProject && (
             <div className="space-y-6">
               <DialogHeader>
