@@ -35,11 +35,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full overflow-hidden bg-[#F8FAFC]">
+      <div className="flex min-h-screen w-full bg-[#F8FAFC]">
         {/* Persistent Tactical Sidebar */}
         <DashboardSidebar />
         
-        <SidebarInset className="flex-1 flex flex-col min-w-0 bg-transparent">
+        <SidebarInset className="flex-1 flex flex-col min-w-0 bg-transparent overflow-y-auto">
           {/* Mobile Header with Navigation Access */}
           <header className="flex h-16 shrink-0 items-center justify-between px-4 lg:hidden bg-white border-b sticky top-0 z-40">
             <div className="flex items-center gap-3">
@@ -58,9 +58,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 pb-20 lg:pb-10">
+          <div className="p-4 md:p-6 lg:p-10 pb-24 lg:pb-12">
             {children}
-          </main>
+          </div>
           
           {/* Global Quick Actions */}
           <QuickActions />

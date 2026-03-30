@@ -61,7 +61,7 @@ export default function ProfilePage() {
   const isIntern = user.role === 'INTERN';
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-10 animate-in fade-in duration-700">
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
       {/* Profile Header */}
       <div className="relative group">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent rounded-[32px] -m-2 opacity-50 group-hover:opacity-100 transition-opacity" />

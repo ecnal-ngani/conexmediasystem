@@ -314,7 +314,7 @@ export default function CalendarPage() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-7xl mx-auto">
       <div className="flex items-center justify-between px-1">
         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Operations Command</h1>
         

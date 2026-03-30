@@ -188,7 +188,7 @@ export default function DashboardPage() {
   if (!isMounted || !user) return null;
 
   return (
-    <div className="space-y-8 max-w-[1600px] mx-auto pb-10 animate-in fade-in duration-700">
+    <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-700">
       <div className="flex items-center gap-2 px-1">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">{roleConfig.title}</h1>
         <ChevronRight className="w-4 h-4 text-primary" />
