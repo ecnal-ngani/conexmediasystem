@@ -12,7 +12,17 @@ import {
   ListTodo, 
   Layers,
   Home,
-  CheckCheck
+  CheckCheck,
+  Briefcase,
+  FileText,
+  Lightbulb,
+  Zap,
+  User,
+  Share2,
+  Link as LinkIcon,
+  Loader2,
+  Save,
+  X
 } from 'lucide-react';
 import {
   Dialog,
@@ -21,6 +31,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Sheet,
@@ -40,12 +51,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/components/auth-context';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const QUICK_ACTIONS = [
   {
@@ -110,6 +124,7 @@ export function QuickActions() {
     if (stored) setLastReadTime(parseInt(stored));
   }, []);
 
+  // Data Queries
   const schedulesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'schedules'), orderBy('createdAt', 'desc'), limit(15));
@@ -122,7 +137,12 @@ export function QuickActions() {
 
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'), limit(15));
+    return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
+  }, [firestore, user]);
+
+  const brandsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'brands'), orderBy('name', 'asc'));
   }, [firestore, user]);
 
   const usersQuery = useMemoFirebase(() => {
@@ -133,7 +153,54 @@ export function QuickActions() {
   const { data: recentSchedules } = useCollection<any>(schedulesQuery);
   const { data: recentTasks } = useCollection<any>(tasksQuery);
   const { data: recentProjects } = useCollection<any>(projectsQuery);
+  const { data: brands } = useCollection<any>(brandsQuery);
   const { data: staffList } = useCollection<any>(usersQuery);
+
+  // States for Schedule
+  const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
+  const [schedulePriority, setSchedulePriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
+  const [client, setClient] = useState('');
+  const [date, setDate] = useState('');
+
+  // States for Task
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDueDate, setTaskDueDate] = useState('');
+  const [assignedToId, setAssignedToId] = useState('');
+
+  // States for Project (Expanded for visual UI match)
+  const [fileCode, setFileCode] = useState('');
+  const [selectedBrandId, setSelectedBrandId] = useState('');
+  const [contentIdea, setContentIdea] = useState('');
+  const [projectStatus, setProjectStatus] = useState('In Production');
+  const [projectPriority, setProjectPriority] = useState('REGULAR');
+  const [artist, setArtist] = useState('');
+  const [projectType, setProjectType] = useState('Video');
+  const [platform, setPlatform] = useState('Instagram');
+  const [projectDueDate, setProjectDueDate] = useState('');
+  const [bm, setBm] = useState('');
+  const [canvasLink, setCanvasLink] = useState('');
+
+  // Auto-generate File Code logic
+  useEffect(() => {
+    if (selectedBrandId && brands && recentProjects) {
+      const brand = brands.find((b: any) => b.id === selectedBrandId);
+      if (brand) {
+        const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+        const prefix = `${brand.prefix}-${dateStr}-`;
+        const dayProjects = recentProjects.filter((p: any) => p.fileCode?.startsWith(prefix));
+        let nextNum = 1;
+        if (dayProjects.length > 0) {
+          const numbers = dayProjects.map((p: any) => {
+            const parts = p.fileCode.split('-');
+            const lastPart = parts[parts.length - 1];
+            return parseInt(lastPart, 10) || 0;
+          });
+          nextNum = Math.max(...numbers) + 1;
+        }
+        setFileCode(`${prefix}${nextNum.toString().padStart(2, '0')}`);
+      }
+    }
+  }, [selectedBrandId, brands, recentProjects]);
 
   const filteredActions = useMemo(() => {
     return QUICK_ACTIONS.filter(action => {
@@ -177,7 +244,7 @@ export function QuickActions() {
       type: 'TASK'
     }));
 
-    recentProjects?.forEach(p => items.push({
+    recentProjects?.slice(0, 5).forEach(p => items.push({
       id: `p-${p.id}`,
       title: 'Project Created',
       description: `${p.fileCode}: ${p.brand}`,
@@ -202,18 +269,6 @@ export function QuickActions() {
     toast({ title: "Notifications Read", description: "All updates have been marked as read." });
   };
 
-  const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
-  const [schedulePriority, setSchedulePriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
-  const [client, setClient] = useState('');
-  const [date, setDate] = useState('');
-
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskDueDate, setTaskDueDate] = useState('');
-  const [assignedToId, setAssignedToId] = useState('');
-
-  const [fileCode, setFileCode] = useState('');
-  const [brand, setBrand] = useState('');
-
   const handleConfirmSchedule = () => {
     if (!firestore || !date || !client) return;
     const ref = collection(firestore, 'schedules');
@@ -226,7 +281,13 @@ export function QuickActions() {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
-    addDoc(ref, data).catch(console.error);
+    addDoc(ref, data).catch((e) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: ref.path,
+        operation: 'create',
+        requestResourceData: data
+      }));
+    });
     toast({ title: "Event Added", description: "The schedule has been updated." });
     setIsScheduleOpen(false);
   };
@@ -247,21 +308,54 @@ export function QuickActions() {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
-    addDoc(ref, data).catch(console.error);
+    addDoc(ref, data).catch((e) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: ref.path,
+        operation: 'create',
+        requestResourceData: data
+      }));
+    });
     toast({ title: "Task Assigned", description: `Assigned to ${assignee.name}.` });
     setIsTaskOpen(false);
   };
 
   const handleCreateProject = () => {
-    if (!firestore || !fileCode || !brand) return;
+    if (!firestore || !fileCode || !selectedBrandId) {
+      toast({ variant: "destructive", title: "Incomplete Form", description: "Brand and File Code are required." });
+      return;
+    }
+    const brandObj = brands?.find((b: any) => b.id === selectedBrandId);
+    if (!brandObj) return;
+
     const ref = collection(firestore, 'projects');
     const data = { 
-      fileCode, brand, status: 'In Production', priority: 'REGULAR', 
-      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      fileCode, 
+      brand: brandObj.name, 
+      brandId: selectedBrandId,
+      contentIdea,
+      status: projectStatus,
+      priority: projectPriority,
+      artist,
+      type: projectType,
+      platform,
+      dueDate: projectDueDate,
+      bm,
+      canvasLink,
+      createdAt: serverTimestamp(), 
+      updatedAt: serverTimestamp()
     };
-    addDoc(ref, data).catch(console.error);
+    addDoc(ref, data).catch((e) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: ref.path,
+        operation: 'create',
+        requestResourceData: data
+      }));
+    });
     toast({ title: "Project Created", description: `${fileCode} is now active.` });
     setIsProjectOpen(false);
+    
+    // Reset state
+    setFileCode(''); setSelectedBrandId(''); setContentIdea(''); setArtist(''); setProjectDueDate(''); setCanvasLink('');
   };
 
   if (!isMounted) return null;
@@ -340,7 +434,7 @@ export function QuickActions() {
               <Plus className="w-5 h-5" />
             </button>
           </DialogTrigger>
-          <DialogContent className="max-w-md p-6 rounded-2xl">
+          <DialogContent className="max-w-md p-6 rounded-2xl border-none shadow-2xl">
             <DialogHeader className="mb-4">
               <DialogTitle className="text-lg font-bold">Quick Actions</DialogTitle>
               <DialogDescription>Access common staff tools and creation menus.</DialogDescription>
@@ -370,40 +464,294 @@ export function QuickActions() {
         </Dialog>
       </div>
 
-      {/* Quick Action Dialogs */}
+      {/* New Project Dialog - Visual Update Match */}
       <Dialog open={isProjectOpen} onOpenChange={setIsProjectOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>New Production Project</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-4">
-            <Input placeholder="File Code" value={fileCode} onChange={(e) => setFileCode(e.target.value)} />
-            <Input placeholder="Brand Name" value={brand} onChange={(e) => setBrand(e.target.value)} />
-            <Button onClick={handleCreateProject} className="w-full">Create Project</Button>
-          </div>
+        <DialogContent className="max-w-[540px] p-0 rounded-[32px] overflow-hidden border-none shadow-2xl">
+          <ScrollArea className="max-h-[90vh]">
+            <div className="p-6 md:p-10 space-y-8">
+              <DialogHeader className="flex flex-row items-start gap-5 space-y-0">
+                <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-xl shadow-red-100">
+                  <Plus className="w-7 h-7 text-white" />
+                </div>
+                <div className="pt-1">
+                  <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle>
+                  <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the hub.</DialogDescription>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Brand Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Briefcase className="w-3.5 h-3.5 text-primary" />
+                      Brand Selection
+                    </Label>
+                    <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                      <SelectTrigger className="h-14 border-slate-200 rounded-2xl focus:ring-primary">
+                        <SelectValue placeholder="Select Brand" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brands?.map((b: any) => (
+                          <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* File Code */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-primary" />
+                      File Code
+                    </Label>
+                    <Input 
+                      placeholder="Generated automatically..." 
+                      value={fileCode}
+                      onChange={(e) => setFileCode(e.target.value)}
+                      className="h-14 border-slate-200 rounded-2xl bg-slate-50 font-mono text-xs" 
+                    />
+                  </div>
+                </div>
+
+                {/* Content Idea */}
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                    <Lightbulb className="w-3.5 h-3.5 text-primary" />
+                    Content Idea
+                  </Label>
+                  <Input 
+                    placeholder="Product showcase reel" 
+                    value={contentIdea}
+                    onChange={(e) => setContentIdea(e.target.value)}
+                    className="h-14 border-slate-200 rounded-2xl focus:ring-primary" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Status */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                      Status
+                    </Label>
+                    <Select value={projectStatus} onValueChange={setProjectStatus}>
+                      <SelectTrigger className="h-14 border-slate-200 rounded-2xl focus:ring-primary">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="In Production">In Production</SelectItem>
+                        <SelectItem value="For QA">For QA</SelectItem>
+                        <SelectItem value="Approved">Approved</SelectItem>
+                        <SelectItem value="Client Revision">Client Revision</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Priority */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Zap className="w-3.5 h-3.5 text-primary" />
+                      Priority
+                    </Label>
+                    <Select value={projectPriority} onValueChange={setProjectPriority}>
+                      <SelectTrigger className="h-14 border-slate-200 rounded-2xl focus:ring-primary">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="REGULAR">REGULAR</SelectItem>
+                        <SelectItem value="RUSH">RUSH</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Artist */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-primary" />
+                      Artist
+                    </Label>
+                    <Input 
+                      placeholder="Jhon Lester Nolial" 
+                      value={artist}
+                      onChange={(e) => setArtist(e.target.value)}
+                      className="h-14 border-slate-200 rounded-2xl focus:ring-primary" 
+                    />
+                  </div>
+
+                  {/* Type */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Layers className="w-3.5 h-3.5 text-primary" />
+                      Type
+                    </Label>
+                    <Select value={projectType} onValueChange={setProjectType}>
+                      <SelectTrigger className="h-14 border-slate-200 rounded-2xl focus:ring-primary">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Video">Video</SelectItem>
+                        <SelectItem value="Graphic Design">Graphic Design</SelectItem>
+                        <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
+                        <SelectItem value="Photography">Photography</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Platform */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Share2 className="w-3.5 h-3.5 text-primary" />
+                      Platform
+                    </Label>
+                    <Select value={platform} onValueChange={setPlatform}>
+                      <SelectTrigger className="h-14 border-slate-200 rounded-2xl focus:ring-primary">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Instagram">Instagram</SelectItem>
+                        <SelectItem value="TikTok">TikTok</SelectItem>
+                        <SelectItem value="Facebook">Facebook</SelectItem>
+                        <SelectItem value="YouTube">YouTube</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Due Date */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5 text-primary" />
+                      Due Date
+                    </Label>
+                    <Input 
+                      type="date" 
+                      value={projectDueDate}
+                      onChange={(e) => setProjectDueDate(e.target.value)}
+                      className="h-14 border-slate-200 rounded-2xl focus:ring-primary" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* BM */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-primary" />
+                      Brand Manager (BM)
+                    </Label>
+                    <Input 
+                      placeholder="Clark" 
+                      value={bm}
+                      onChange={(e) => setBm(e.target.value)}
+                      className="h-14 border-slate-200 rounded-2xl focus:ring-primary" 
+                    />
+                  </div>
+
+                  {/* Canvas Link */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <LinkIcon className="w-3.5 h-3.5 text-primary" />
+                      Canvas Link
+                    </Label>
+                    <Input 
+                      placeholder="https://..." 
+                      value={canvasLink}
+                      onChange={(e) => setCanvasLink(e.target.value)}
+                      className="h-14 border-slate-200 rounded-2xl focus:ring-primary" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <DialogClose asChild>
+                  <Button variant="outline" className="flex-1 h-14 rounded-2xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50">
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <Button 
+                  onClick={handleCreateProject}
+                  className="flex-1 h-14 rounded-2xl font-bold bg-primary hover:bg-primary/90 shadow-xl shadow-red-100 text-white transition-all active:scale-[0.98]"
+                >
+                  Add to Hub
+                </Button>
+              </div>
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
+      {/* Task Dialog */}
       <Dialog open={isTaskOpen} onOpenChange={setIsTaskOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Assign Task</DialogTitle></DialogHeader>
+        <DialogContent className="rounded-3xl border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Assign Task</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 py-4">
-            <Input placeholder="Task Title" value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
-            <Select value={assignedToId} onValueChange={setAssignedToId}>
-              <SelectTrigger><SelectValue placeholder="Assignee" /></SelectTrigger>
-              <SelectContent>{staffList?.map((s: any) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}</SelectContent>
-            </Select>
-            <Input type="date" value={taskDueDate} onChange={(e) => setTaskDueDate(e.target.value)} />
-            <Button onClick={handleCreateTask} className="w-full">Assign Task</Button>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Task Title</Label>
+              <Input placeholder="Objective description..." value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} className="h-12 rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Assignee</Label>
+              <Select value={assignedToId} onValueChange={setAssignedToId}>
+                <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Select personnel" /></SelectTrigger>
+                <SelectContent>{staffList?.map((s: any) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Deadline</Label>
+              <Input type="date" value={taskDueDate} onChange={(e) => setTaskDueDate(e.target.value)} className="h-12 rounded-xl" />
+            </div>
+            <Button onClick={handleCreateTask} className="w-full h-12 rounded-xl bg-primary text-white font-bold mt-4 shadow-lg shadow-red-100">Assign Mission</Button>
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* Schedule Dialog */}
       <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>New Event</DialogTitle></DialogHeader>
+        <DialogContent className="rounded-3xl border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">New Event</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 py-4">
-            <Input placeholder="Client Name" value={client} onChange={(e) => setClient(e.target.value)} />
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            <Button onClick={handleConfirmSchedule} className="w-full">Save Event</Button>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Client/Brand Name</Label>
+              <Input placeholder="Authorized brand..." value={client} onChange={(e) => setClient(e.target.value)} className="h-12 rounded-xl" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Type</Label>
+                <Select value={eventType} onValueChange={(v: any) => setEventType(v)}>
+                  <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Shoot">Shoot</SelectItem>
+                    <SelectItem value="Meeting">Meeting</SelectItem>
+                    <SelectItem value="Deadline">Deadline</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Priority</Label>
+                <Select value={schedulePriority} onValueChange={(v: any) => setSchedulePriority(v)}>
+                  <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="URGENT">URGENT</SelectItem>
+                    <SelectItem value="HIGH">HIGH</SelectItem>
+                    <SelectItem value="NORMAL">NORMAL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Deployment Date</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 rounded-xl" />
+            </div>
+            <Button onClick={handleConfirmSchedule} className="w-full h-12 rounded-xl bg-primary text-white font-bold mt-4 shadow-lg shadow-red-100">Save Event</Button>
           </div>
         </DialogContent>
       </Dialog>
