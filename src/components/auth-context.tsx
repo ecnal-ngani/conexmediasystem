@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -6,9 +7,10 @@
  * This file manages the user session, handling:
  * 1. Firebase Anonymous sign-in as a baseline.
  * 2. Lookup of authorized user profiles from Firestore.
- * 3. Session persistence using LocalStorage.
- * 4. Biometric verification gating for WFH users.
- * 5. Automatic status synchronization (Office/WFH/Offline).
+ * 3. Security Token validation (Gate 1).
+ * 4. Session persistence using LocalStorage.
+ * 5. Biometric verification gating for WFH users.
+ * 6. Automatic status synchronization (Office/WFH/Offline).
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -22,7 +24,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, isWfh: boolean) => Promise<void>;
+  login: (email: string, securityToken: string, isWfh: boolean) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   isWfh: boolean;
@@ -75,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /**
    * Validates credentials and automatically synchronizes operational status.
    */
-  const login = async (email: string, wfhStatus: boolean) => {
+  const login = async (email: string, securityToken: string, wfhStatus: boolean) => {
     if (!firestore || !firebaseAuth) {
       throw new Error('Database connection not established.');
     }
@@ -96,6 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userDoc = querySnapshot.docs[0];
       const userData = userDoc.data();
+      
+      // SECURITY TOKEN VALIDATION (Gate 1)
+      if (userData.securityToken !== securityToken) {
+        throw new Error('Invalid Security Token: Access denied.');
+      }
       
       // AUTOMATIC STATUS SYNCHRONIZATION
       const userRef = doc(firestore, 'users', userDoc.id);

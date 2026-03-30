@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -5,8 +6,9 @@
  * 
  * Allows Administrators to:
  * 1. Enroll new staff members and generate system IDs.
- * 2. Assign tasks (directives) to personnel.
- * 3. View attendance and biometric logs.
+ * 2. Manage high-security internal Security Tokens.
+ * 3. Assign tasks (directives) to personnel.
+ * 4. View attendance and biometric logs.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -17,21 +19,12 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
   UserPlus, 
-  Trophy, 
-  Zap,
-  Users,
-  CheckCircle2,
-  Loader2,
-  ShieldCheck,
-  Camera,
-  Calendar,
-  UserMinus,
-  AlertTriangle,
-  ClipboardList,
-  Timer,
-  History,
-  Clock,
-  RefreshCcw
+  Loader2, 
+  Users, 
+  UserMinus, 
+  ClipboardList, 
+  RefreshCcw,
+  Key
 } from 'lucide-react';
 import { 
   Table, 
@@ -96,6 +89,7 @@ export default function AdminPage() {
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [newSecurityToken, setNewSecurityToken] = useState('');
   const [mounted, setMounted] = useState(false);
   
   // Task state
@@ -105,7 +99,6 @@ export default function AdminPage() {
   const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [taskCategory, setTaskCategory] = useState('Operations');
   const [taskDueDate, setTaskDueDate] = useState('');
-  const [taskEstimatedHours, setTaskEstimatedHours] = useState('');
 
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -114,21 +107,18 @@ export default function AdminPage() {
     setMounted(true);
   }, []);
 
-  // Fetch all users for the management list - uses real-time snapshot
   const staffQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
     return query(collection(firestore, 'users'), orderBy('systemId', 'asc'));
   }, [firestore, currentUser]);
   const { data: staff, loading: staffLoading } = useCollection<any>(staffQuery);
 
-  // Fetch biometric verification history
   const historyQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
     return query(collection(firestore, 'verifications'), orderBy('timestamp', 'desc'));
   }, [firestore, currentUser]);
   const { data: verifications, loading: historyLoading } = useCollection<any>(historyQuery);
 
-  // Filters staff based on search input (name, ID, or role)
   const filteredStaff = useMemo(() => {
     if (!staff) return [];
     const q = searchQuery.toLowerCase();
@@ -139,7 +129,6 @@ export default function AdminPage() {
     );
   }, [staff, searchQuery]);
 
-  // Generates the next available System ID for a role
   const nextSystemId = useMemo(() => {
     if (!staff) return "CX-LOAD-00";
     const code = ROLE_CODE_MAPPINGS[selectedRole] || "ST";
@@ -149,8 +138,8 @@ export default function AdminPage() {
   }, [selectedRole, staff]);
 
   const handleEnrollStaff = () => {
-    if (!firestore || !newUserName || !newUserEmail) {
-      toast({ variant: "destructive", title: "Missing Fields", description: "Name and Email are required." });
+    if (!firestore || !newUserName || !newUserEmail || !newSecurityToken) {
+      toast({ variant: "destructive", title: "Missing Fields", description: "Name, Email, and Security Token are required." });
       return;
     }
 
@@ -161,11 +150,9 @@ export default function AdminPage() {
       systemId: nextSystemId,
       name: newUserName,
       email: newUserEmail.toLowerCase(),
+      securityToken: newSecurityToken,
       role: selectedRole,
       status: 'Offline',
-      points: 0,
-      xp: 0,
-      badges: [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       avatarUrl: avatar
@@ -187,6 +174,7 @@ export default function AdminPage() {
     setIsEnrollModalOpen(false);
     setNewUserName('');
     setNewUserEmail('');
+    setNewSecurityToken('');
   };
 
   const handleCreateTask = () => {
@@ -198,7 +186,6 @@ export default function AdminPage() {
       category: taskCategory,
       priority: taskPriority,
       dueDate: taskDueDate,
-      hours: taskEstimatedHours || '0h',
       status: 'pending',
       assignedToId: taskTargetUser.id,
       assignedToName: taskTargetUser.name,
@@ -223,7 +210,6 @@ export default function AdminPage() {
 
     setIsTaskModalOpen(false);
     setTaskTitle('');
-    setTaskEstimatedHours('');
     setTaskTargetUser(null);
   };
 
@@ -261,7 +247,7 @@ export default function AdminPage() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Enroll New Personnel</DialogTitle>
-              <DialogDescription>Assign system credentials and role clearance.</DialogDescription>
+              <DialogDescription>Assign system credentials and security token clearance.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -271,6 +257,13 @@ export default function AdminPage() {
               <div className="space-y-2">
                 <Label>Work Email</Label>
                 <Input placeholder="john@conex.private" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Key className="w-3 h-3 text-primary" />
+                  Initial Security Token
+                </Label>
+                <Input placeholder="e.g. CX-9988-ABC" value={newSecurityToken} onChange={(e) => setNewSecurityToken(e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -325,7 +318,7 @@ export default function AdminPage() {
                 <TableRow>
                   <TableHead className="font-bold text-slate-500">System ID</TableHead>
                   <TableHead className="font-bold text-slate-500">Name</TableHead>
-                  <TableHead className="font-bold text-slate-500">Role</TableHead>
+                  <TableHead className="font-bold text-slate-500">Security Token</TableHead>
                   <TableHead className="font-bold text-slate-500">Status</TableHead>
                   <TableHead className="text-right font-bold text-slate-500">Actions</TableHead>
                 </TableRow>
@@ -340,7 +333,7 @@ export default function AdminPage() {
                     <TableRow key={emp.id} className="hover:bg-slate-50">
                       <TableCell className="font-mono text-xs font-bold">{emp.systemId}</TableCell>
                       <TableCell className="font-bold text-slate-900">{emp.name}</TableCell>
-                      <TableCell className="text-xs text-slate-500">{emp.role}</TableCell>
+                      <TableCell className="font-mono text-[10px] text-slate-400">••••••••</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className={cn(

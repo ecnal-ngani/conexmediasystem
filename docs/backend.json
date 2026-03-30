@@ -24,6 +24,10 @@
           "type": "string",
           "description": "The tactical system ID (e.g., CX-AD-01)."
         },
+        "securityToken": {
+          "type": "string",
+          "description": "The unique high-entropy passcode for internal access."
+        },
         "role": {
           "type": "string",
           "description": "The primary role assigned to this user.",
@@ -50,6 +54,7 @@
         "email",
         "name",
         "systemId",
+        "securityToken",
         "role",
         "createdAt",
         "updatedAt"
