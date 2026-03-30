@@ -7,7 +7,7 @@
  * This file manages the user session, handling:
  * 1. Firebase Anonymous sign-in as a baseline.
  * 2. Lookup of authorized user profiles from Firestore.
- * 3. Security Token validation (Gate 1).
+ * 3. Security Token validation (Gate 1) with Master Bootstrap.
  * 4. Session persistence using LocalStorage.
  * 5. Biometric verification gating for WFH users.
  * 6. Automatic status synchronization (Office/WFH/Offline).
@@ -17,7 +17,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/mock-data';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
-import { collection, query, where, getDocs, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -34,6 +34,10 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// MASTER BOOTSTRAP CREDENTIALS
+const MASTER_EMAIL = 'admin@conex.media';
+const MASTER_TOKEN = 'CONEX-ADMIN-INIT';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -88,33 +92,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await signInAnonymously(firebaseAuth);
       }
 
+      const cleanEmail = email.toLowerCase().trim();
       const usersRef = collection(firestore, 'users');
-      const q = query(usersRef, where('email', '==', email.toLowerCase()), limit(1));
+      const q = query(usersRef, where('email', '==', cleanEmail), limit(1));
       const querySnapshot = await getDocs(q);
       
-      if (querySnapshot.empty) {
-        throw new Error('Unauthorized: Email not found in the staff registry.');
-      }
+      let userData: any = null;
+      let userId: string = '';
 
-      const userDoc = querySnapshot.docs[0];
-      const userData = userDoc.data();
-      
-      // SECURITY TOKEN VALIDATION (Gate 1)
-      if (userData.securityToken !== securityToken) {
-        throw new Error('Invalid Security Token: Access denied.');
+      if (querySnapshot.empty) {
+        // CHECK FOR MASTER BOOTSTRAP
+        if (cleanEmail === MASTER_EMAIL && securityToken === MASTER_TOKEN) {
+          // AUTO-ENROLL FIRST ADMIN
+          const newAdmin = {
+            systemId: 'CX-AD-01',
+            name: 'System Administrator',
+            email: MASTER_EMAIL,
+            securityToken: MASTER_TOKEN,
+            role: 'ADMIN',
+            status: wfhStatus ? 'WFH' : 'Office',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            avatarUrl: 'https://picsum.photos/seed/admin/200/200'
+          };
+          const docRef = await addDoc(usersRef, newAdmin);
+          userData = newAdmin;
+          userId = docRef.id;
+        } else {
+          throw new Error('Unauthorized: Email not found in the staff registry.');
+        }
+      } else {
+        const userDoc = querySnapshot.docs[0];
+        userData = userDoc.data();
+        userId = userDoc.id;
+
+        // SECURITY TOKEN VALIDATION (Gate 1)
+        if (userData.securityToken !== securityToken) {
+          throw new Error('Invalid Security Token: Access denied.');
+        }
       }
       
       // AUTOMATIC STATUS SYNCHRONIZATION
-      const userRef = doc(firestore, 'users', userDoc.id);
+      const userRef = doc(firestore, 'users', userId);
       const newStatus = wfhStatus ? 'WFH' : 'Office';
       
-      // Perform Firestore update first to ensure global availability
       await updateDoc(userRef, { 
         status: newStatus,
         updatedAt: serverTimestamp() 
       });
 
-      const updatedUser = { id: userDoc.id, ...userData, status: newStatus } as User;
+      const updatedUser = { id: userId, ...userData, status: newStatus } as User;
 
       setUser(updatedUser);
       setIsWfh(wfhStatus);
@@ -164,7 +191,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    // Attempt to set user as Offline before clearing session
     if (user && firestore) {
       const userRef = doc(firestore, 'users', user.id);
       try {
