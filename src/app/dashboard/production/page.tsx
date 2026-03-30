@@ -100,23 +100,33 @@ export default function ProductionPage() {
   }, [firestore, user]);
   const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
 
+  // Tactical File Code Logic: Continuous Sequence per Brand
   useEffect(() => {
     if (selectedBrandId && brands && projects) {
       const brand = brands.find(b => b.id === selectedBrandId);
       if (brand) {
-        const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-        const prefix = `${brand.prefix}-${dateStr}-`;
-        const dayProjects = projects.filter((p: any) => p.fileCode?.startsWith(prefix));
+        // Use local date (YYMMDD) to prevent timezone flipping errors
+        const now = new Date();
+        const yy = now.getFullYear().toString().slice(-2);
+        const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+        const dd = now.getDate().toString().padStart(2, '0');
+        const dateStr = `${yy}${mm}${dd}`;
+        
+        // Filter all projects for this specific brand to find the absolute max sequence
+        const brandPrefixMatch = `${brand.prefix}-`;
+        const brandProjects = projects.filter((p: any) => p.fileCode?.startsWith(brandPrefixMatch));
+        
         let nextNum = 1;
-        if (dayProjects.length > 0) {
-          const numbers = dayProjects.map((p: any) => {
+        if (brandProjects.length > 0) {
+          const numbers = brandProjects.map((p: any) => {
             const parts = p.fileCode.split('-');
             const lastPart = parts[parts.length - 1];
             return parseInt(lastPart, 10) || 0;
           });
           nextNum = Math.max(...numbers) + 1;
         }
-        setFileCode(`${prefix}${nextNum.toString().padStart(2, '0')}`);
+        
+        setFileCode(`${brand.prefix}-${dateStr}-${nextNum.toString().padStart(2, '0')}`);
       }
     }
   }, [selectedBrandId, brands, projects]);

@@ -184,24 +184,33 @@ export function QuickActions() {
   const [bm, setBm] = useState('');
   const [canvasLink, setCanvasLink] = useState('');
 
-  // Auto-generate File Code logic
+  // Continuous Tactical File Code Logic
   useEffect(() => {
     if (projectBrandId && brands && recentProjects) {
       const brand = brands.find((b: any) => b.id === projectBrandId);
       if (brand) {
-        const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-        const prefix = `${brand.prefix}-${dateStr}-`;
-        const dayProjects = recentProjects.filter((p: any) => p.fileCode?.startsWith(prefix));
+        // Use local date (YYMMDD)
+        const now = new Date();
+        const yy = now.getFullYear().toString().slice(-2);
+        const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+        const dd = now.getDate().toString().padStart(2, '0');
+        const dateStr = `${yy}${mm}${dd}`;
+        
+        // Filter all projects for this brand to find the absolute max sequence
+        const brandPrefixMatch = `${brand.prefix}-`;
+        const brandProjects = recentProjects.filter((p: any) => p.fileCode?.startsWith(brandPrefixMatch));
+        
         let nextNum = 1;
-        if (dayProjects.length > 0) {
-          const numbers = dayProjects.map((p: any) => {
+        if (brandProjects.length > 0) {
+          const numbers = brandProjects.map((p: any) => {
             const parts = p.fileCode.split('-');
             const lastPart = parts[parts.length - 1];
             return parseInt(lastPart, 10) || 0;
           });
           nextNum = Math.max(...numbers) + 1;
         }
-        setFileCode(`${prefix}${nextNum.toString().padStart(2, '0')}`);
+        
+        setFileCode(`${brand.prefix}-${dateStr}-${nextNum.toString().padStart(2, '0')}`);
       }
     }
   }, [projectBrandId, brands, recentProjects]);
@@ -319,7 +328,7 @@ export function QuickActions() {
       assignedToName: assignee.name,
       assignedById: user.id,
       assignedByName: user.name,
-      createdAt: serverTimestamp(),
+      createdAt: serverTimestamp(), 
       updatedAt: serverTimestamp()
     };
     addDoc(ref, data).catch((e) => {
