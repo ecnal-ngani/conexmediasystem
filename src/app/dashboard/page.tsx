@@ -13,7 +13,6 @@ import {
   Loader2,
   ChevronRight,
   Star,
-  Shield,
   Camera,
   Scissors,
   Lightbulb,
@@ -21,9 +20,7 @@ import {
   Clock,
   HardDrive,
   BookOpen,
-  Award,
-  User as UserIcon,
-  Check
+  Award
 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -40,8 +37,6 @@ import {
   Legend 
 } from 'recharts';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -76,42 +71,8 @@ export default function DashboardPage() {
     return query(collection(firestore, 'projects'));
   }, [firestore, user]);
 
-  const tasksQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(
-      collection(firestore, 'tasks'), 
-      where('assignedToId', '==', user.id), 
-      limit(20)
-    );
-  }, [firestore, user]);
-
   const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
-  const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
-  const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
-
-  const handleCompleteTask = (taskId: string, title: string) => {
-    if (!firestore) return;
-    const taskRef = doc(firestore, 'tasks', taskId);
-    const updateData = { 
-      status: 'completed', 
-      updatedAt: serverTimestamp() 
-    };
-
-    updateDoc(taskRef, updateData)
-      .then(() => {
-        toast({
-          title: "Directive Completed",
-          description: `"${title}" has been successfully synchronized as completed.`,
-        });
-      })
-      .catch(async (e) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: taskRef.path,
-          operation: 'update',
-          requestResourceData: updateData
-        }));
-      });
-  };
+  const { data: projects } = useCollection<any>(projectsQuery);
 
   const roleConfig = useMemo(() => {
     const role = user?.role || 'EDITOR';
@@ -188,7 +149,7 @@ export default function DashboardPage() {
   if (!isMounted || !user) return null;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto animate-in fade-in duration-700">
+    <div className="w-full space-y-8 animate-in fade-in duration-700">
       <div className="flex items-center gap-2 px-1">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">{roleConfig.title}</h1>
         <ChevronRight className="w-4 h-4 text-primary" />

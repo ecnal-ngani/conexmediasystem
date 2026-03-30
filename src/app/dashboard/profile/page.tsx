@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
-  User as UserIcon, 
   ShieldCheck, 
   Mail, 
   Fingerprint, 
@@ -61,7 +60,7 @@ export default function ProfilePage() {
   const isIntern = user.role === 'INTERN';
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
+    <div className="w-full space-y-8 animate-in fade-in duration-700">
       {/* Profile Header */}
       <div className="relative group">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent rounded-[32px] -m-2 opacity-50 group-hover:opacity-100 transition-opacity" />

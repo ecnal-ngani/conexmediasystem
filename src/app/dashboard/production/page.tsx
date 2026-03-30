@@ -254,7 +254,7 @@ export default function ProductionPage() {
   const canEditStatus = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
+    <div className="w-full space-y-6 md:space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between px-1">
         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Production Hub</h1>
         <div className="flex items-center gap-2">

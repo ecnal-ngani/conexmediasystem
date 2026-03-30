@@ -58,7 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </header>
 
-          <div className="p-4 md:p-6 lg:p-10 pb-24 lg:pb-12">
+          <div className="w-full p-4 md:p-6 lg:p-10 pb-24 lg:pb-12">
             {children}
           </div>
           

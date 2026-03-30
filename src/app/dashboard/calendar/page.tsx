@@ -9,22 +9,12 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Calendar as CalendarIcon,
-  Clock,
   Loader2,
-  MapPin,
-  Users,
-  FileText,
-  Briefcase,
   Layers,
   CheckCircle2,
-  AlertCircle,
-  RefreshCw,
   Plus,
-  Lightbulb,
   Zap,
   Trash2,
-  ShieldAlert,
-  Save,
   Building2,
   Check
 } from 'lucide-react';
@@ -65,7 +55,6 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { useAuth } from '@/components/auth-context';
 
 export default function CalendarPage() {
-  const router = useRouter();
   const { user } = useAuth();
   const [viewDate, setViewDate] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -99,25 +88,25 @@ export default function CalendarPage() {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'schedules'), orderBy('date', 'asc'));
   }, [firestore, user]);
-  const { data: schedules, loading: sLoading } = useCollection<any>(schedulesQuery);
+  const { data: schedules } = useCollection<any>(schedulesQuery);
 
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'projects'), orderBy('dueDate', 'asc'));
   }, [firestore, user]);
-  const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
+  const { data: projects } = useCollection<any>(projectsQuery);
 
   const tasksQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'tasks'), orderBy('dueDate', 'asc'));
   }, [firestore, user]);
-  const { data: allTasks, loading: tLoading } = useCollection<any>(tasksQuery);
+  const { data: allTasks } = useCollection<any>(tasksQuery);
 
   const brandsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'brands'), orderBy('name', 'asc'));
   }, [firestore, user]);
-  const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
+  const { data: brands } = useCollection<any>(brandsQuery);
 
   // Filter tasks for privacy
   const tasks = useMemo(() => {
@@ -196,36 +185,27 @@ export default function CalendarPage() {
     setSelectedBrandId(''); setEventDate(''); setEventLocation(''); setEventNotes('');
   };
 
-  const handleUpdateEventDate = () => {
-    if (!firestore || !selectedEvent || !editingDate) return;
+  const handleDeleteEvent = () => {
+    if (!firestore || !selectedEvent || !selectedEvent.id) return;
 
     let collectionName = '';
-    let fieldName = 'date';
     switch (selectedEvent.source) {
       case 'schedule': collectionName = 'schedules'; break;
-      case 'production': collectionName = 'projects'; fieldName = 'dueDate'; break;
-      case 'task': collectionName = 'tasks'; fieldName = 'dueDate'; break;
+      case 'production': collectionName = 'projects'; break;
+      case 'task': collectionName = 'tasks'; break;
       default: return;
     }
 
     const docRef = doc(firestore, collectionName, selectedEvent.id);
-    const updateData = { [fieldName]: editingDate, updatedAt: serverTimestamp() };
+    deleteDoc(docRef).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'delete'
+      }));
+    });
 
-    updateDoc(docRef, updateData)
-      .then(() => {
-        toast({
-          title: "Event Rescheduled",
-          description: "The deployment timeline has been updated."
-        });
-        setSelectedEvent(null);
-      })
-      .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'update',
-          requestResourceData: updateData
-        }));
-      });
+    toast({ title: "Event Terminated", description: `The record has been purged.` });
+    setSelectedEvent(null);
   };
 
   const handleCompleteTask = (taskId: string, title: string) => {
@@ -251,29 +231,6 @@ export default function CalendarPage() {
           requestResourceData: updateData
         }));
       });
-  };
-
-  const handleDeleteEvent = () => {
-    if (!firestore || !selectedEvent || !selectedEvent.id) return;
-
-    let collectionName = '';
-    switch (selectedEvent.source) {
-      case 'schedule': collectionName = 'schedules'; break;
-      case 'production': collectionName = 'projects'; break;
-      case 'task': collectionName = 'tasks'; break;
-      default: return;
-    }
-
-    const docRef = doc(firestore, collectionName, selectedEvent.id);
-    deleteDoc(docRef).catch(async (err) => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: docRef.path,
-        operation: 'delete'
-      }));
-    });
-
-    toast({ title: "Event Terminated", description: `The record has been purged.` });
-    setSelectedEvent(null);
   };
 
   const renderCalendarDays = () => {
@@ -314,7 +271,7 @@ export default function CalendarPage() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-700 max-w-7xl mx-auto">
+    <div className="w-full space-y-6 md:space-y-8 animate-in fade-in duration-700">
       <div className="flex items-center justify-between px-1">
         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Operations Command</h1>
         

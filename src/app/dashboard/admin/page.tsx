@@ -235,7 +235,7 @@ export default function AdminPage() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="w-full space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Staff Management</h1>
