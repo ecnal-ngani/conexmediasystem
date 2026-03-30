@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -8,7 +7,7 @@
  * 1. Enroll new staff members and generate system IDs.
  * 2. Manage high-security internal Security Tokens.
  * 3. Assign tasks (directives) to personnel.
- * 4. View attendance and biometric logs.
+ * 4. View attendance and biometric logs with Visual ID.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -24,7 +23,10 @@ import {
   UserMinus, 
   ClipboardList, 
   RefreshCcw,
-  Key
+  Key,
+  Eye,
+  Camera,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   Table, 
@@ -99,6 +101,9 @@ export default function AdminPage() {
   const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [taskCategory, setTaskCategory] = useState('Operations');
   const [taskDueDate, setTaskDueDate] = useState('');
+
+  // Biometric Photo state
+  const [selectedLogPhoto, setSelectedLogPhoto] = useState<string | null>(null);
 
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -388,7 +393,7 @@ export default function AdminPage() {
                   <TableHead className="font-bold text-slate-500">Personnel</TableHead>
                   <TableHead className="font-bold text-slate-500">Timestamp</TableHead>
                   <TableHead className="font-bold text-slate-500">Method</TableHead>
-                  <TableHead className="text-right font-bold text-slate-500">Confidence</TableHead>
+                  <TableHead className="text-right font-bold text-slate-500">Visual ID</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -409,7 +414,17 @@ export default function AdminPage() {
                         {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'PPP p') : 'Pending...'}
                       </TableCell>
                       <TableCell><Badge className="bg-slate-100 text-slate-600 font-bold text-[9px]">BIOMETRIC FEED</Badge></TableCell>
-                      <TableCell className="text-right font-mono text-xs">{(log.confidence * 100).toFixed(1)}%</TableCell>
+                      <TableCell className="text-right">
+                        <button 
+                          onClick={() => setSelectedLogPhoto(log.photoUrl)}
+                          className="group relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 hover:border-primary transition-colors inline-block"
+                        >
+                          <img src={log.photoUrl} alt="Visual ID" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <Eye className="w-4 h-4 text-white" />
+                          </div>
+                        </button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -418,6 +433,37 @@ export default function AdminPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Biometric Asset Viewer */}
+      <Dialog open={!!selectedLogPhoto} onOpenChange={(open) => !open && setSelectedLogPhoto(null)}>
+        <DialogContent className="max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+          <div className="p-6 md:p-8 space-y-6">
+            <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
+                <Camera className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Biometric Asset</DialogTitle>
+                <DialogDescription className="text-slate-400 font-medium">Visual identity confirm for secure login.</DialogDescription>
+              </div>
+            </DialogHeader>
+
+            <div className="aspect-video bg-black rounded-2xl overflow-hidden border-4 border-slate-50 relative">
+               <img src={selectedLogPhoto || ''} alt="Capture" className="w-full h-full object-cover" />
+               <div className="absolute bottom-4 left-4">
+                  <Badge className="bg-green-600 text-white font-black text-[10px] px-3 gap-2">
+                    <ShieldCheck className="w-3 h-3" />
+                    AUTHORIZED CAPTURE
+                  </Badge>
+               </div>
+            </div>
+
+            <Button onClick={() => setSelectedLogPhoto(null)} className="w-full h-12 rounded-xl font-bold bg-slate-900 text-white">
+              Close Visual ID
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Task Assignment Modal */}
       <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
