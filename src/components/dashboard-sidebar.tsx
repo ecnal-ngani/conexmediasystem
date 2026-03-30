@@ -8,7 +8,8 @@ import {
   Users, 
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  UserCircle
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
@@ -34,6 +35,7 @@ const navItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
   { title: 'Production Hub', url: '/dashboard/production', icon: Layers },
   { title: 'Schedule', url: '/dashboard/calendar', icon: Calendar },
+  { title: 'Profile', url: '/dashboard/profile', icon: UserCircle },
   { title: 'Administration', url: '/dashboard/admin', icon: Users, adminOnly: true },
 ];
 
@@ -95,8 +97,8 @@ export function DashboardSidebar() {
       <SidebarContent className="px-0 py-6">
         <ScrollArea className="h-full px-2">
           {/* User Profile Summary */}
-          <div className={cn(
-            "mb-8 flex items-center gap-3 w-full p-2 rounded-xl",
+          <Link href="/dashboard/profile" className={cn(
+            "mb-8 flex items-center gap-3 w-full p-2 rounded-xl transition-colors hover:bg-slate-50",
             isCollapsed ? "justify-center" : "px-2"
           )}>
             <div className="relative shrink-0">
@@ -115,14 +117,14 @@ export function DashboardSidebar() {
               )}></span>
             </div>
             {!isCollapsed && (
-              <div className="overflow-hidden flex-1">
+              <div className="overflow-hidden flex-1 text-left">
                 <p className="text-sm font-bold text-slate-900 truncate">{user.name}</p>
                 <span className="text-[10px] text-slate-500 font-medium">
                   {user.systemId}
                 </span>
               </div>
             )}
-          </div>
+          </Link>
 
           <SidebarMenu>
             {filteredNavItems.map((item) => (
