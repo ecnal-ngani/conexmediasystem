@@ -119,7 +119,7 @@ export default function CalendarPage() {
   }, [firestore, user]);
   const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
 
-  // Filter tasks for privacy: Only show tasks assigned to the current user or given by them (if Admin/BM)
+  // Filter tasks for privacy
   const tasks = useMemo(() => {
     if (!allTasks || !user) return [];
     if (user.role === 'ADMIN' || user.role === 'BRAND_MANAGER') {
@@ -193,10 +193,7 @@ export default function CalendarPage() {
     });
 
     setIsAddEventOpen(false);
-    setSelectedBrandId('');
-    setEventDate('');
-    setEventLocation('');
-    setEventNotes('');
+    setSelectedBrandId(''); setEventDate(''); setEventLocation(''); setEventNotes('');
   };
 
   const handleUpdateEventDate = () => {
@@ -257,27 +254,17 @@ export default function CalendarPage() {
   };
 
   const handleDeleteEvent = () => {
-    if (!firestore || !selectedEvent || !selectedEvent.id) {
-      toast({
-        variant: "destructive",
-        title: "System Error",
-        description: "Could not identify the record ID for deletion."
-      });
-      return;
-    }
+    if (!firestore || !selectedEvent || !selectedEvent.id) return;
 
     let collectionName = '';
     switch (selectedEvent.source) {
       case 'schedule': collectionName = 'schedules'; break;
       case 'production': collectionName = 'projects'; break;
       case 'task': collectionName = 'tasks'; break;
-      default: 
-        toast({ variant: "destructive", title: "Error", description: "Unknown source node." });
-        return;
+      default: return;
     }
 
     const docRef = doc(firestore, collectionName, selectedEvent.id);
-    
     deleteDoc(docRef).catch(async (err) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: docRef.path,
@@ -285,11 +272,7 @@ export default function CalendarPage() {
       }));
     });
 
-    toast({
-      title: "Event Terminated",
-      description: `The ${selectedEvent.source} record has been purged from the matrix.`
-    });
-
+    toast({ title: "Event Terminated", description: `The record has been purged.` });
     setSelectedEvent(null);
   };
 
@@ -319,16 +302,7 @@ export default function CalendarPage() {
               <button key={`p-${idx}`} onClick={() => setSelectedEvent({...p, source: 'production'})} className="w-full text-left truncate text-[10px] font-bold py-0.5 px-1.5 rounded bg-blue-600 text-white">PROD: {p.brand}</button>
             ))}
             {dayTasks.map((t, idx) => (
-              <button 
-                key={`t-${idx}`} 
-                onClick={() => setSelectedEvent({...t, source: 'task'})} 
-                className={cn(
-                  "w-full text-left truncate text-[10px] font-bold py-0.5 px-1.5 rounded text-white", 
-                  t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700')
-                )}
-              >
-                TASK: {t.title}
-              </button>
+              <button key={`t-${idx}`} onClick={() => setSelectedEvent({...t, source: 'task'})} className={cn("w-full text-left truncate text-[10px] font-bold py-0.5 px-1.5 rounded text-white", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))}>TASK: {t.title}</button>
             ))}
           </div>
         </div>
@@ -337,9 +311,6 @@ export default function CalendarPage() {
     return days;
   };
 
-  const isAdmin = user?.role === 'ADMIN';
-  const canCreateEvents = user?.role !== 'INTERN';
-
   if (!mounted) return null;
 
   return (
@@ -347,7 +318,7 @@ export default function CalendarPage() {
       <div className="flex items-center justify-between px-1">
         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Operations Command</h1>
         
-        {canCreateEvents && (
+        {user?.role !== 'INTERN' && (
           <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-primary/90 font-bold h-10 px-6 rounded-xl shadow-lg shadow-red-100 text-white gap-2">
@@ -355,25 +326,25 @@ export default function CalendarPage() {
                 Create New Event
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+            <DialogContent className="max-w-[480px] p-0 rounded-[32px] overflow-hidden border-none shadow-2xl">
               <ScrollArea className="max-h-[90vh]">
-                <div className="p-6 md:p-8 space-y-6">
-                  <DialogHeader className="flex flex-row items-start gap-4 space-y-0">
-                    <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
-                      <CalendarIcon className="w-6 h-6 text-white" />
+                <div className="p-6 md:p-10 space-y-8">
+                  <DialogHeader className="flex flex-row items-start gap-5 space-y-0">
+                    <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-xl shadow-red-100">
+                      <CalendarIcon className="w-7 h-7 text-white" />
                     </div>
-                    <div>
+                    <div className="pt-1">
                       <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Event Schedule</DialogTitle>
                       <DialogDescription className="text-slate-400 font-medium">Synchronize a new event with the master calendar.</DialogDescription>
                     </div>
                   </DialogHeader>
 
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Type</Label>
                         <Select value={eventType} onValueChange={(val: any) => setEventType(val)}>
-                          <SelectTrigger className="h-11 rounded-xl">
+                          <SelectTrigger className="h-14 border-slate-200 rounded-2xl">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -383,13 +354,13 @@ export default function CalendarPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                           <Zap className="w-3 h-3 text-primary" />
                           Priority
                         </Label>
                         <Select value={eventPriority} onValueChange={(val: any) => setEventPriority(val)}>
-                          <SelectTrigger className="h-11 rounded-xl">
+                          <SelectTrigger className="h-14 border-slate-200 rounded-2xl">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -401,13 +372,13 @@ export default function CalendarPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                        <Building2 className="w-3 h-3 text-primary" />
+                        <Building2 className="w-3.5 h-3.5 text-primary" />
                         Authorized Brand
                       </Label>
                       <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
-                        <SelectTrigger className="h-11 rounded-xl">
+                        <SelectTrigger className="h-14 border-slate-200 rounded-2xl">
                           <SelectValue placeholder="Select authorized client" />
                         </SelectTrigger>
                         <SelectContent>
@@ -418,44 +389,44 @@ export default function CalendarPage() {
                       </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Date</Label>
                         <Input 
                           type="date" 
                           value={eventDate} 
                           onChange={(e) => setEventDate(e.target.value)}
-                          className="h-11 rounded-xl"
+                          className="h-14 border-slate-200 rounded-2xl"
                         />
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</Label>
                         <Input 
                           placeholder="Studio A / Site" 
                           value={eventLocation} 
                           onChange={(e) => setEventLocation(e.target.value)}
-                          className="h-11 rounded-xl"
+                          className="h-14 border-slate-200 rounded-2xl"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Operational Notes</Label>
                       <Input 
                         placeholder="Special instructions or gear required..." 
                         value={eventNotes} 
                         onChange={(e) => setEventNotes(e.target.value)}
-                        className="h-11 rounded-xl"
+                        className="h-14 border-slate-200 rounded-2xl"
                       />
                     </div>
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
                       <DialogClose asChild>
-                        <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
+                        <Button variant="outline" className="flex-1 h-14 rounded-2xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50">Cancel</Button>
                       </DialogClose>
                       <Button 
                         onClick={handleCreateEvent}
-                        className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
+                        className="flex-1 h-14 rounded-2xl font-bold bg-primary hover:bg-primary/90 shadow-xl shadow-red-100 text-white"
                       >
                         Deploy to Calendar
                       </Button>
@@ -475,7 +446,6 @@ export default function CalendarPage() {
               <div className="flex items-center gap-3">
                 <CalendarIcon className="w-5 h-5 text-primary" />
                 <CardTitle className="text-lg font-bold">{viewDate ? format(viewDate, 'MMMM yyyy') : 'Loading...'}</CardTitle>
-                {(sLoading || pLoading || tLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
               </div>
               <div className="flex gap-1">
                 <Button variant="ghost" size="icon" onClick={prevMonth}><ChevronLeft className="w-4 h-4" /></Button>
@@ -491,7 +461,7 @@ export default function CalendarPage() {
           </Card>
         </div>
 
-        <Card className="border shadow-none rounded-xl bg-white overflow-hidden flex flex-col h-fit">
+        <Card className="border shadow-none rounded-xl bg-white h-fit">
           <CardHeader className="border-b bg-slate-50/30"><CardTitle className="text-base font-bold text-slate-800">Command-Wide Matrix</CardTitle></CardHeader>
           <CardContent className="p-4 space-y-6">
             <div className="grid grid-cols-3 gap-2">
@@ -502,31 +472,12 @@ export default function CalendarPage() {
             <ScrollArea className="h-[450px] pr-2">
               <div className="space-y-3">
                 {tasks?.map((task: any) => (
-                  <div 
-                    key={task.id} 
-                    onClick={() => setSelectedEvent({...task, source: 'task'})} 
-                    className={cn(
-                      "p-4 border rounded-xl shadow-sm transition-all cursor-pointer group",
-                      task.status === 'completed' ? "bg-green-50 border-green-200" : "bg-white border-slate-100 hover:border-primary/20"
-                    )}
-                  >
+                  <div key={task.id} onClick={() => setSelectedEvent({...task, source: 'task'})} className={cn("p-4 border rounded-xl shadow-sm transition-all cursor-pointer group", task.status === 'completed' ? "bg-green-50 border-green-200" : "bg-white border-slate-100 hover:border-primary/20")}>
                     <div className="flex justify-between mb-2">
-                      <h4 className={cn("text-xs font-bold truncate max-w-[70%] transition-colors", task.status === 'completed' ? "text-green-800" : "text-slate-800 group-hover:text-primary")}>
-                        {task.title}
-                      </h4>
-                      <Badge variant="outline" className={cn(
-                        "text-[8px]", 
-                        task.status === 'completed' ? "bg-green-600 text-white border-none" : (task.priority === 'URGENT' ? "text-red-600" : "text-blue-600")
-                      )}>
-                        {task.status === 'completed' ? 'DONE' : task.priority}
-                      </Badge>
+                      <h4 className={cn("text-xs font-bold truncate max-w-[70%] transition-colors", task.status === 'completed' ? "text-green-800" : "text-slate-800 group-hover:text-primary")}>{task.title}</h4>
+                      <Badge variant="outline" className={cn("text-[8px]", task.status === 'completed' ? "bg-green-600 text-white border-none" : (task.priority === 'URGENT' ? "text-red-600" : "text-blue-600"))}>{task.status === 'completed' ? 'DONE' : task.priority}</Badge>
                     </div>
-                    <div className="flex justify-between mt-4 text-[10px] text-slate-400">
-                      <span className={task.status === 'completed' ? "text-green-600 font-bold" : ""}>
-                        {task.status === 'completed' ? '✓ SYNCHRONIZED' : 'TASK'}
-                      </span>
-                      <span>{task.dueDate}</span>
-                    </div>
+                    <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span className={task.status === 'completed' ? "text-green-600 font-bold" : ""}>{task.status === 'completed' ? '✓ SYNCHRONIZED' : 'TASK'}</span><span>{task.dueDate}</span></div>
                   </div>
                 ))}
                 {projects?.filter(p => p.status !== 'Approved').map((p: any) => (
@@ -540,9 +491,6 @@ export default function CalendarPage() {
                 ))}
               </div>
             </ScrollArea>
-            <Button onClick={() => router.push('/dashboard/production')} className="w-full bg-primary font-bold h-11 rounded-xl shadow-lg shadow-red-100 text-white">
-              View All Company Tasks
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -552,10 +500,7 @@ export default function CalendarPage() {
           {selectedEvent && (
             <div className="space-y-6">
               <DialogHeader className="flex flex-row items-center gap-4">
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center", 
-                  selectedEvent.status === 'completed' ? 'bg-green-600' : (selectedEvent.source === 'production' ? 'bg-blue-600' : 'bg-primary')
-                )}>
+                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center", selectedEvent.status === 'completed' ? 'bg-green-600' : (selectedEvent.source === 'production' ? 'bg-blue-600' : 'bg-primary'))}>
                   {selectedEvent.status === 'completed' ? <CheckCircle2 className="w-6 h-6 text-white" /> : (selectedEvent.source === 'production' ? <Layers className="w-6 h-6 text-white" /> : <CalendarIcon className="w-6 h-6 text-white" />)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -564,96 +509,15 @@ export default function CalendarPage() {
                 </div>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-6 pt-4 border-t">
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase font-black text-slate-400">Priority</p>
-                  <Badge className={cn(
-                    "text-[10px] font-black px-2 py-1 rounded",
-                    selectedEvent.status === 'completed' ? "bg-green-50 text-green-600 border-green-100" :
-                    (selectedEvent.priority === 'URGENT' || selectedEvent.priority === 'RUSH' ? "bg-red-50 text-red-500 border-red-100" :
-                    selectedEvent.priority === 'HIGH' ? "bg-orange-50 text-orange-500 border-orange-100" :
-                    "bg-blue-50 text-blue-500 border-blue-100")
-                  )} variant="outline">
-                    {selectedEvent.status === 'completed' ? 'DONE' : (selectedEvent.priority || 'NORMAL')}
-                  </Badge>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase font-black text-slate-400">Date</p>
-                  {isAdmin ? (
-                    <Input 
-                      type="date" 
-                      value={editingDate} 
-                      onChange={(e) => setEditingDate(e.target.value)} 
-                      className="h-8 text-xs font-bold border-slate-200 mt-1"
-                    />
-                  ) : (
-                    <p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p>
-                  )}
-                </div>
-                {selectedEvent.location && (
-                  <div className="space-y-1 col-span-2">
-                    <p className="text-[10px] uppercase font-black text-slate-400">Location</p>
-                    <p className="text-xs font-bold text-slate-700">{selectedEvent.location}</p>
-                  </div>
-                )}
-                <div className="space-y-1 col-span-2">
-                  <p className="text-[10px] uppercase font-black text-slate-400">Status</p>
-                  <Badge variant="secondary" className={cn(
-                    "uppercase font-black text-[10px]",
-                    selectedEvent.status === 'completed' ? "bg-green-600 text-white" : "bg-slate-100 text-slate-700"
-                  )}>
-                    {selectedEvent.status || 'PENDING'}
-                  </Badge>
-                </div>
-                {selectedEvent.notes && (
-                  <div className="space-y-1 col-span-2">
-                    <p className="text-[10px] uppercase font-black text-slate-400">Operational Notes</p>
-                    <p className="text-xs font-medium text-slate-500 italic">{selectedEvent.notes}</p>
-                  </div>
-                )}
+                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Priority</p><Badge className={cn("text-[10px] font-black px-2 py-1 rounded", selectedEvent.status === 'completed' ? "bg-green-50 text-green-600 border-green-100" : (selectedEvent.priority === 'URGENT' || selectedEvent.priority === 'RUSH' ? "bg-red-50 text-red-500 border-red-100" : "bg-blue-50 text-blue-500 border-blue-100"))} variant="outline">{selectedEvent.status === 'completed' ? 'DONE' : (selectedEvent.priority || 'NORMAL')}</Badge></div>
+                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Date</p>{user?.role === 'ADMIN' ? (<Input type="date" value={editingDate} onChange={(e) => setEditingDate(e.target.value)} className="h-8 text-xs font-bold border-slate-200 mt-1" />) : (<p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p>)}</div>
+                {selectedEvent.location && (<div className="space-y-1 col-span-2"><p className="text-[10px] uppercase font-black text-slate-400">Location</p><p className="text-xs font-bold text-slate-700">{selectedEvent.location}</p></div>)}
+                <div className="space-y-1 col-span-2"><p className="text-[10px] uppercase font-black text-slate-400">Status</p><Badge variant="secondary" className={cn("uppercase font-black text-[10px]", selectedEvent.status === 'completed' ? "bg-green-600 text-white" : "bg-slate-100 text-slate-700")}>{selectedEvent.status || 'PENDING'}</Badge></div>
               </div>
-              
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
-                {selectedEvent.source === 'task' && selectedEvent.status !== 'completed' && (
-                  <Button 
-                    onClick={() => handleCompleteTask(selectedEvent.id, selectedEvent.title)} 
-                    className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100"
-                  >
-                    <Check className="w-4 h-4" />
-                    MARK AS DONE
-                  </Button>
-                )}
-
-                {isAdmin && (
-                  <Button 
-                    onClick={handleUpdateEventDate} 
-                    className="w-full h-12 font-bold rounded-xl gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-100"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save Deployment Update
-                  </Button>
-                )}
-
-                <Button onClick={() => setSelectedEvent(null)} variant="outline" className="w-full h-12 font-bold rounded-xl">
-                  Close Briefing
-                </Button>
-
-                {isAdmin && (
-                  <Button 
-                    onClick={handleDeleteEvent} 
-                    variant="destructive" 
-                    className="w-full h-12 font-bold rounded-xl gap-2 shadow-lg shadow-red-100"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Terminate Event
-                  </Button>
-                )}
-                
-                {isAdmin && (
-                  <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 mt-2">
-                    <ShieldAlert className="w-3 h-3 text-red-500" />
-                    Privileged Command Action
-                  </p>
-                )}
+                {selectedEvent.source === 'task' && selectedEvent.status !== 'completed' && (<Button onClick={() => handleCompleteTask(selectedEvent.id, selectedEvent.title)} className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 text-white shadow-lg shadow-green-100"><Check className="w-4 h-4" />MARK AS DONE</Button>)}
+                <Button onClick={() => setSelectedEvent(null)} variant="outline" className="w-full h-12 font-bold rounded-xl">Close Briefing</Button>
+                {user?.role === 'ADMIN' && (<Button onClick={handleDeleteEvent} variant="destructive" className="w-full h-12 font-bold rounded-xl gap-2 shadow-lg shadow-red-100"><Trash2 className="w-4 h-4" />Terminate Event</Button>)}
               </div>
             </div>
           )}

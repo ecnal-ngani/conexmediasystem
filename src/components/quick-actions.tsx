@@ -22,7 +22,9 @@ import {
   Link as LinkIcon,
   Loader2,
   Save,
-  X
+  X,
+  MapPin,
+  Building2
 } from 'lucide-react';
 import {
   Dialog,
@@ -159,17 +161,19 @@ export function QuickActions() {
   // States for Schedule
   const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
   const [schedulePriority, setSchedulePriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
-  const [client, setClient] = useState('');
-  const [date, setDate] = useState('');
+  const [selectedBrandId, setSelectedBrandId] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [eventLocation, setEventLocation] = useState('');
+  const [eventNotes, setEventNotes] = useState('');
 
   // States for Task
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDueDate, setTaskDueDate] = useState('');
   const [assignedToId, setAssignedToId] = useState('');
 
-  // States for Project (Expanded for visual UI match)
+  // States for Project
   const [fileCode, setFileCode] = useState('');
-  const [selectedBrandId, setSelectedBrandId] = useState('');
+  const [projectBrandId, setProjectBrandId] = useState('');
   const [contentIdea, setContentIdea] = useState('');
   const [projectStatus, setProjectStatus] = useState('In Production');
   const [projectPriority, setProjectPriority] = useState('REGULAR');
@@ -182,8 +186,8 @@ export function QuickActions() {
 
   // Auto-generate File Code logic
   useEffect(() => {
-    if (selectedBrandId && brands && recentProjects) {
-      const brand = brands.find((b: any) => b.id === selectedBrandId);
+    if (projectBrandId && brands && recentProjects) {
+      const brand = brands.find((b: any) => b.id === projectBrandId);
       if (brand) {
         const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
         const prefix = `${brand.prefix}-${dateStr}-`;
@@ -200,7 +204,7 @@ export function QuickActions() {
         setFileCode(`${prefix}${nextNum.toString().padStart(2, '0')}`);
       }
     }
-  }, [selectedBrandId, brands, recentProjects]);
+  }, [projectBrandId, brands, recentProjects]);
 
   const filteredActions = useMemo(() => {
     return QUICK_ACTIONS.filter(action => {
@@ -270,14 +274,23 @@ export function QuickActions() {
   };
 
   const handleConfirmSchedule = () => {
-    if (!firestore || !date || !client) return;
+    if (!firestore || !eventDate || !selectedBrandId) {
+      toast({ variant: "destructive", title: "Incomplete Intel", description: "Brand and Date are required." });
+      return;
+    }
+    const brand = brands?.find((b: any) => b.id === selectedBrandId);
+    if (!brand) return;
+
     const ref = collection(firestore, 'schedules');
     const data = { 
-      title: `${eventType}: ${client}`, 
+      title: `${eventType}: ${brand.name}`, 
       type: eventType, 
       priority: schedulePriority, 
-      client, 
-      date, 
+      client: brand.name, 
+      brandId: selectedBrandId,
+      date: eventDate, 
+      location: eventLocation,
+      notes: eventNotes,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -288,8 +301,9 @@ export function QuickActions() {
         requestResourceData: data
       }));
     });
-    toast({ title: "Event Added", description: "The schedule has been updated." });
+    toast({ title: "Event Synchronized", description: `${brand.name} has been added to the master calendar.` });
     setIsScheduleOpen(false);
+    setSelectedBrandId(''); setEventDate(''); setEventLocation(''); setEventNotes('');
   };
 
   const handleCreateTask = () => {
@@ -320,18 +334,18 @@ export function QuickActions() {
   };
 
   const handleCreateProject = () => {
-    if (!firestore || !fileCode || !selectedBrandId) {
+    if (!firestore || !fileCode || !projectBrandId) {
       toast({ variant: "destructive", title: "Incomplete Form", description: "Brand and File Code are required." });
       return;
     }
-    const brandObj = brands?.find((b: any) => b.id === selectedBrandId);
+    const brandObj = brands?.find((b: any) => b.id === projectBrandId);
     if (!brandObj) return;
 
     const ref = collection(firestore, 'projects');
     const data = { 
       fileCode, 
       brand: brandObj.name, 
-      brandId: selectedBrandId,
+      brandId: projectBrandId,
       contentIdea,
       status: projectStatus,
       priority: projectPriority,
@@ -353,9 +367,7 @@ export function QuickActions() {
     });
     toast({ title: "Project Created", description: `${fileCode} is now active.` });
     setIsProjectOpen(false);
-    
-    // Reset state
-    setFileCode(''); setSelectedBrandId(''); setContentIdea(''); setArtist(''); setProjectDueDate(''); setCanvasLink('');
+    setFileCode(''); setProjectBrandId(''); setContentIdea(''); setArtist(''); setProjectDueDate(''); setCanvasLink('');
   };
 
   if (!isMounted) return null;
@@ -363,7 +375,6 @@ export function QuickActions() {
   return (
     <>
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-30 pointer-events-none">
-        {/* Notifications Trigger */}
         <Sheet>
           <SheetTrigger asChild>
             <button className={cn(
@@ -427,7 +438,6 @@ export function QuickActions() {
           </SheetContent>
         </Sheet>
 
-        {/* Command Quick Actions Trigger */}
         <Dialog open={isActionsOpen} onOpenChange={setIsActionsOpen}>
           <DialogTrigger asChild>
             <button className="pointer-events-auto w-12 h-12 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-all">
@@ -464,7 +474,7 @@ export function QuickActions() {
         </Dialog>
       </div>
 
-      {/* New Project Dialog - Visual Update Match */}
+      {/* New Project Dialog */}
       <Dialog open={isProjectOpen} onOpenChange={setIsProjectOpen}>
         <DialogContent className="max-w-[540px] p-0 rounded-[32px] overflow-hidden border-none shadow-2xl">
           <ScrollArea className="max-h-[90vh]">
@@ -481,13 +491,12 @@ export function QuickActions() {
 
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Brand Selection */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <Briefcase className="w-3.5 h-3.5 text-primary" />
                       Brand Selection
                     </Label>
-                    <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                    <Select value={projectBrandId} onValueChange={setProjectBrandId}>
                       <SelectTrigger className="h-14 border-slate-200 rounded-2xl focus:ring-primary">
                         <SelectValue placeholder="Select Brand" />
                       </SelectTrigger>
@@ -498,8 +507,6 @@ export function QuickActions() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* File Code */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <FileText className="w-3.5 h-3.5 text-primary" />
@@ -513,8 +520,6 @@ export function QuickActions() {
                     />
                   </div>
                 </div>
-
-                {/* Content Idea */}
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                     <Lightbulb className="w-3.5 h-3.5 text-primary" />
@@ -527,9 +532,7 @@ export function QuickActions() {
                     className="h-14 border-slate-200 rounded-2xl focus:ring-primary" 
                   />
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Status */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
@@ -547,8 +550,6 @@ export function QuickActions() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Priority */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <Zap className="w-3.5 h-3.5 text-primary" />
@@ -565,9 +566,7 @@ export function QuickActions() {
                     </Select>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Artist */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <User className="w-3.5 h-3.5 text-primary" />
@@ -580,8 +579,6 @@ export function QuickActions() {
                       className="h-14 border-slate-200 rounded-2xl focus:ring-primary" 
                     />
                   </div>
-
-                  {/* Type */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <Layers className="w-3.5 h-3.5 text-primary" />
@@ -600,9 +597,7 @@ export function QuickActions() {
                     </Select>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Platform */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <Share2 className="w-3.5 h-3.5 text-primary" />
@@ -620,8 +615,6 @@ export function QuickActions() {
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Due Date */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <Calendar className="w-3.5 h-3.5 text-primary" />
@@ -635,9 +628,7 @@ export function QuickActions() {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* BM */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <User className="w-3.5 h-3.5 text-primary" />
@@ -650,8 +641,6 @@ export function QuickActions() {
                       className="h-14 border-slate-200 rounded-2xl focus:ring-primary" 
                     />
                   </div>
-
-                  {/* Canvas Link */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                       <LinkIcon className="w-3.5 h-3.5 text-primary" />
@@ -712,47 +701,116 @@ export function QuickActions() {
         </DialogContent>
       </Dialog>
 
-      {/* Schedule Dialog */}
+      {/* New Event Schedule Dialog */}
       <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-        <DialogContent className="rounded-3xl border-none shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">New Event</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Client/Brand Name</Label>
-              <Input placeholder="Authorized brand..." value={client} onChange={(e) => setClient(e.target.value)} className="h-12 rounded-xl" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Type</Label>
-                <Select value={eventType} onValueChange={(v: any) => setEventType(v)}>
-                  <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Shoot">Shoot</SelectItem>
-                    <SelectItem value="Meeting">Meeting</SelectItem>
-                    <SelectItem value="Deadline">Deadline</SelectItem>
-                  </SelectContent>
-                </Select>
+        <DialogContent className="max-w-[480px] p-0 rounded-[32px] overflow-hidden border-none shadow-2xl">
+          <ScrollArea className="max-h-[90vh]">
+            <div className="p-6 md:p-10 space-y-8">
+              <DialogHeader className="flex flex-row items-start gap-5 space-y-0">
+                <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-xl shadow-red-100">
+                  <Calendar className="w-7 h-7 text-white" />
+                </div>
+                <div className="pt-1">
+                  <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Event Schedule</DialogTitle>
+                  <DialogDescription className="text-slate-400 font-medium">Synchronize a new event with the master calendar.</DialogDescription>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Type</Label>
+                    <Select value={eventType} onValueChange={(val: any) => setEventType(val)}>
+                      <SelectTrigger className="h-14 border-slate-200 rounded-2xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Shoot">Shoot</SelectItem>
+                        <SelectItem value="Meeting">Meeting</SelectItem>
+                        <SelectItem value="Deadline">Deadline</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                      <Zap className="w-3 h-3 text-primary" />
+                      Priority
+                    </Label>
+                    <Select value={schedulePriority} onValueChange={(val: any) => setSchedulePriority(val)}>
+                      <SelectTrigger className="h-14 border-slate-200 rounded-2xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="URGENT">URGENT</SelectItem>
+                        <SelectItem value="HIGH">HIGH</SelectItem>
+                        <SelectItem value="NORMAL">NORMAL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <Building2 className="w-3.5 h-3.5 text-primary" />
+                    Authorized Brand
+                  </Label>
+                  <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                    <SelectTrigger className="h-14 border-slate-200 rounded-2xl">
+                      <SelectValue placeholder="Select authorized client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brands?.map((b: any) => (
+                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Date</Label>
+                    <Input 
+                      type="date" 
+                      value={eventDate} 
+                      onChange={(e) => setEventDate(e.target.value)}
+                      className="h-14 border-slate-200 rounded-2xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</Label>
+                    <Input 
+                      placeholder="Studio A / Site" 
+                      value={eventLocation} 
+                      onChange={(e) => setEventLocation(e.target.value)}
+                      className="h-14 border-slate-200 rounded-2xl"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Operational Notes</Label>
+                  <Input 
+                    placeholder="Special instructions or gear required..." 
+                    value={eventNotes} 
+                    onChange={(e) => setEventNotes(e.target.value)}
+                    className="h-14 border-slate-200 rounded-2xl"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <DialogClose asChild>
+                    <Button variant="outline" className="flex-1 h-14 rounded-2xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50">Cancel</Button>
+                  </DialogClose>
+                  <Button 
+                    onClick={handleConfirmSchedule}
+                    className="flex-1 h-14 rounded-2xl font-bold bg-primary hover:bg-primary/90 shadow-xl shadow-red-100 text-white"
+                  >
+                    Deploy to Calendar
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Priority</Label>
-                <Select value={schedulePriority} onValueChange={(v: any) => setSchedulePriority(v)}>
-                  <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="URGENT">URGENT</SelectItem>
-                    <SelectItem value="HIGH">HIGH</SelectItem>
-                    <SelectItem value="NORMAL">NORMAL</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Deployment Date</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 rounded-xl" />
-            </div>
-            <Button onClick={handleConfirmSchedule} className="w-full h-12 rounded-xl bg-primary text-white font-bold mt-4 shadow-lg shadow-red-100">Save Event</Button>
-          </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </>
