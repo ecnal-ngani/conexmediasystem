@@ -27,14 +27,14 @@ import { collection, query, orderBy, limit, where, doc, updateDoc, serverTimesta
 import { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+  Radar, 
+  RadarChart, 
+  PolarGrid, 
+  PolarAngleAxis, 
+  PolarRadiusAxis, 
   ResponsiveContainer, 
-  Legend 
+  Tooltip,
+  Legend
 } from 'recharts';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -42,12 +42,12 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 const performanceData = [
-  { name: 'Jan', efficiency: 82, projects: 45 },
-  { name: 'Feb', efficiency: 85, projects: 52 },
-  { name: 'Mar', efficiency: 88, projects: 58 },
-  { name: 'Apr', efficiency: 91, projects: 64 },
-  { name: 'May', efficiency: 94, projects: 71 },
-  { name: 'Jun', efficiency: 92, projects: 68 },
+  { subject: 'Jan', A: 82, B: 45, fullMark: 100 },
+  { subject: 'Feb', A: 85, B: 52, fullMark: 100 },
+  { subject: 'Mar', A: 88, B: 58, fullMark: 100 },
+  { subject: 'Apr', A: 91, B: 64, fullMark: 100 },
+  { subject: 'May', A: 94, B: 71, fullMark: 100 },
+  { subject: 'Jun', A: 92, B: 68, fullMark: 100 },
 ];
 
 export default function DashboardPage() {
@@ -188,50 +188,46 @@ export default function DashboardPage() {
         <div className="xl:col-span-3 space-y-4">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mission Performance Trend</h3>
           <Card className="border shadow-none rounded-none bg-white p-6">
-            <div className="h-[400px] w-full mt-4">
+            <div className="h-[400px] w-full mt-4 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#94a3b8', fontSize: 12}} 
-                    dy={10}
+                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={performanceData}>
+                  <PolarGrid stroke="#f1f5f9" />
+                  <PolarAngleAxis 
+                    dataKey="subject" 
+                    tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }} 
                   />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#94a3b8', fontSize: 12}}
+                  <PolarRadiusAxis 
+                    angle={30} 
+                    domain={[0, 100]} 
+                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                    axisLine={false}
+                  />
+                  <Radar
+                    name="Efficiency %"
+                    dataKey="A"
+                    stroke="#E11D48"
+                    strokeWidth={2}
+                    fill="#E11D48"
+                    fillOpacity={0.6}
+                  />
+                  <Radar
+                    name="Active Load"
+                    dataKey="B"
+                    stroke="#0f172a"
+                    strokeWidth={2}
+                    fill="#0f172a"
+                    fillOpacity={0.3}
                   />
                   <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
                   />
                   <Legend 
                     verticalAlign="bottom" 
                     align="center" 
                     iconType="circle"
-                    wrapperStyle={{ paddingTop: '30px' }}
+                    wrapperStyle={{ paddingTop: '30px', fontSize: '12px', fontWeight: 600 }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="efficiency" 
-                    name="Efficiency %" 
-                    stroke="#E11D48" 
-                    strokeWidth={2} 
-                    dot={{ r: 4, fill: '#E11D48', strokeWidth: 2, stroke: '#fff' }} 
-                    activeDot={{ r: 6 }} 
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="projects" 
-                    name="Active Load" 
-                    stroke="#0f172a" 
-                    strokeWidth={2} 
-                    dot={{ r: 4, fill: '#0f172a', strokeWidth: 2, stroke: '#fff' }} 
-                    activeDot={{ r: 6 }} 
-                  />
-                </LineChart>
+                </RadarChart>
               </ResponsiveContainer>
             </div>
           </Card>
