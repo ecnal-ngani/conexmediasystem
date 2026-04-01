@@ -40,6 +40,24 @@ If you are setting up the system for the first time and have no users in your da
 
 ---
 
+## 📱 Mobile Access (Crucial for Testing)
+
+### 1. Why the "Share Preview" Link fails on Phone
+The "Share Preview" link is protected by a Google Cloud authentication gate. You will likely see a **401: Workstation does not exist** or find that the **Login Button does not work** on your phone because:
+- **Authentication**: Your phone browser isn't signed into the same Google account as your PC.
+- **Proxy Blocking**: Mobile browsers (especially Safari on iOS) block the secure cookies required to talk to the database through the preview proxy.
+
+### 2. The Solution: Local IP Method (The ONLY way to test on Phone)
+1. **Connect**: Put your phone and computer on the **same Wi-Fi network**.
+2. **Identify IP**:
+   - **Windows**: Open **Command Prompt**, type `ipconfig`, look for `IPv4 Address`.
+   - **macOS/Linux**: Open **Terminal**, type `ipconfig getifaddr en0`.
+3. **Browse**: On your phone, type: `http://YOUR_IP_ADDRESS:9002` (e.g., `http://192.168.1.15:9002`).
+
+*Note: This bypasses the Google proxy and allows the phone to talk directly to your code server.*
+
+---
+
 ## 🛡️ Panel Defense Preparation (Q&A)
 
 ### 1. Technical Architecture
@@ -59,22 +77,15 @@ If you are setting up the system for the first time and have no users in your da
 
 ---
 
-## 🛠 Troubleshooting & Mobile Access
+## 🛠 Troubleshooting
 
 ### 1. Fixing "401: Workstation does not exist"
 If you see this error when using the "Share Preview" link:
 - **Authentication**: Ensure the browser you are using (especially on mobile) is signed into the **same Google account** as your Firebase Studio session.
 - **Active Session**: Ensure your Firebase Studio tab is active and not hibernating.
-- **Best Practice**: Use the **Mobile Access (Local IP)** method below for testing on physical devices—it is faster and avoids 401 errors.
+- **Best Practice**: Use the **Mobile Access (Local IP)** method described above—it is faster and avoids 401 errors.
 
-### 2. Mobile Access (Testing on your phone)
-1. **Same Network**: Connect your phone and computer to the same Wi-Fi.
-2. **Find Your IP Address**: 
-   - **Windows**: Open **Command Prompt**, type `ipconfig`, and look for `IPv4 Address`.
-   - **macOS (Terminal)**: Type `ipconfig getifaddr en0`.
-3. **Open Browser**: Type `http://YOUR_IP_ADDRESS:9002` on your phone.
-
-### 3. Launch Development Server
+### 2. Launch Development Server
 ```bash
 npm run dev
 ```
