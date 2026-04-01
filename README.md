@@ -59,27 +59,26 @@ If you are setting up the system for the first time and have no users in your da
 
 ---
 
-## 🛠 Quick Start
+## 🛠 Troubleshooting & Mobile Access
 
-### 1. Installation
-Open your terminal in the project folder and run:
-```bash
-npm install
-```
+### 1. Fixing "401: Workstation does not exist"
+If you see this error when using the "Share Preview" link:
+- **Authentication**: Ensure the browser you are using (especially on mobile) is signed into the **same Google account** as your Firebase Studio session.
+- **Active Session**: Ensure your Firebase Studio tab is active and not hibernating.
+- **Best Practice**: Use the **Mobile Access (Local IP)** method below for testing on physical devices—it is faster and avoids 401 errors.
 
-### 2. Launch Development Server
+### 2. Mobile Access (Testing on your phone)
+1. **Same Network**: Connect your phone and computer to the same Wi-Fi.
+2. **Find Your IP Address**: 
+   - **Windows**: Open **Command Prompt**, type `ipconfig`, and look for `IPv4 Address`.
+   - **macOS (Terminal)**: Type `ipconfig getifaddr en0`.
+3. **Open Browser**: Type `http://YOUR_IP_ADDRESS:9002` on your phone.
+
+### 3. Launch Development Server
 ```bash
 npm run dev
 ```
 The application will be available at [http://localhost:9002](http://localhost:9002).
-
-## 📱 Mobile Access (Testing on your phone)
-1. **Same Network**: Connect your phone and computer to the same Wi-Fi.
-2. **Find Your IP Address**: 
-   - **Windows**: Open **Command Prompt**, type `ipconfig`, and look for `IPv4 Address`.
-   - **macOS (Visual)**: Go to **System Settings** > **Network** > Select your Wi-Fi > Click **Details...**. 
-   - **macOS (Terminal)**: Type `ipconfig getifaddr en0`.
-3. **Open Browser**: Type `http://YOUR_IP_ADDRESS:9002` on your phone.
 
 ---
 *Note: This codebase is designed for high readability and professional maintenance.*
