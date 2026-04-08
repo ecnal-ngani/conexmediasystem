@@ -15,11 +15,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isAdmin() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
-    }
-
     // --- Collection Policies ---
 
     // Staff Registry: Allow authenticated users to read and update their own profile/status.
@@ -28,8 +23,6 @@ service cloud.firestore {
     }
 
     // Attendance Verification: Crucial for WFH identity compliance.
-    // Explicitly allow read (list/get) and write for all authenticated personnel
-    // to resolve synchronization errors during biometric check.
     match /verifications/{id} {
       allow read, write: if isAuthenticated();
     }

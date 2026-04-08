@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/components/auth-context';
@@ -102,14 +101,16 @@ export default function DashboardPage() {
 
   const tasksQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    const baseTasksRef = collection(firestore, 'tasks');
+    
     if (user.role === 'INTERN') {
       return query(
-        collection(firestore, 'tasks'), 
+        baseTasksRef, 
         where('assignedToId', '==', user.id),
         orderBy('createdAt', 'desc')
       );
     }
-    return query(collection(firestore, 'tasks'), limit(10));
+    return query(baseTasksRef, limit(10));
   }, [firestore, user]);
 
   const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
