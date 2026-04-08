@@ -2,7 +2,7 @@
 'use client';
 
 import { useAuth } from '@/components/auth-context';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Users, 
   Briefcase, 
@@ -22,7 +22,8 @@ import {
   BookOpen,
   Award,
   Target,
-  Rocket
+  Rocket,
+  Circle
 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -163,6 +164,9 @@ export default function DashboardPage() {
     }
   }, [user, staff, projects, tasks]);
 
+  const onlineCount = useMemo(() => staff?.filter((s: any) => s.status !== 'Offline').length || 0, [staff]);
+  const totalCount = useMemo(() => staff?.length || 0, [staff]);
+
   if (!isMounted || !user) return null;
 
   return (
@@ -278,20 +282,28 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Tactical Leaderboard
-            </h3>
-          </div>
-          
-          <Card className="border shadow-none rounded-none bg-white overflow-hidden">
-            <CardContent className="p-0">
+          <Card className="border shadow-none rounded-none bg-white overflow-hidden flex flex-col h-full">
+            <CardHeader className="bg-slate-50 border-b p-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Live Presence
+                </CardTitle>
+                <div className="text-[10px] font-black bg-white border px-2 py-0.5 rounded-full text-primary flex items-center gap-1.5 shadow-sm">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  {onlineCount} / {totalCount} ONLINE
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 flex-1">
               <div className="divide-y divide-slate-50">
                 {sLoading ? (
                   <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
+                ) : !staff || staff.length === 0 ? (
+                  <div className="p-10 text-center text-xs text-slate-400">No personnel found.</div>
                 ) : (
-                  staff?.sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0)).slice(0, 8).map((emp: any, index: number) => (
-                    <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-colors group">
+                  staff.map((emp: any) => (
+                    <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-all group border-l-2 border-transparent hover:border-primary">
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm ring-1 ring-slate-100">
@@ -300,30 +312,27 @@ export default function DashboardPage() {
                               {emp.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
-                          {index < 3 && (
-                            <div className={cn(
-                              "absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white shadow-sm",
-                              index === 0 ? "bg-yellow-500" : index === 1 ? "bg-slate-300" : "bg-orange-400"
-                            )}>
-                              <Trophy className="w-2 h-2 text-white" />
-                            </div>
-                          )}
+                          <div className={cn(
+                            "absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm",
+                            emp.status !== 'Offline' ? "bg-green-500 animate-pulse" : "bg-slate-300"
+                          )} />
                         </div>
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors">{emp.name}</span>
                           <span className="text-[9px] uppercase font-black text-slate-400 tracking-tighter">{emp.role.replace('_', ' ')}</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[11px] font-black text-slate-900">{emp.xp || (200 - (index * 20))} XP</p>
-                        <div className="flex items-center justify-end gap-1 mt-1">
-                          <div className={cn(
-                            "w-1 h-1 rounded-full",
-                            emp.status === 'Office' ? "bg-green-500" : 
-                            emp.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
-                          )} />
-                          <span className="text-[8px] font-black text-slate-400 uppercase">{emp.status}</span>
-                        </div>
+                      <div className="text-right flex flex-col items-end gap-1">
+                         <Badge variant="outline" className={cn(
+                           "text-[8px] font-black uppercase px-1.5 py-0",
+                           emp.status === 'Office' ? "text-green-600 bg-green-50 border-green-200" :
+                           emp.status === 'WFH' ? "text-orange-600 bg-orange-50 border-orange-200" : "text-slate-400 bg-slate-50 border-slate-200"
+                         )}>
+                           {emp.status}
+                         </Badge>
+                         <span className="text-[8px] font-bold text-slate-300 font-mono tracking-tighter">
+                           {emp.systemId}
+                         </span>
                       </div>
                     </div>
                   ))
@@ -355,4 +364,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
