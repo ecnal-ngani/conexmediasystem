@@ -5,7 +5,7 @@
  * 
  * Allows Administrators to:
  * 1. Enroll new staff members and generate system IDs.
- * 2. Manage high-security internal Security Tokens.
+ * 2. Manage high-security internal Security Tokens with automated generation.
  * 3. Assign tasks (directives) to personnel.
  * 4. View attendance and biometric logs with Visual ID.
  */
@@ -26,7 +26,8 @@ import {
   Key,
   Eye,
   Camera,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
 import { 
   Table, 
@@ -84,6 +85,15 @@ const ROLE_CODE_MAPPINGS: Record<string, string> = {
   "INTERN": "IN"
 };
 
+/**
+ * Generates a high-entropy tactical security token
+ * Format: CX-XXXX-XXXX (e.g., CX-8F2K-P9S5)
+ */
+const generateSecurityToken = () => {
+  const segment = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `CX-${segment()}-${segment()}`;
+};
+
 export default function AdminPage() {
   const { user: currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,6 +121,13 @@ export default function AdminPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Automatically generate token when modal opens
+  useEffect(() => {
+    if (isEnrollModalOpen) {
+      setNewSecurityToken(generateSecurityToken());
+    }
+  }, [isEnrollModalOpen]);
 
   const staffQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
@@ -266,9 +283,26 @@ export default function AdminPage() {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Key className="w-3 h-3 text-primary" />
-                  Initial Security Token
+                  Security Token
                 </Label>
-                <Input placeholder="e.g. CX-9988-ABC" value={newSecurityToken} onChange={(e) => setNewSecurityToken(e.target.value)} />
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="e.g. CX-9988-ABC" 
+                    value={newSecurityToken} 
+                    onChange={(e) => setNewSecurityToken(e.target.value)} 
+                    className="font-mono text-sm uppercase"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setNewSecurityToken(generateSecurityToken())}
+                    className="shrink-0"
+                    title="Regenerate Token"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-[10px] text-slate-400 font-medium italic">Auto-generated high-entropy passcode.</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
