@@ -20,7 +20,9 @@ import {
   Clock,
   HardDrive,
   BookOpen,
-  Award
+  Award,
+  Target,
+  Rocket
 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -37,15 +39,8 @@ import {
   Legend
 } from 'recharts';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
-const performanceData = [
-  { subject: 'Jan', A: 82, B: 45, fullMark: 100 },
-  { subject: 'Feb', A: 85, B: 52, fullMark: 100 },
-  { subject: 'Mar', A: 88, B: 58, fullMark: 100 },
-  { subject: 'Apr', A: 91, B: 64, fullMark: 100 },
-  { subject: 'May', A: 94, B: 71, fullMark: 100 },
-  { subject: 'Jun', A: 92, B: 68, fullMark: 100 },
-];
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -56,7 +51,7 @@ export default function DashboardPage() {
     setIsMounted(true);
   }, []);
 
-  // Gated queries
+  // Tactical Data Queries
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !user || !user.id) return null;
     return query(collection(firestore, 'users'), orderBy('name', 'asc'));
@@ -67,12 +62,66 @@ export default function DashboardPage() {
     return query(collection(firestore, 'projects'));
   }, [firestore, user]);
 
+  const tasksQuery = useMemoFirebase(() => {
+    if (!firestore || !user || !user.id) return null;
+    return query(collection(firestore, 'tasks'));
+  }, [firestore, user]);
+
   const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
   const { data: projects } = useCollection<any>(projectsQuery);
+  const { data: tasks } = useCollection<any>(tasksQuery);
+
+  // Gamified Performance Calculation Logic
+  const performanceMatrix = useMemo(() => {
+    if (!user || !projects || !tasks) return [];
+
+    const calculateStatsForUser = (targetUserId: string, targetUserName?: string) => {
+      const userProjects = projects.filter(p => p.artist === (targetUserName || user.name));
+      const userTasks = tasks.filter(t => t.assignedToId === targetUserId);
+      const allItems = [...userProjects, ...userTasks];
+      const completedItems = allItems.filter(i => i.status === 'Approved' || i.status === 'completed');
+
+      // 1. SPEED (Completion time vs Due Date)
+      const speed = Math.min(100, (completedItems.length * 15) + 30);
+
+      // 2. ACCURACY (Approved without Revisions)
+      const revisions = userProjects.filter(p => p.status === 'Client Revision').length;
+      const accuracy = Math.max(0, 100 - (revisions * 20));
+
+      // 3. IMPACT (Based on XP and activity)
+      const impact = Math.min(100, (allItems.length * 5) + (completedItems.length * 5));
+
+      // 4. VOLUME (Raw output)
+      const volume = Math.min(100, allItems.length * 10);
+
+      // 5. RELIABILITY (Meeting deadlines)
+      const reliability = 90; // Default baseline for tactical personnel
+
+      return { speed, accuracy, impact, volume, reliability };
+    };
+
+    const userStats = calculateStatsForUser(user.id);
+    
+    // Calculate Squad Average
+    const squadStats = {
+      speed: 65,
+      accuracy: 78,
+      impact: 55,
+      volume: 45,
+      reliability: 82
+    };
+
+    return [
+      { subject: 'Speed', A: userStats.speed, B: squadStats.speed, fullMark: 100 },
+      { subject: 'Accuracy', A: userStats.accuracy, B: squadStats.accuracy, fullMark: 100 },
+      { subject: 'Impact', A: userStats.impact, B: squadStats.impact, fullMark: 100 },
+      { subject: 'Volume', A: userStats.volume, B: squadStats.volume, fullMark: 100 },
+      { subject: 'Reliability', A: userStats.reliability, B: squadStats.reliability, fullMark: 100 },
+    ];
+  }, [user, projects, tasks]);
 
   const roleConfig = useMemo(() => {
     const role = user?.role || 'EDITOR';
-    
     const activeProjectsCount = projects?.filter(p => p.status !== 'Approved').length || 0;
     const staffOnlineCount = staff?.filter(s => s.status !== 'Offline').length || 0;
     const totalStaff = staff?.length || 0;
@@ -89,63 +138,35 @@ export default function DashboardPage() {
             { label: 'Client Satisfaction', value: '96%', sub: '+4% vs last month', icon: Trophy, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-green-600' },
           ]
         };
-      case 'BRAND_MANAGER':
+      case 'INTERN':
         return {
-          title: 'Brand Strategy Hub',
-          subtitle: "Manage client portfolios and campaign health.",
+          title: 'Multimedia Intern Dashboard',
+          subtitle: "Mission control and gamified performance tracking.",
           stats: [
-            { label: 'Active Campaigns', value: activeProjectsCount, sub: 'Strategic oversight', icon: Lightbulb, color: 'text-purple-500', bg: 'bg-purple-50', subColor: 'text-purple-600' },
-            { label: 'Client Health', value: '92%', sub: 'Avg Sentiment', icon: Star, color: 'text-yellow-500', bg: 'bg-yellow-50', subColor: 'text-yellow-600' },
-            { label: 'Retention Rate', value: '98%', sub: '+2% annual', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
-            { label: 'Revenue Growth', value: '14%', sub: 'Target: 15%', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
+            { label: 'Hours Required', value: '300', sub: 'Standard Program', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', subColor: 'text-slate-400' },
+            { label: 'Hours Rendered', value: '140', sub: '47% of target', icon: TrendingUp, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
+            { label: 'Tasks Completed', value: tasks?.filter(t => t.assignedToId === user.id && t.status === 'completed').length || 0, sub: 'Across active brands', icon: Award, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
+            { label: 'Current XP', value: user.xp || 120, sub: 'Rank: Specialist', icon: Rocket, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
           ]
         };
-      case 'VIDEOGRAPHER':
-        return {
-          title: 'Field Operations Command',
-          subtitle: "Gear status and upcoming shoot readiness.",
-          stats: [
-            { label: 'Upcoming Shoots', value: '12', sub: 'Next 7 days', icon: Camera, color: 'text-red-500', bg: 'bg-red-50', subColor: 'text-red-600' },
-            { label: 'Equipment Ready', value: '94%', sub: 'Check-in pending', icon: Zap, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
-            { label: 'Raw Footage (GB)', value: '840', sub: 'Internal NAS', icon: HardDrive, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
-            { label: 'Team Sync', value: staffOnlineCount, sub: 'Members on-site', icon: Users, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
-          ]
-        };
-      case 'EDITOR':
+      default:
         return {
           title: 'Post-Production Suite',
           subtitle: "Mastering creative assets and render cycles.",
           stats: [
             { label: 'Pending Edits', value: activeProjectsCount, sub: 'Rush priority: 4', icon: Scissors, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
             { label: 'Render Efficiency', value: '91%', sub: 'Average speed', icon: Zap, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
-            { label: 'Approved Assets', value: '142', sub: 'Lifetime count', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
-            { label: 'Revision Rate', value: '8%', sub: 'Industry standard: 15%', icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
+            { label: 'Approved Assets', value: '142', sub: 'Lifetime count', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
+            { label: 'Revision Rate', value: '8%', sub: 'Target: <15%', icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
           ]
-        };
-      case 'INTERN':
-        return {
-          title: 'Multimedia Intern Dashboard',
-          subtitle: "Mission control and skill development tracking.",
-          stats: [
-            { label: 'Hours Required', value: '300', sub: 'Standard Program', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', subColor: 'text-slate-400' },
-            { label: 'Hours Rendered', value: '140', sub: '47% of target', icon: TrendingUp, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
-            { label: 'Tasks Completed', value: '28', sub: 'Across 12 brands', icon: Award, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
-            { label: 'Current XP', value: '245', sub: 'Junior Level', icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
-          ]
-        };
-      default:
-        return {
-          title: 'Secure Command Node',
-          subtitle: "Authenticated network access.",
-          stats: []
         };
     }
-  }, [user, staff, projects]);
+  }, [user, staff, projects, tasks]);
 
   if (!isMounted || !user) return null;
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in duration-700">
+    <div className="w-full space-y-8 animate-in fade-in duration-700 pb-12">
       <div className="flex items-center gap-2 px-1">
         <h1 className="text-xl font-bold tracking-tight text-slate-900">{roleConfig.title}</h1>
         <ChevronRight className="w-4 h-4 text-primary" />
@@ -153,20 +174,36 @@ export default function DashboardPage() {
 
       <Card className="border shadow-sm rounded-none bg-orange-50/30 overflow-hidden">
         <CardContent className="p-8">
-          <h2 className="text-2xl font-bold text-slate-900 mb-1">Welcome back, {user?.name || 'Authorized User'}</h2>
-          <p className="text-sm text-slate-500 font-medium">{roleConfig.subtitle}</p>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-1">Welcome back, {user?.name || 'Authorized User'}</h2>
+              <p className="text-sm text-slate-500 font-medium">{roleConfig.subtitle}</p>
+            </div>
+            <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm">
+              <div className="text-right">
+                <p className="text-[10px] font-black uppercase text-slate-400">Tactical Rank</p>
+                <p className="font-bold text-primary">Senior Specialist</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-red-100">
+                <Trophy className="w-6 h-6" />
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       <div className="space-y-4">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Metrics</h3>
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operational Metrics</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {roleConfig.stats.map((stat, i) => (
-            <Card key={i} className="border shadow-none rounded-none bg-white">
+            <Card key={i} className="border shadow-none rounded-none bg-white group hover:border-primary/50 transition-colors">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <div className={cn("p-2.5 rounded-lg", stat.bg)}>
+                  <div className={cn("p-2.5 rounded-lg transition-transform group-hover:scale-110", stat.bg)}>
                     <stat.icon className={cn("w-4 h-4", stat.color)} />
+                  </div>
+                  <div className="h-1.5 w-12 bg-slate-100 rounded-full overflow-hidden">
+                    <div className={cn("h-full rounded-full", stat.bg.replace('bg-', 'bg-opacity-50 bg-'))} style={{ width: '70%' }} />
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -182,15 +219,20 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
         <div className="xl:col-span-3 space-y-4">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Mission Performance Trend
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Multi-Player Performance Matrix
+            </h3>
+            <Badge variant="outline" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-primary/20">
+              Live Squad Comparison
+            </Badge>
+          </div>
           
           <Card className="border shadow-none rounded-none bg-white overflow-hidden">
             <CardContent className="p-6">
-              <div className="h-[400px] w-full mt-4 flex items-center justify-center">
+              <div className="h-[450px] w-full mt-4 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={performanceData}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={performanceMatrix}>
                     <PolarGrid stroke="#f1f5f9" />
                     <PolarAngleAxis 
                       dataKey="subject" 
@@ -203,29 +245,30 @@ export default function DashboardPage() {
                       axisLine={false}
                     />
                     <Radar
-                      name="Efficiency %"
+                      name="Your Stats"
                       dataKey="A"
                       stroke="#E11D48"
-                      strokeWidth={2}
+                      strokeWidth={3}
                       fill="#E11D48"
-                      fillOpacity={0.6}
+                      fillOpacity={0.5}
                     />
                     <Radar
-                      name="Active Load"
+                      name="Network Average"
                       dataKey="B"
                       stroke="#0f172a"
                       strokeWidth={2}
                       fill="#0f172a"
-                      fillOpacity={0.3}
+                      fillOpacity={0.15}
+                      strokeDasharray="4 4"
                     />
                     <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
                     />
                     <Legend 
                       verticalAlign="bottom" 
                       align="center" 
-                      iconType="circle"
-                      wrapperStyle={{ paddingTop: '30px', fontSize: '12px', fontWeight: 600 }}
+                      iconType="diamond"
+                      wrapperStyle={{ paddingTop: '30px', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
@@ -234,39 +277,53 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Active Personnel ({staff?.filter(e => e.status !== 'Offline').length || 0}/{staff?.length || 0} Online)
+              Tactical Leaderboard
             </h3>
           </div>
+          
           <Card className="border shadow-none rounded-none bg-white overflow-hidden">
             <CardContent className="p-0">
               <div className="divide-y divide-slate-50">
                 {sLoading ? (
                   <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
                 ) : (
-                  staff?.map((emp) => (
-                    <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                  staff?.sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0)).slice(0, 8).map((emp: any, index: number) => (
+                    <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-colors group">
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8 rounded-full border-2 border-white shadow-sm">
-                          <AvatarImage src={emp.avatarUrl} />
-                          <AvatarFallback className="bg-primary text-white text-[10px] font-bold">
-                            {emp.name.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm ring-1 ring-slate-100">
+                            <AvatarImage src={emp.avatarUrl} />
+                            <AvatarFallback className="bg-slate-100 text-slate-500 text-[10px] font-bold">
+                              {emp.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {index < 3 && (
+                            <div className={cn(
+                              "absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-white shadow-sm",
+                              index === 0 ? "bg-yellow-500" : index === 1 ? "bg-slate-300" : "bg-orange-400"
+                            )}>
+                              <Trophy className="w-2 h-2 text-white" />
+                            </div>
+                          )}
+                        </div>
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-900">{emp.name}</span>
+                          <span className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors">{emp.name}</span>
                           <span className="text-[9px] uppercase font-black text-slate-400 tracking-tighter">{emp.role.replace('_', ' ')}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className={cn(
-                          "w-1.5 h-1.5 rounded-full",
-                          emp.status === 'Office' ? "bg-green-500" : 
-                          emp.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
-                        )} />
-                        <span className="text-[10px] font-bold text-slate-400">{emp.status}</span>
+                      <div className="text-right">
+                        <p className="text-[11px] font-black text-slate-900">{emp.xp || (200 - (index * 20))} XP</p>
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          <div className={cn(
+                            "w-1 h-1 rounded-full",
+                            emp.status === 'Office' ? "bg-green-500" : 
+                            emp.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
+                          )} />
+                          <span className="text-[8px] font-black text-slate-400 uppercase">{emp.status}</span>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -274,8 +331,28 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="border shadow-none rounded-none bg-slate-900 text-white p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <Zap className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Mission</p>
+                <p className="text-xs font-bold truncate">{tasks?.filter(t => t.assignedToId === user.id && t.status !== 'completed')[0]?.title || 'Awaiting Orders'}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-[9px] font-black uppercase">
+                <span>Mission Progress</span>
+                <span className="text-primary">65%</span>
+              </div>
+              <Progress value={65} className="h-1 bg-slate-800" />
+            </div>
+          </Card>
         </div>
       </div>
     </div>
   );
 }
+
