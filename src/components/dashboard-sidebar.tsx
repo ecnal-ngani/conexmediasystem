@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 // Navigation items - Profile removed as it is now integrated into the header summary
@@ -93,71 +92,69 @@ export function DashboardSidebar() {
         )}
       </SidebarHeader>
       
-      <SidebarContent className="px-0 py-6">
-        <ScrollArea className="h-full px-2">
-          {/* User Profile Summary - Now the primary gateway to the profile page */}
-          <Link href="/dashboard/profile" className={cn(
-            "mb-8 flex items-center gap-3 w-full p-2 rounded-xl transition-all hover:bg-slate-50 active:scale-[0.98] group",
-            isCollapsed ? "justify-center" : "px-2"
-          )}>
-            <div className="relative shrink-0">
-              <Avatar className={cn(
-                "border-2 border-white shadow-sm ring-1 ring-slate-100",
-                isCollapsed ? "w-10 h-10" : "w-12 h-12"
-              )}>
-                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                <AvatarFallback className="bg-primary text-white font-bold text-xs">
-                  {user.name.substring(0, 1)}
-                </AvatarFallback>
-              </Avatar>
-              <span className={cn(
-                "absolute bottom-0.5 right-0.5 border-2 border-white rounded-full shadow-sm",
-                isCollapsed ? "w-2.5 h-2.5" : "w-3 h-3",
-                user.status === 'Office' ? "bg-green-500" : 
-                user.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
-              )}></span>
+      <SidebarContent className="px-2 py-6 overflow-y-auto">
+        {/* User Profile Summary - Now the primary gateway to the profile page */}
+        <Link href="/dashboard/profile" className={cn(
+          "mb-8 flex items-center gap-3 w-full p-2 rounded-xl transition-all hover:bg-slate-50 active:scale-[0.98] group",
+          isCollapsed ? "justify-center" : "px-2"
+        )}>
+          <div className="relative shrink-0">
+            <Avatar className={cn(
+              "border-2 border-white shadow-sm ring-1 ring-slate-100",
+              isCollapsed ? "w-10 h-10" : "w-12 h-12"
+            )}>
+              <AvatarImage src={user.avatarUrl} alt={user.name} />
+              <AvatarFallback className="bg-primary text-white font-bold text-xs">
+                {user.name.substring(0, 1)}
+              </AvatarFallback>
+            </Avatar>
+            <span className={cn(
+              "absolute bottom-0.5 right-0.5 border-2 border-white rounded-full shadow-sm",
+              isCollapsed ? "w-2.5 h-2.5" : "w-3 h-3",
+              user.status === 'Office' ? "bg-green-500" : 
+              user.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
+            )}></span>
+          </div>
+          {!isCollapsed && (
+            <div className="overflow-hidden flex-1 text-left">
+              <p className="text-[13px] font-bold text-slate-900 truncate leading-tight group-hover:text-primary transition-colors">{user.name}</p>
+              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 font-mono">
+                {user.systemId}
+              </p>
             </div>
-            {!isCollapsed && (
-              <div className="overflow-hidden flex-1 text-left">
-                <p className="text-[13px] font-bold text-slate-900 truncate leading-tight group-hover:text-primary transition-colors">{user.name}</p>
-                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 font-mono">
-                  {user.systemId}
-                </p>
-              </div>
-            )}
-          </Link>
+          )}
+        </Link>
 
-          <SidebarMenu>
-            {filteredNavItems.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={pathname === item.url}
-                  tooltip={item.title}
-                  className={cn(
-                    "h-11 rounded-xl transition-all mb-1.5",
-                    pathname === item.url 
-                      ? 'bg-primary text-white font-bold hover:bg-primary/90 shadow-md' 
-                      : 'text-slate-600 hover:bg-slate-100',
-                    isCollapsed ? "px-0 justify-center" : "px-3"
+        <SidebarMenu>
+          {filteredNavItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton 
+                asChild 
+                isActive={pathname === item.url}
+                tooltip={item.title}
+                className={cn(
+                  "h-11 rounded-xl transition-all mb-1.5",
+                  pathname === item.url 
+                    ? 'bg-primary text-white font-bold hover:bg-primary/90 shadow-md' 
+                    : 'text-slate-600 hover:bg-slate-100',
+                  isCollapsed ? "px-0 justify-center" : "px-3"
+                )}
+              >
+                <Link href={item.url} className="flex items-center gap-3">
+                  <item.icon className={cn(
+                    "w-5 h-5 shrink-0",
+                    pathname === item.url ? 'text-white' : 'text-slate-400'
+                  )} />
+                  {!isCollapsed && (
+                    <span className="text-sm font-medium tracking-tight">
+                      {item.title}
+                    </span>
                   )}
-                >
-                  <Link href={item.url} className="flex items-center gap-3">
-                    <item.icon className={cn(
-                      "w-5 h-5 shrink-0",
-                      pathname === item.url ? 'text-white' : 'text-slate-400'
-                    )} />
-                    {!isCollapsed && (
-                      <span className="text-sm font-medium tracking-tight">
-                        {item.title}
-                      </span>
-                    )}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </ScrollArea>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
       </SidebarContent>
 
       <SidebarFooter className="p-2 border-t">
