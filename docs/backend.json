@@ -87,7 +87,9 @@
         "assignedToId": { "type": "string" },
         "assignedToName": { "type": "string" },
         "assignedById": { "type": "string" },
-        "assignedByName": { "type": "string" }
+        "assignedByName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       }
     },
     "Project": {
@@ -100,7 +102,9 @@
         "status": { "type": "string" },
         "priority": { "type": "string" },
         "artist": { "type": "string" },
-        "dueDate": { "type": "string" }
+        "dueDate": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       }
     },
     "Brand": {
@@ -109,7 +113,8 @@
       "description": "Authorized client brand.",
       "properties": {
         "name": { "type": "string" },
-        "prefix": { "type": "string" }
+        "prefix": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     },
     "Schedule": {
@@ -120,7 +125,8 @@
         "title": { "type": "string" },
         "type": { "type": "string" },
         "date": { "type": "string" },
-        "location": { "type": "string" }
+        "location": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     }
   },

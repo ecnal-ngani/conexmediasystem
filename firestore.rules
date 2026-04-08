@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 /**
@@ -15,34 +16,29 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // --- Collection Policies ---
-
-    // Staff Registry: Allow authenticated users to read and update their own profile/status.
+    // --- Global Collection Policy ---
+    // All authenticated staff members can read and write to operational collections.
+    
     match /users/{userId} {
       allow read, write: if isAuthenticated();
     }
 
-    // Attendance Verification: Crucial for WFH identity compliance.
     match /verifications/{id} {
       allow read, write: if isAuthenticated();
     }
 
-    // Internal Tasks: Staff directives and deadlines.
     match /tasks/{id} {
       allow read, write: if isAuthenticated();
     }
 
-    // Production Hub: Active projects and file tracking.
     match /projects/{id} {
       allow read, write: if isAuthenticated();
     }
 
-    // Client Registry: Authorized brand list.
     match /brands/{id} {
       allow read, write: if isAuthenticated();
     }
 
-    // Operations Calendar: Master shoot and meeting schedules.
     match /schedules/{id} {
       allow read, write: if isAuthenticated();
     }

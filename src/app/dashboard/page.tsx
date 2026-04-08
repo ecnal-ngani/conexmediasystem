@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/components/auth-context';
@@ -88,19 +89,19 @@ export default function DashboardPage() {
     setIsMounted(true);
   }, []);
 
-  // Gated queries
+  // Gated queries - Ensuring user and firestore are ready
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || !user.id) return null;
     return query(collection(firestore, 'users'), orderBy('name', 'asc'));
   }, [firestore, user]);
 
   const projectsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || !user.id) return null;
     return query(collection(firestore, 'projects'));
   }, [firestore, user]);
 
   const tasksQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || !user.id) return null;
     const baseTasksRef = collection(firestore, 'tasks');
     
     if (user.role === 'INTERN') {
@@ -204,20 +205,21 @@ export default function DashboardPage() {
       updatedAt: serverTimestamp()
     };
 
-    try {
-      await updateDoc(taskRef, updateData);
-      toast({
-        title: "Mission Updated",
-        description: `Task status synchronized as "${updatingStatus.toUpperCase()}".`
+    updateDoc(taskRef, updateData)
+      .then(() => {
+        toast({
+          title: "Mission Updated",
+          description: `Task status synchronized as "${updatingStatus.toUpperCase()}".`
+        });
+        setIsUpdateSheetOpen(false);
+      })
+      .catch(async (e: any) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: taskRef.path,
+          operation: 'update',
+          requestResourceData: updateData
+        }));
       });
-      setIsUpdateSheetOpen(false);
-    } catch (e: any) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: taskRef.path,
-        operation: 'update',
-        requestResourceData: updateData
-      }));
-    }
   };
 
   if (!isMounted || !user) return null;
@@ -315,14 +317,12 @@ export default function DashboardPage() {
                             )}>
                               {task.status?.replace('-', ' ') || 'PENDING'}
                             </Badge>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="w-9 h-9 rounded-xl hover:bg-white hover:shadow-sm"
+                            <button 
+                              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white hover:shadow-sm"
                               onClick={() => handleOpenTaskUpdate(task)}
                             >
                               <Edit3 className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
-                            </Button>
+                            </button>
                           </div>
                         </div>
                       ))
