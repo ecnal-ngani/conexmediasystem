@@ -183,15 +183,7 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-bold text-slate-900 mb-1">Welcome back, {user?.name || 'Authorized User'}</h2>
               <p className="text-sm text-slate-500 font-medium">{roleConfig.subtitle}</p>
             </div>
-            <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border shadow-sm">
-              <div className="text-right">
-                <p className="text-[10px] font-black uppercase text-slate-400">Tactical Rank</p>
-                <p className="font-bold text-primary">Senior Specialist</p>
-              </div>
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-red-100">
-                <Trophy className="w-6 h-6" />
-              </div>
-            </div>
+            {/* Tactical Rank Node decommissioned per user request */}
           </div>
         </CardContent>
       </Card>
