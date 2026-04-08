@@ -81,27 +81,22 @@ import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc } f
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
-import { format, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { useAuth } from '@/components/auth-context';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import staffRegistry from '@/app/lib/initial-staff.json';
 
-// Helper mapping for generating System IDs based on role
-const ROLE_CODE_MAPPINGS: Record<string, string> = {
-  "ADMIN": "AD",
-  "BRAND_MANAGER": "BM",
-  "VIDEOGRAPHER": "VG",
-  "EDITOR": "ED",
-  "INTERN": "IN"
-};
+// Hourly rates configuration derived from registry file
+const HOURLY_RATES: Record<string, number> = staffRegistry.roles.reduce((acc, role) => {
+  acc[role.id] = role.rate;
+  return acc;
+}, {} as Record<string, number>);
 
-// Hourly rates configuration
-const HOURLY_RATES: Record<string, number> = {
-  "ADMIN": 500,
-  "BRAND_MANAGER": 400,
-  "VIDEOGRAPHER": 350,
-  "EDITOR": 300,
-  "INTERN": 150
-};
+// Role code mappings for system ID generation
+const ROLE_CODE_MAPPINGS: Record<string, string> = staffRegistry.roles.reduce((acc, role) => {
+  acc[role.id] = role.code;
+  return acc;
+}, {} as Record<string, string>);
 
 const generateSecurityToken = () => {
   const segment = () => Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -364,7 +359,7 @@ export default function AdminPage() {
                   <Select value={selectedRole} onValueChange={setSelectedRole}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {Object.keys(ROLE_CODE_MAPPINGS).map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      {staffRegistry.roles.map(r => <SelectItem key={r.id} value={r.id}>{r.id.replace('_', ' ')}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

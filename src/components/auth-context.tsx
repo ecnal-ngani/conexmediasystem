@@ -22,6 +22,7 @@ import { collection, query, where, getDocs, limit, doc, updateDoc, serverTimesta
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import staffData from '@/app/lib/initial-staff.json';
 
 interface AuthContextType {
   user: User | null;
@@ -36,9 +37,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// MASTER BOOTSTRAP CREDENTIALS
-const MASTER_EMAIL = 'admin@conex.media';
-const MASTER_TOKEN = 'CONEX-ADMIN-INIT';
+// MASTER BOOTSTRAP CREDENTIALS FROM REGISTRY FILE
+const MASTER_EMAIL = staffData.bootstrap.email;
+const MASTER_TOKEN = staffData.bootstrap.token;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -143,14 +144,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       // ATTENDANCE LOGGING (Crucial for Payroll Node)
-      // Only log Office users here; WFH users log after biometric verification in VerifyPage.tsx
       if (!wfhStatus) {
         const verificationsRef = collection(firestore, 'verifications');
         const attendanceData = {
           userId: userId,
           userName: userData.name,
           userSystemId: userData.systemId,
-          photoUrl: null, // No photo required for Office check-in
+          photoUrl: null,
           timestamp: serverTimestamp(),
           isVerified: true,
           confidence: 1.0

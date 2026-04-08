@@ -1,0 +1,40 @@
+
+{
+  "bootstrap": {
+    "email": "admin@conex.media",
+    "token": "CONEX-ADMIN-INIT",
+    "description": "Master System Administrator account for initial perimeter setup."
+  },
+  "roles": [
+    {
+      "id": "ADMIN",
+      "code": "AD",
+      "rate": 500,
+      "description": "Global Command and Control"
+    },
+    {
+      "id": "BRAND_MANAGER",
+      "code": "BM",
+      "rate": 400,
+      "description": "Strategic Client Oversight"
+    },
+    {
+      "id": "VIDEOGRAPHER",
+      "code": "VG",
+      "rate": 350,
+      "description": "Field Operations and Capture"
+    },
+    {
+      "id": "EDITOR",
+      "code": "ED",
+      "rate": 300,
+      "description": "Post-Production and Mastering"
+    },
+    {
+      "id": "INTERN",
+      "code": "IN",
+      "rate": 150,
+      "description": "Operational Assistance and Training"
+    }
+  ]
+}
