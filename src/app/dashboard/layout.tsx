@@ -39,7 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Persistent Tactical Sidebar */}
         <DashboardSidebar />
         
-        <SidebarInset className="flex-1 flex flex-col min-w-0 bg-transparent overflow-y-auto">
+        <SidebarInset className="flex-1 flex flex-col min-w-0 bg-transparent">
           {/* Mobile Header with Navigation Access */}
           <header className="flex h-16 shrink-0 items-center justify-between px-4 lg:hidden bg-white border-b sticky top-0 z-40">
             <div className="flex items-center gap-3">
