@@ -34,7 +34,9 @@ import {
   Check,
   Banknote,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Mail,
+  ShieldAlert
 } from 'lucide-react';
 import { 
   Table, 
@@ -159,7 +161,8 @@ export default function AdminPage() {
     return staff.filter(emp => 
       emp.name.toLowerCase().includes(q) ||
       emp.systemId.toLowerCase().includes(q) ||
-      emp.role.toLowerCase().includes(q)
+      emp.role.toLowerCase().includes(q) ||
+      (emp.email && emp.email.toLowerCase().includes(q))
     );
   }, [staff, searchQuery]);
 
@@ -409,6 +412,7 @@ export default function AdminPage() {
                 <TableRow>
                   <TableHead className="font-bold text-slate-500">System ID</TableHead>
                   <TableHead className="font-bold text-slate-500">Name</TableHead>
+                  <TableHead className="font-bold text-slate-500">Email/Role</TableHead>
                   <TableHead className="font-bold text-slate-500">Security Token</TableHead>
                   <TableHead className="font-bold text-slate-500">Status</TableHead>
                   <TableHead className="text-right font-bold text-slate-500">Actions</TableHead>
@@ -416,14 +420,25 @@ export default function AdminPage() {
               </TableHeader>
               <TableBody>
                 {staffLoading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
                 ) : filteredStaff.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-400">No personnel found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400">No personnel found.</TableCell></TableRow>
                 ) : (
                   filteredStaff.map((emp) => (
                     <TableRow key={emp.id} className="hover:bg-slate-50">
                       <TableCell className="font-mono text-xs font-bold">{emp.systemId}</TableCell>
                       <TableCell className="font-bold text-slate-900">{emp.name}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-xs text-slate-600 flex items-center gap-1.5">
+                            <Mail className="w-3 h-3 text-slate-400" />
+                            {emp.email}
+                          </span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-primary mt-1">
+                            {emp.role.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <code className="font-mono text-[10px] font-bold text-primary bg-slate-50 px-2 py-0.5 rounded tracking-tighter border border-slate-100">
