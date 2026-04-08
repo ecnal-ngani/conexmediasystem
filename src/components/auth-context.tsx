@@ -11,6 +11,7 @@
  * 4. Session persistence using LocalStorage.
  * 5. Biometric verification gating for WFH users.
  * 6. Automatic status synchronization (Office/WFH/Offline).
+ * 7. Attendance logging for all login methods to support Payroll calculations.
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -140,6 +141,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: newStatus,
         updatedAt: serverTimestamp() 
       });
+
+      // ATTENDANCE LOGGING (Crucial for Payroll Node)
+      // Only log Office users here; WFH users log after biometric verification in VerifyPage.tsx
+      if (!wfhStatus) {
+        const verificationsRef = collection(firestore, 'verifications');
+        const attendanceData = {
+          userId: userId,
+          userName: userData.name,
+          userSystemId: userData.systemId,
+          photoUrl: null, // No photo required for Office check-in
+          timestamp: serverTimestamp(),
+          isVerified: true,
+          confidence: 1.0
+        };
+        addDoc(verificationsRef, attendanceData).catch((e) => {
+          console.error("Attendance log failed", e);
+        });
+      }
 
       const updatedUser = { id: userId, ...userData, status: newStatus } as User;
 

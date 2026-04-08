@@ -1,13 +1,15 @@
+
 'use client';
 
 /**
- * Admin Hub: Staff Management & Tasking
+ * Admin Hub: Staff Management, Tasking & Payroll
  * 
  * Allows Administrators to:
  * 1. Enroll new staff members and generate system IDs.
- * 2. Manage high-security internal Security Tokens with automated generation.
+ * 2. Manage high-security internal Security Tokens.
  * 3. Assign tasks (directives) to personnel.
  * 4. View attendance and biometric logs with Visual ID.
+ * 5. Compute Payroll based on attendance data and hourly rates.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -29,7 +31,10 @@ import {
   ShieldCheck,
   RefreshCw,
   Copy,
-  Check
+  Check,
+  Banknote,
+  Clock,
+  TrendingUp
 } from 'lucide-react';
 import { 
   Table, 
@@ -74,7 +79,7 @@ import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc } f
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { useAuth } from '@/components/auth-context';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -87,10 +92,15 @@ const ROLE_CODE_MAPPINGS: Record<string, string> = {
   "INTERN": "IN"
 };
 
-/**
- * Generates a high-entropy tactical security token
- * Format: CX-XXXX-XXXX (e.g., CX-8F2K-P9S5)
- */
+// Hourly rates configuration
+const HOURLY_RATES: Record<string, number> = {
+  "ADMIN": 500,
+  "BRAND_MANAGER": 400,
+  "VIDEOGRAPHER": 350,
+  "EDITOR": 300,
+  "INTERN": 150
+};
+
 const generateSecurityToken = () => {
   const segment = () => Math.random().toString(36).substring(2, 6).toUpperCase();
   return `CX-${segment()}-${segment()}`;
@@ -125,7 +135,6 @@ export default function AdminPage() {
     setMounted(true);
   }, []);
 
-  // Automatically generate token when modal opens
   useEffect(() => {
     if (isEnrollModalOpen) {
       setNewSecurityToken(generateSecurityToken());
@@ -153,6 +162,38 @@ export default function AdminPage() {
       emp.role.toLowerCase().includes(q)
     );
   }, [staff, searchQuery]);
+
+  // Payroll Calculation Logic
+  const payrollData = useMemo(() => {
+    if (!staff || !verifications) return [];
+
+    return staff.map(emp => {
+      // Find all verification logs for this employee
+      const empLogs = verifications.filter(log => log.userId === emp.id);
+      
+      // Count unique working days from logs
+      const uniqueDays = new Set();
+      empLogs.forEach(log => {
+        if (log.timestamp?.toDate) {
+          uniqueDays.add(format(log.timestamp.toDate(), 'yyyy-MM-dd'));
+        }
+      });
+
+      const daysActive = uniqueDays.size;
+      const hoursPerDay = 8;
+      const totalHours = daysActive * hoursPerDay;
+      const rate = HOURLY_RATES[emp.role] || 0;
+      const netSalary = totalHours * rate;
+
+      return {
+        ...emp,
+        daysActive,
+        totalHours,
+        rate,
+        netSalary
+      };
+    });
+  }, [staff, verifications]);
 
   const nextSystemId = useMemo(() => {
     if (!staff) return "CX-LOAD-00";
@@ -342,6 +383,7 @@ export default function AdminPage() {
         <TabsList className="bg-white border rounded-xl p-1">
           <TabsTrigger value="staff">Staff Directory</TabsTrigger>
           <TabsTrigger value="attendance">Biometric Logs</TabsTrigger>
+          <TabsTrigger value="payroll">Payroll Node</TabsTrigger>
         </TabsList>
 
         <TabsContent value="staff" className="space-y-4">
@@ -474,13 +516,21 @@ export default function AdminPage() {
                       <TableCell><Badge className="bg-slate-100 text-slate-600 font-bold text-[9px]">BIOMETRIC FEED</Badge></TableCell>
                       <TableCell className="text-right">
                         <button 
-                          onClick={() => setSelectedLogPhoto(log.photoUrl)}
+                          onClick={() => log.photoUrl && setSelectedLogPhoto(log.photoUrl)}
                           className="group relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 hover:border-primary transition-colors inline-block"
                         >
-                          <img src={log.photoUrl} alt="Visual ID" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                            <Eye className="w-4 h-4 text-white" />
-                          </div>
+                          {log.photoUrl ? (
+                            <img src={log.photoUrl} alt="Visual ID" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                              <ShieldCheck className="w-4 h-4 text-slate-300" />
+                            </div>
+                          )}
+                          {log.photoUrl && (
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <Eye className="w-4 h-4 text-white" />
+                            </div>
+                          )}
                         </button>
                       </TableCell>
                     </TableRow>
@@ -489,6 +539,83 @@ export default function AdminPage() {
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+
+        <TabsContent value="payroll" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border shadow-none bg-primary text-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Banknote className="w-5 h-5 opacity-80" />
+                  <TrendingUp className="w-4 h-4 opacity-60" />
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Total Estimated Payroll</p>
+                <h3 className="text-2xl font-black mt-1">
+                  ₱{payrollData.reduce((acc, curr) => acc + curr.netSalary, 0).toLocaleString()}
+                </h3>
+              </CardContent>
+            </Card>
+            <Card className="border shadow-none bg-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Clock className="w-5 h-5 text-slate-400" />
+                  <Badge variant="outline" className="text-[9px] font-black uppercase text-green-600 bg-green-50 border-green-200">Active Node</Badge>
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Hours Rendered</p>
+                <h3 className="text-2xl font-black mt-1 text-slate-900">
+                  {payrollData.reduce((acc, curr) => acc + curr.totalHours, 0).toLocaleString()} hrs
+                </h3>
+              </CardContent>
+            </Card>
+            <Card className="border shadow-none bg-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <Users className="w-5 h-5 text-slate-400" />
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Staff Count</p>
+                <h3 className="text-2xl font-black mt-1 text-slate-900">
+                  {payrollData.length} Personnel
+                </h3>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
+            <Table>
+              <TableHeader className="bg-slate-50">
+                <TableRow>
+                  <TableHead className="font-bold text-slate-500">Personnel</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-center">Days Active</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-center">Total Hours</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-center">Hourly Rate</TableHead>
+                  <TableHead className="text-right font-bold text-slate-500">Net Salary</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payrollData.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-400">No payroll data available.</TableCell></TableRow>
+                ) : (
+                  payrollData.map((data) => (
+                    <TableRow key={data.id} className="hover:bg-slate-50">
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-900">{data.name}</span>
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{data.role.replace('_', ' ')}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center font-bold text-slate-700">{data.daysActive} days</TableCell>
+                      <TableCell className="text-center font-bold text-slate-700">{data.totalHours} hrs</TableCell>
+                      <TableCell className="text-center text-slate-500 font-mono text-xs">₱{data.rate}/hr</TableCell>
+                      <TableCell className="text-right">
+                        <span className="font-black text-primary">₱{data.netSalary.toLocaleString()}</span>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-[10px] text-slate-400 font-medium italic text-right">*Calculations are based on 8-hour shifts per logged working day.</p>
         </TabsContent>
       </Tabs>
 
