@@ -27,7 +27,9 @@ import {
   Eye,
   Camera,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Copy,
+  Check
 } from 'lucide-react';
 import { 
   Table, 
@@ -103,6 +105,7 @@ export default function AdminPage() {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newSecurityToken, setNewSecurityToken] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
   
   // Task state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -249,6 +252,13 @@ export default function AdminPage() {
     });
   };
 
+  const copyToken = (id: string, token: string) => {
+    navigator.clipboard.writeText(token);
+    setCopiedTokenId(id);
+    setTimeout(() => setCopiedTokenId(null), 2000);
+    toast({ title: "Token Copied", description: "Security Token copied to clipboard." });
+  };
+
   if (!mounted) return null;
 
   return (
@@ -372,7 +382,21 @@ export default function AdminPage() {
                     <TableRow key={emp.id} className="hover:bg-slate-50">
                       <TableCell className="font-mono text-xs font-bold">{emp.systemId}</TableCell>
                       <TableCell className="font-bold text-slate-900">{emp.name}</TableCell>
-                      <TableCell className="font-mono text-[10px] text-slate-400">••••••••</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <code className="font-mono text-[10px] font-bold text-primary bg-slate-50 px-2 py-0.5 rounded tracking-tighter border border-slate-100">
+                            {emp.securityToken}
+                          </code>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={() => copyToken(emp.id, emp.securityToken)}
+                          >
+                            {copiedTokenId === emp.id ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-slate-400" />}
+                          </Button>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className={cn(
