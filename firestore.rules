@@ -4,7 +4,7 @@ rules_version = '2';
 /**
  * CONEX MEDIA - Secure Network Policy
  * 
- * Deployment ID: CX-SEC-2024-009-FINAL
+ * Deployment ID: CX-SEC-2024-010-PERM-FIX
  */
 
 service cloud.firestore {
@@ -17,7 +17,8 @@ service cloud.firestore {
     }
 
     // --- Global Collection Policy ---
-    // All authenticated staff members can read and write to operational collections.
+    // All authenticated personnel (including anonymous sessions used for verification)
+    // are granted access to operational nodes.
     
     match /users/{userId} {
       allow read, write: if isAuthenticated();

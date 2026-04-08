@@ -38,6 +38,10 @@
           "description": "Current operational status.",
           "enum": ["Office", "WFH", "Offline"]
         },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL to the user's avatar image."
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the user account was created.",
@@ -99,10 +103,16 @@
       "properties": {
         "fileCode": { "type": "string" },
         "brand": { "type": "string" },
+        "brandId": { "type": "string" },
+        "contentIdea": { "type": "string" },
         "status": { "type": "string" },
         "priority": { "type": "string" },
         "artist": { "type": "string" },
+        "type": { "type": "string" },
+        "platform": { "type": "string" },
         "dueDate": { "type": "string" },
+        "bm": { "type": "string" },
+        "canvasLink": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
@@ -126,7 +136,12 @@
         "type": { "type": "string" },
         "date": { "type": "string" },
         "location": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "priority": { "type": "string" },
+        "client": { "type": "string" },
+        "brandId": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       }
     }
   },
@@ -137,55 +152,29 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": { "$ref": "#/backend/entities/User" },
-          "description": "Primary user profiles."
-        }
-      },
-      {
-        "path": "/verifications/{id}",
-        "definition": {
-          "entityName": "Verification",
-          "schema": { "$ref": "#/backend/entities/Verification" },
-          "description": "Biometric logs."
-        }
-      },
-      {
-        "path": "/tasks/{id}",
-        "definition": {
-          "entityName": "Task",
-          "schema": { "$ref": "#/backend/entities/Task" },
-          "description": "Assigned internal tasks."
-        }
-      },
-      {
-        "path": "/projects/{id}",
-        "definition": {
-          "entityName": "Project",
-          "schema": { "$ref": "#/backend/entities/Project" },
-          "description": "Production hub items."
-        }
-      },
-      {
-        "path": "/brands/{id}",
-        "definition": {
-          "entityName": "Brand",
-          "schema": { "$ref": "#/backend/entities/Brand" },
-          "description": "Registered clients."
-        }
-      },
-      {
-        "path": "/schedules/{id}",
-        "definition": {
-          "entityName": "Schedule",
-          "schema": { "$ref": "#/backend/entities/Schedule" },
-          "description": "Calendar events."
-        }
-      }
-    ]
+    "/users/{userId}": {
+      "schema": { "$ref": "#/backend/entities/User" },
+      "description": "Primary user profiles."
+    },
+    "/verifications/{verificationId}": {
+      "schema": { "$ref": "#/backend/entities/Verification" },
+      "description": "Biometric logs."
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/backend/entities/Task" },
+      "description": "Assigned internal tasks."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/backend/entities/Project" },
+      "description": "Production hub items."
+    },
+    "/brands/{brandId}": {
+      "schema": { "$ref": "#/backend/entities/Brand" },
+      "description": "Registered clients."
+    },
+    "/schedules/{scheduleId}": {
+      "schema": { "$ref": "#/backend/entities/Schedule" },
+      "description": "Calendar events."
+    }
   }
 }
