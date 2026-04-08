@@ -58,25 +58,6 @@ The "Share Preview" link is protected by a Google Cloud authentication gate. You
 
 ---
 
-## 🛡️ Panel Defense Preparation (Q&A)
-
-### 1. Technical Architecture
-**Q: Why did you choose Next.js for this project?**
-*   **A:** Next.js allows us to build a "Full Stack" app in one place. It handles both the frontend (what users see) and the backend logic (how pages load and redirect) very efficiently using its "App Router" system.
-
-### 2. Security & Authentication
-**Q: What is a Security Token?**
-*   **A:** It is a high-entropy internal passcode assigned to staff. Unlike public passwords, these are managed by the Administrator to prevent unauthorized access even if an email is compromised.
-
-**Q: How do you prevent unauthorized users from seeing staff data?**
-*   **A:** We use a "Two-Gate" system. Gate 1 is the Security Token check. Gate 2 is the AI Biometric Verification (for WFH).
-
-### 3. Artificial Intelligence (AI)
-**Q: How does the AI Biometric Verification work?**
-*   **A:** We use a Genkit Flow that connects to Google's Gemini AI. When a WFH user takes a photo, the AI analyzes it in real-time to ensure it's a "Live" human face and not a photo of a screen or a mask.
-
----
-
 ## 🛠 Troubleshooting
 
 ### 1. Fixing "401: Workstation does not exist"

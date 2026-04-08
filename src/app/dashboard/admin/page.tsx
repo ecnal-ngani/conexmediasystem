@@ -36,7 +36,9 @@ import {
   Clock,
   TrendingUp,
   Mail,
-  ShieldAlert
+  ShieldAlert,
+  Smartphone,
+  Wifi
 } from 'lucide-react';
 import { 
   Table, 
@@ -308,73 +310,75 @@ export default function AdminPage() {
           {staffLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-300" />}
         </div>
         
-        <Dialog open={isEnrollModalOpen} onOpenChange={setIsEnrollModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full md:w-auto font-bold bg-primary text-white">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Enroll New Staff
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Enroll New Personnel</DialogTitle>
-              <DialogDescription>Assign system credentials and security token clearance.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Full Name</Label>
-                <Input placeholder="John Doe" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Work Email</Label>
-                <Input placeholder="john@conex.private" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Key className="w-3 h-3 text-primary" />
-                  Security Token
-                </Label>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="e.g. CX-9988-ABC" 
-                    value={newSecurityToken} 
-                    onChange={(e) => setNewSecurityToken(e.target.value)} 
-                    className="font-mono text-sm uppercase"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => setNewSecurityToken(generateSecurityToken())}
-                    className="shrink-0"
-                    title="Regenerate Token"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </Button>
-                </div>
-                <p className="text-[10px] text-slate-400 font-medium italic">Auto-generated high-entropy passcode.</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Dialog open={isEnrollModalOpen} onOpenChange={setIsEnrollModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex-1 md:flex-none font-bold bg-primary text-white">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Enroll New Staff
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Enroll New Personnel</DialogTitle>
+                <DialogDescription>Assign system credentials and security token clearance.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>Role</Label>
-                  <Select value={selectedRole} onValueChange={setSelectedRole}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {staffRegistry.roles.map(r => <SelectItem key={r.id} value={r.id}>{r.id.replace('_', ' ')}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label>Full Name</Label>
+                  <Input placeholder="John Doe" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
                 </div>
-                <div className="bg-slate-50 p-2 rounded flex flex-col justify-center border">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">System ID</span>
-                  <span className="font-bold text-primary">{nextSystemId}</span>
+                <div className="space-y-2">
+                  <Label>Work Email</Label>
+                  <Input placeholder="john@conex.private" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Key className="w-3 h-3 text-primary" />
+                    Security Token
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="e.g. CX-9988-ABC" 
+                      value={newSecurityToken} 
+                      onChange={(e) => setNewSecurityToken(e.target.value)} 
+                      className="font-mono text-sm uppercase"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => setNewSecurityToken(generateSecurityToken())}
+                      className="shrink-0"
+                      title="Regenerate Token"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium italic">Auto-generated high-entropy passcode.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Role</Label>
+                    <Select value={selectedRole} onValueChange={setSelectedRole}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {staffRegistry.roles.map(r => <SelectItem key={r.id} value={r.id}>{r.id.replace('_', ' ')}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded flex flex-col justify-center border">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">System ID</span>
+                    <span className="font-bold text-primary">{nextSystemId}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex justify-end gap-3">
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button onClick={handleEnrollStaff} className="bg-primary text-white font-bold">Enroll</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+              <div className="flex justify-end gap-3">
+                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                <Button onClick={handleEnrollStaff} className="bg-primary text-white font-bold">Enroll</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Tabs defaultValue="staff" className="space-y-6">
@@ -385,8 +389,8 @@ export default function AdminPage() {
         </TabsList>
 
         <TabsContent value="staff" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="relative max-w-sm flex-1">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="relative w-full md:max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input 
                 placeholder="Search directory..." 
@@ -395,10 +399,23 @@ export default function AdminPage() {
                 className="pl-10"
               />
             </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-400 ml-4">
-              <RefreshCcw className={cn("w-3 h-3", staffLoading && "animate-spin")} />
-              REAL-TIME SYNC ACTIVE
-            </div>
+            
+            {/* Mobile Preview Intelligence Card */}
+            <Card className="w-full md:w-auto border-dashed border-primary/30 bg-primary/5">
+              <CardContent className="p-3 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-white border border-primary/20 flex items-center justify-center shrink-0">
+                  <Smartphone className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">Mobile Preview Protocol</p>
+                  <p className="text-[9px] text-slate-500 font-medium">Use your PC's IP address on port 9002 for mobile access.</p>
+                </div>
+                <div className="hidden lg:flex items-center gap-2 text-[9px] font-bold text-slate-400 ml-4">
+                  <Wifi className="w-3 h-3" />
+                  SAME WIFI REQ
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
