@@ -37,7 +37,8 @@ import {
   Loader2,
   XCircle,
   Save,
-  Tag
+  Tag,
+  Trash2
 } from 'lucide-react';
 import {
   Dialog,
@@ -48,11 +49,22 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -105,14 +117,13 @@ export default function ProductionPage() {
     if (selectedBrandId && brands && projects) {
       const brand = brands.find(b => b.id === selectedBrandId);
       if (brand) {
-        // Use local date (YYMMDD) to prevent timezone flipping errors
+        // Use local date (YYMMDD)
         const now = new Date();
         const yy = now.getFullYear().toString().slice(-2);
         const mm = (now.getMonth() + 1).toString().padStart(2, '0');
         const dd = now.getDate().toString().padStart(2, '0');
         const dateStr = `${yy}${mm}${dd}`;
         
-        // Filter all projects for this specific brand to find the absolute max sequence
         const brandPrefixMatch = `${brand.prefix}-`;
         const brandProjects = projects.filter((p: any) => p.fileCode?.startsWith(brandPrefixMatch));
         
@@ -250,8 +261,28 @@ export default function ProductionPage() {
     });
   };
 
+  const handleDeleteProject = (projectId: string, code: string) => {
+    if (!firestore) return;
+    const projectRef = doc(firestore, 'projects', projectId);
+    
+    deleteDoc(projectRef)
+      .then(() => {
+        toast({
+          title: "Project Terminated",
+          description: `Asset ${code} has been purged from the Production Hub.`,
+        });
+      })
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: projectRef.path,
+          operation: 'delete'
+        }));
+      });
+  };
+
   const isIntern = user?.role === 'INTERN';
   const canEditStatus = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
+  const canTerminate = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
 
   return (
     <div className="w-full space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -613,6 +644,32 @@ export default function ProductionPage() {
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600 hover:bg-blue-50" asChild>
                           <a href={item.canvasLink} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3 h-3" /></a>
                         </Button>
+                      )}
+                      {canTerminate && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-2xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Terminate Project</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to permanently remove <strong>{item.fileCode}</strong> from the hub? This action cannot be reversed.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteProject(item.id, item.fileCode)}
+                                className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
+                              >
+                                Terminate
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   </TableCell>
