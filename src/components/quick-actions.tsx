@@ -256,7 +256,7 @@ export function QuickActions() {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-30 pointer-events-none">
+      <div className="fixed bottom-24 lg:bottom-6 right-6 flex flex-col gap-3 z-30 pointer-events-none">
         <Sheet>
           <SheetTrigger asChild>
             <button className="pointer-events-auto w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-lg"><Bell className="w-5 h-5" /></button>
