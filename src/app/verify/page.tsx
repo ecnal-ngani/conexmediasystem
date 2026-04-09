@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -7,7 +6,7 @@ import { useAuth } from '@/components/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Camera, Loader2, ShieldCheck, ShieldAlert, RefreshCw, Sparkles } from 'lucide-react';
+import { Camera, Loader2, ShieldCheck, ShieldAlert, RefreshCw, Sparkles, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { verifyFace } from '@/ai/flows/face-verification-flow';
 import { useFirestore } from '@/firebase';
@@ -25,6 +24,14 @@ export default function VerifyPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isSecureContext, setIsSecureContext] = useState(true);
+
+  useEffect(() => {
+    // Check for secure context - cameras are restricted on non-HTTPS/localhost
+    if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost') {
+      setIsSecureContext(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -38,6 +45,9 @@ export default function VerifyPage() {
 
     const getCameraPermission = async () => {
       try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+           throw new Error('MediaDevices API not available');
+        }
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
         if (videoRef.current) {
@@ -49,12 +59,14 @@ export default function VerifyPage() {
         toast({
           variant: 'destructive',
           title: 'Camera Access Denied',
-          description: 'CONEX MEDIA policy requires camera access for identity verification.',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
         });
       }
     };
 
-    getCameraPermission();
+    if (isSecureContext) {
+      getCameraPermission();
+    }
 
     return () => {
       if (videoRef.current?.srcObject) {
@@ -62,7 +74,7 @@ export default function VerifyPage() {
         tracks.forEach(track => track.stop());
       }
     };
-  }, [user, isWfh, authLoading, router, toast]);
+  }, [user, isWfh, authLoading, router, toast, isSecureContext]);
 
   const handleCapture = async () => {
     if (!videoRef.current || !user || !firestore) return;
@@ -145,7 +157,7 @@ export default function VerifyPage() {
           </p>
         </div>
 
-        <Card className="border-2 shadow-2xl overflow-hidden">
+        <Card className="border-2 shadow-2xl overflow-hidden rounded-[32px]">
           <CardHeader className="bg-muted/30 border-b">
             <CardTitle className="text-lg flex items-center gap-2">
               <Camera className="w-5 h-5 text-primary" />
@@ -156,6 +168,7 @@ export default function VerifyPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0 bg-black aspect-video relative flex items-center justify-center">
+            {/* Always show <video> tag irrespective of hasCameraPermission check to prevent race condition */}
             <video 
               ref={videoRef} 
               className={`w-full h-full object-cover ${capturedImage ? 'hidden' : 'block'}`} 
@@ -177,13 +190,27 @@ export default function VerifyPage() {
               </div>
             )}
 
-            {!hasCameraPermission && hasCameraPermission !== null && (
+            {!isSecureContext && (
+               <div className="absolute inset-0 bg-slate-900 flex items-center justify-center p-6 text-center">
+                 <div className="space-y-4 max-w-xs">
+                   <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
+                     <Lock className="w-8 h-8 text-red-500" />
+                   </div>
+                   <h3 className="text-white font-bold text-lg">Secure Context Required</h3>
+                   <p className="text-slate-400 text-sm">
+                     Camera access is restricted on non-HTTPS connections. Please use the mobile preview link or localhost for full biometric testing.
+                   </p>
+                 </div>
+               </div>
+            )}
+
+            {isSecureContext && hasCameraPermission === false && (
               <div className="absolute inset-0 bg-muted flex items-center justify-center p-6">
                 <Alert variant="destructive" className="max-w-md bg-background">
                   <ShieldAlert className="h-4 w-4" />
                   <AlertTitle>Camera Access Required</AlertTitle>
                   <AlertDescription>
-                    Please allow camera access in your browser settings to continue with CONEX MEDIA verification.
+                    Please allow camera access in your browser settings to use this feature.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -205,7 +232,7 @@ export default function VerifyPage() {
                   variant="outline" 
                   onClick={() => setCapturedImage(null)} 
                   disabled={isVerifying}
-                  className="w-full sm:w-auto h-12"
+                  className="w-full sm:w-auto h-12 rounded-2xl"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Retake Photo
@@ -213,8 +240,8 @@ export default function VerifyPage() {
               ) : (
                 <Button 
                   onClick={handleCapture} 
-                  disabled={!hasCameraPermission || isVerifying}
-                  className="w-full sm:w-auto bg-primary font-bold h-12 px-8"
+                  disabled={!hasCameraPermission || isVerifying || !isSecureContext}
+                  className="w-full sm:w-auto bg-primary font-bold h-12 px-8 rounded-2xl shadow-lg shadow-red-100 text-white"
                 >
                   {isVerifying ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

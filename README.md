@@ -54,7 +54,7 @@ The "Share Preview" link is protected by a Google Cloud authentication gate. You
    - **macOS/Linux**: Open **Terminal**, type `ipconfig getifaddr en0`.
 3. **Browse**: On your phone, type: `http://YOUR_IP_ADDRESS:9002` (e.g., `http://192.168.1.15:9002`).
 
-*Note: This bypasses the Google proxy and allows the phone to talk directly to your code server.*
+*Note: Camera access is restricted on non-HTTPS connections. If the camera fails via Local IP, use the "Share Preview" link on a logged-in mobile browser or test on a secure localhost connection.*
 
 ---
 
