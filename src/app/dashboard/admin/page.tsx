@@ -39,7 +39,6 @@ import {
   ShieldAlert,
   Smartphone,
   Wifi,
-  DollarSign,
   Edit2
 } from 'lucide-react';
 import { 
@@ -384,10 +383,13 @@ export default function AdminPage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
-                      <DollarSign className="w-3 h-3 text-primary" />
+                      <Banknote className="w-3 h-3 text-primary" />
                       Hourly Rate (PHP)
                     </Label>
-                    <Input type="number" placeholder="500" value={newHourlyRate} onChange={(e) => setNewHourlyRate(e.target.value)} />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₱</span>
+                      <Input type="number" placeholder="500" value={newHourlyRate} onChange={(e) => setNewHourlyRate(e.target.value)} className="pl-8" />
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -479,7 +481,7 @@ export default function AdminPage() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setRateEditingUser(emp); setEditingRateValue((emp.hourlyRate || DEFAULT_RATES[emp.role]).toString()); setIsRateModalOpen(true); }} title="Edit Hourly Rate">
-                            <DollarSign className="w-4 h-4 text-slate-400" />
+                            <Banknote className="w-4 h-4 text-slate-400" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setTaskTargetUser(emp); setIsTaskModalOpen(true); }}>
                             <ClipboardList className="w-4 h-4 text-slate-400" />
@@ -663,7 +665,7 @@ export default function AdminPage() {
             <div className="space-y-2">
               <Label>Hourly Rate (PHP)</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">₱</span>
                 <Input type="number" value={editingRateValue} onChange={(e) => setEditingRateValue(e.target.value)} className="pl-10 h-12 text-lg font-bold" />
               </div>
             </div>
