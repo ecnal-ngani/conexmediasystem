@@ -13,15 +13,23 @@ import {
   ArrowRight, 
   Loader2, 
   Home, 
-  Building2
+  Building2,
+  HelpCircle,
+  Wifi
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isWfh, setIsWfh] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const { login, isLoading } = useAuth();
   const { toast } = useToast();
 
@@ -57,12 +65,33 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {showHelp && (
+          <Alert className="bg-blue-50 border-blue-200 animate-in slide-in-from-top-2 duration-300">
+            <Wifi className="h-4 w-4 text-blue-600" />
+            <AlertTitle className="text-blue-800 font-bold">Mobile Access Tip</AlertTitle>
+            <AlertDescription className="text-blue-700 text-xs">
+              Seeing a <strong>401 Error</strong> on your phone? Connect to the same Wi-Fi as your PC and use your computer's <strong>Local IP address</strong> (e.g., http://192.168.1.XX:9002) to bypass the workstation security gate.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Card className="border shadow-2xl bg-white rounded-3xl overflow-hidden">
           <CardHeader className="space-y-1 bg-slate-50/50 p-8 border-b">
-            <CardTitle className="text-xl flex items-center gap-2 font-black tracking-tight">
-              <Lock className="w-5 h-5 text-primary" />
-              Secure Login
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl flex items-center gap-2 font-black tracking-tight">
+                <Lock className="w-5 h-5 text-primary" />
+                Secure Login
+              </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full h-8 w-8"
+                onClick={() => setShowHelp(!showHelp)}
+                title="Login Help"
+              >
+                <HelpCircle className="w-4 h-4 text-slate-400" />
+              </Button>
+            </div>
             <CardDescription className="font-medium">
               Enter credentials to initialize security check.
             </CardDescription>
