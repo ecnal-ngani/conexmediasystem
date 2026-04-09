@@ -7,7 +7,8 @@ import {
   Home, 
   Layers, 
   Calendar, 
-  ShieldCheck 
+  ShieldCheck,
+  User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/auth-context';
@@ -16,6 +17,7 @@ const navItems = [
   { title: 'Home', url: '/dashboard', icon: Home },
   { title: 'Hub', url: '/dashboard/production', icon: Layers },
   { title: 'Calendar', url: '/dashboard/calendar', icon: Calendar },
+  { title: 'Profile', url: '/dashboard/profile', icon: User },
   { title: 'Admin', url: '/dashboard/admin', icon: ShieldCheck, adminOnly: true },
 ];
 
