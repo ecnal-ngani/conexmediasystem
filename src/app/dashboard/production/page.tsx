@@ -67,7 +67,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { useAuth } from '@/components/auth-context';
 import { createSlug } from '@/lib/media-helpers';
 
@@ -100,6 +100,7 @@ export default function ProductionPage() {
   const [newBrandName, setNewBrandName] = useState('');
   const [newBrandPrefix, setNewBrandPrefix] = useState('');
 
+  // MEMOIZED QUERIES for performance stability
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
@@ -112,12 +113,11 @@ export default function ProductionPage() {
   }, [firestore, user]);
   const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
 
-  // Tactical File Code Logic: Continuous Sequence per Brand
+  // Tactical File Code Logic (Memoized calculation via useEffect)
   useEffect(() => {
     if (selectedBrandId && brands && projects) {
       const brand = brands.find(b => b.id === selectedBrandId);
       if (brand) {
-        // Use local date (YYMMDD)
         const now = new Date();
         const yy = now.getFullYear().toString().slice(-2);
         const mm = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -157,13 +157,6 @@ export default function ProductionPage() {
     });
   }, [projects, searchQuery, statusFilter, priorityFilter, typeFilter]);
 
-  const resetFilters = () => {
-    setSearchQuery('');
-    setStatusFilter('all');
-    setPriorityFilter('all');
-    setTypeFilter('all');
-  };
-
   const handleUpdateStatus = (projectId: string, newStatus: string) => {
     if (!firestore) return;
     const projectRef = doc(firestore, 'projects', projectId);
@@ -174,17 +167,14 @@ export default function ProductionPage() {
 
     updateDoc(projectRef, updateData)
       .then(() => {
-        toast({
-          title: "Status Synchronized",
-          description: `Asset status updated to ${newStatus}.`,
-        });
+        toast({ title: "Status Synchronized", description: `Asset status updated to ${newStatus}.` });
       })
       .catch(async (err) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: projectRef.path,
           operation: 'update',
           requestResourceData: updateData
-        }));
+        } satisfies SecurityRuleContext));
       });
   };
 
@@ -209,39 +199,40 @@ export default function ProductionPage() {
       dueDate,
       bm,
       canvasLink,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     };
     addDoc(projectsRef, projectData).catch(async (err) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: projectsRef.path,
         operation: 'create',
         requestResourceData: projectData
-      }));
+      } satisfies SecurityRuleContext));
     });
-    toast({ title: "Project Initialized", description: `${fileCode} has been added to the Production Hub.` });
+    toast({ title: "Project Initialized", description: `${fileCode} has been added.` });
     setIsAddProjectOpen(false);
-    setFileCode(''); setSelectedBrandId(''); setContentIdea(''); setArtist(''); setDueDate(''); setCanvasLink('');
   };
 
   const handleAddBrand = () => {
     if (!firestore || !newBrandName || !newBrandPrefix) {
-      toast({ variant: "destructive", title: "Missing Fields", description: "Name and Prefix (3 chars) are required." });
+      toast({ variant: "destructive", title: "Missing Fields", description: "Name and Prefix are required." });
       return;
     }
     const brandsRef = collection(firestore, 'brands');
     const brandData = {
       name: newBrandName,
       prefix: newBrandPrefix.toUpperCase().slice(0, 3),
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     };
     addDoc(brandsRef, brandData).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: brandsRef.path,
         operation: 'create',
         requestResourceData: brandData
-      }));
+      } satisfies SecurityRuleContext));
     });
-    toast({ title: "Brand Registered", description: `${newBrandName} is now an authorized client.` });
+    toast({ title: "Brand Registered", description: `${newBrandName} is authorized.` });
     setNewBrandName('');
     setNewBrandPrefix('');
   };
@@ -249,38 +240,32 @@ export default function ProductionPage() {
   const handleUpdateLink = () => {
     if (!firestore || !selectedProject || !editingLink) return;
     const projectRef = doc(firestore, 'projects', selectedProject.id);
-    updateDoc(projectRef, { canvasLink: editingLink }).then(() => {
-      toast({ title: "Asset Link Updated", description: "The project's destination link has been synchronized." });
+    const updates = { canvasLink: editingLink, updatedAt: serverTimestamp() };
+    updateDoc(projectRef, updates).then(() => {
+      toast({ title: "Asset Link Updated", description: "Destination synchronized." });
       setSelectedProject({ ...selectedProject, canvasLink: editingLink });
     }).catch(async (err) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: projectRef.path,
         operation: 'update',
-        requestResourceData: { canvasLink: editingLink }
-      }));
+        requestResourceData: updates
+      } satisfies SecurityRuleContext));
     });
   };
 
   const handleDeleteProject = (projectId: string, code: string) => {
     if (!firestore) return;
     const projectRef = doc(firestore, 'projects', projectId);
-    
-    deleteDoc(projectRef)
-      .then(() => {
-        toast({
-          title: "Project Terminated",
-          description: `Asset ${code} has been purged from the Production Hub.`,
-        });
-      })
-      .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: projectRef.path,
-          operation: 'delete'
-        }));
-      });
+    deleteDoc(projectRef).then(() => {
+      toast({ title: "Project Terminated", description: `${code} purged.` });
+    }).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: projectRef.path,
+        operation: 'delete'
+      } satisfies SecurityRuleContext));
+    });
   };
 
-  const isIntern = user?.role === 'INTERN';
   const canEditStatus = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
   const canTerminate = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
 
@@ -290,7 +275,7 @@ export default function ProductionPage() {
         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Production Hub</h1>
         <div className="flex items-center gap-2">
            {(statusFilter !== 'all' || priorityFilter !== 'all' || typeFilter !== 'all' || searchQuery !== '') && (
-             <Button variant="ghost" onClick={resetFilters} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary">
+             <Button variant="ghost" onClick={() => {setSearchQuery(''); setStatusFilter('all'); setPriorityFilter('all'); setTypeFilter('all');}} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary">
                <XCircle className="w-3 h-3 mr-1" />
                Reset Filters
              </Button>
@@ -340,7 +325,7 @@ export default function ProductionPage() {
             </SelectContent>
           </Select>
 
-          {!isIntern && (
+          {user?.role !== 'INTERN' && (
             <div className="flex gap-2 lg:col-span-2">
               <Dialog open={isManageBrandsOpen} onOpenChange={setIsManageBrandsOpen}>
                 <DialogTrigger asChild>
@@ -443,30 +428,18 @@ export default function ProductionPage() {
                             />
                           </div>
                         </div>
-
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                             <Lightbulb className="w-3 h-3 text-primary" />
                             Content Idea
                           </Label>
-                          <Input 
-                            placeholder="Product showcase reel" 
-                            value={contentIdea}
-                            onChange={(e) => setContentIdea(e.target.value)}
-                            className="h-12 border-slate-200 rounded-xl" 
-                            />
+                          <Input placeholder="Product showcase reel" value={contentIdea} onChange={(e) => setContentIdea(e.target.value)} className="h-12 rounded-xl" />
                         </div>
-
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                              <CheckCircle2 className="w-3 h-3 text-primary" />
-                              Status
-                            </Label>
+                            <Label>Status</Label>
                             <Select value={status} onValueChange={setStatus}>
-                              <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                                <SelectValue />
-                              </SelectTrigger>
+                              <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="In Production">In Production</SelectItem>
                                 <SelectItem value="For QA">For QA</SelectItem>
@@ -476,14 +449,9 @@ export default function ProductionPage() {
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                              <Zap className="w-3 h-3 text-primary" />
-                              Priority
-                            </Label>
+                            <Label>Priority</Label>
                             <Select value={priority} onValueChange={setPriority}>
-                              <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                                <SelectValue />
-                              </SelectTrigger>
+                              <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="REGULAR">REGULAR</SelectItem>
                                 <SelectItem value="RUSH">RUSH</SelectItem>
@@ -491,109 +459,10 @@ export default function ProductionPage() {
                             </Select>
                           </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                              <User className="w-3 h-3 text-primary" />
-                              Artist
-                            </Label>
-                            <Input 
-                              placeholder="Jhon Lester Nolial" 
-                              value={artist}
-                              onChange={(e) => setArtist(e.target.value)}
-                              className="h-12 border-slate-200 rounded-xl" 
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                              <Layers className="w-3 h-3 text-primary" />
-                              Type
-                            </Label>
-                            <Select value={type} onValueChange={setType}>
-                              <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Video">Video</SelectItem>
-                                <SelectItem value="Graphic Design">Graphic Design</SelectItem>
-                                <SelectItem value="Motion Graphics">Motion Graphics</SelectItem>
-                                <SelectItem value="Photography">Photography</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                              <Share2 className="w-3 h-3 text-primary" />
-                              Platform
-                            </Label>
-                            <Select value={platform} onValueChange={setPlatform}>
-                              <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Instagram">Instagram</SelectItem>
-                                <SelectItem value="TikTok">TikTok</SelectItem>
-                                <SelectItem value="Facebook">Facebook</SelectItem>
-                                <SelectItem value="YouTube">YouTube</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                              <Calendar className="w-3 h-3 text-primary" />
-                              Due Date
-                            </Label>
-                            <Input 
-                              type="date" 
-                              value={dueDate}
-                              onChange={(e) => setDueDate(e.target.value)}
-                              className="h-12 border-slate-200 rounded-xl" 
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                              <User className="w-3 h-3 text-primary" />
-                              Brand Manager (BM)
-                            </Label>
-                            <Input 
-                              placeholder="Clark" 
-                              value={bm}
-                              onChange={(e) => setBm(e.target.value)}
-                              className="h-12 border-slate-200 rounded-xl" 
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                              <LinkIcon className="w-3 h-3 text-primary" />
-                              Canvas Link
-                            </Label>
-                            <Input 
-                              placeholder="https://..." 
-                              value={canvasLink}
-                              onChange={(e) => setCanvasLink(e.target.value)}
-                              className="h-12 border-slate-200 rounded-xl" 
-                            />
-                          </div>
-                        </div>
                       </div>
-
                       <div className="flex gap-3 pt-4">
-                        <DialogClose asChild>
-                          <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-600">Cancel</Button>
-                        </DialogClose>
-                        <Button 
-                          onClick={handleAddProject}
-                          className="flex-1 h-12 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-red-100 text-white"
-                        >
-                          Add to Hub
-                        </Button>
+                        <DialogClose asChild><Button variant="outline" className="flex-1 h-12 rounded-xl">Cancel</Button></DialogClose>
+                        <Button onClick={handleAddProject} className="flex-1 h-12 rounded-xl bg-primary text-white font-bold">Add to Hub</Button>
                       </div>
                     </div>
                   </ScrollArea>
@@ -608,88 +477,48 @@ export default function ProductionPage() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-50/50">
-              <TableRow className="hover:bg-transparent border-0">
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 pl-6">Action</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">File Code</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Brand</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 text-center">Status</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4 text-center">Priority</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Type</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Artist</TableHead>
-                <TableHead className="text-[10px] font-black uppercase tracking-wider text-slate-400 py-4">Due Date</TableHead>
+              <TableRow className="border-0">
+                <TableHead className="text-[10px] font-black uppercase py-4 pl-6">Action</TableHead>
+                <TableHead className="text-[10px] font-black uppercase py-4">File Code</TableHead>
+                <TableHead className="text-[10px] font-black uppercase py-4">Brand</TableHead>
+                <TableHead className="text-[10px] font-black uppercase py-4 text-center">Status</TableHead>
+                <TableHead className="text-[10px] font-black uppercase py-4 text-center">Priority</TableHead>
+                <TableHead className="text-[10px] font-black uppercase py-4">Artist</TableHead>
+                <TableHead className="text-[10px] font-black uppercase py-4">Due Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={8} className="h-32 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="h-32 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
               ) : filteredProjects.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="h-40 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-2">
-                      <Filter className="w-8 h-8 text-slate-200" />
-                      <p className="text-sm font-medium text-slate-400">No production items found.</p>
-                      <Button variant="link" onClick={resetFilters} className="text-xs text-primary font-bold">Clear all filters</Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <TableRow><TableCell colSpan={7} className="h-40 text-center text-slate-400">No production items found.</TableCell></TableRow>
               ) : filteredProjects.map((item: any) => (
-                <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors border-0 group">
+                <TableRow key={item.id} className="border-0 group">
                   <TableCell className="py-4 pl-6">
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => { setSelectedProject(item); setEditingLink(item.canvasLink || ''); }} className="text-primary hover:text-primary/80 hover:bg-primary/5 h-7 text-[10px] px-2 font-bold group">
-                        <LinkIcon className="w-3 h-3 mr-1 transition-transform group-hover:scale-110" />
-                        Link
+                      <Button variant="ghost" size="sm" onClick={() => { setSelectedProject(item); setEditingLink(item.canvasLink || ''); }} className="text-primary h-7 text-[10px] font-bold">
+                        <LinkIcon className="w-3 h-3 mr-1" /> Link
                       </Button>
-                      {item.canvasLink && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600 hover:bg-blue-50" asChild>
-                          <a href={item.canvasLink} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3 h-3" /></a>
-                        </Button>
-                      )}
                       {canTerminate && (
                         <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-2xl">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Terminate Project</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to permanently remove <strong>{item.fileCode}</strong> from the hub? This action cannot be reversed.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
+                          <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-red-500"><Trash2 className="w-3.5 h-3.5" /></Button></AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Terminate Project</AlertDialogTitle><AlertDialogDescription>Delete {item.fileCode}?</AlertDialogDescription></AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => handleDeleteProject(item.id, item.fileCode)}
-                                className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
-                              >
-                                Terminate
-                              </AlertDialogAction>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteProject(item.id, item.fileCode)} className="bg-red-600 text-white">Terminate</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-[10px] font-bold text-slate-500 py-4">{item.fileCode}</TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-slate-800">{item.brand}</span>
-                      <span className="text-[9px] text-slate-400 truncate max-w-[150px] font-mono italic">
-                        /{createSlug(item.brand)}
-                      </span>
-                    </div>
-                  </TableCell>
+                  <TableCell className="font-mono text-[10px] font-bold text-slate-500">{item.fileCode}</TableCell>
+                  <TableCell className="py-4 font-bold text-slate-800">{item.brand}</TableCell>
                   <TableCell className="text-center">
                     {canEditStatus ? (
                       <Select value={item.status} onValueChange={(val) => handleUpdateStatus(item.id, val)}>
-                        <SelectTrigger className={cn("h-7 text-[8px] font-black uppercase tracking-wider rounded border min-w-[110px] shadow-none focus:ring-0", 
-                          item.status === 'In Production' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                          item.status === 'For QA' ? 'bg-orange-50 text-orange-600 border-orange-200' :
-                          item.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-pink-50 text-pink-600 border-pink-200'
-                        )}>
+                        <SelectTrigger className="h-7 text-[8px] font-black uppercase min-w-[110px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -699,71 +528,19 @@ export default function ProductionPage() {
                           <SelectItem value="Client Revision">CLIENT REVISION</SelectItem>
                         </SelectContent>
                       </Select>
-                    ) : (
-                      <Badge variant="outline" className={cn("text-[8px] font-bold px-2 py-0.5 rounded border min-w-[90px]", 
-                        item.status === 'In Production' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                        item.status === 'For QA' ? 'bg-orange-50 text-orange-600 border-orange-200' :
-                        item.status === 'Approved' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-pink-50 text-pink-600 border-pink-200'
-                      )}>
-                        {item.status.toUpperCase()}
-                      </Badge>
-                    )}
+                    ) : <Badge variant="outline" className="text-[8px] font-bold uppercase">{item.status}</Badge>}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="outline" className={cn("text-[8px] font-bold px-2 py-0.5 rounded border", 
-                      item.priority === 'RUSH' ? 'text-red-600 bg-red-50 border-red-200' : 'text-slate-500 bg-slate-50 border-slate-200'
-                    )}>
-                      {item.priority}
-                    </Badge>
+                    <Badge variant="outline" className={cn("text-[8px] font-bold", item.priority === 'RUSH' ? 'text-red-600 bg-red-50' : 'text-slate-500')}>{item.priority}</Badge>
                   </TableCell>
-                  <TableCell className="py-4"><div className="flex items-center gap-1.5"><Layers className="w-3 h-3 text-slate-400" /><span className="text-[10px] font-medium text-slate-600">{item.type}</span></div></TableCell>
-                  <TableCell className="py-4"><div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500">{item.artist?.charAt(0) || 'U'}</div><span className="text-[10px] font-medium text-slate-700">{item.artist}</span></div></TableCell>
-                  <TableCell className="py-4"><div className="flex flex-col items-start"><span className="text-[10px] font-bold text-slate-800">{item.dueDate}</span><span className="text-[8px] text-slate-400 uppercase font-black">{item.platform}</span></div></TableCell>
+                  <TableCell className="text-[10px] font-medium text-slate-700">{item.artist}</TableCell>
+                  <TableCell className="text-[10px] font-bold text-slate-800">{item.dueDate}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       </div>
-
-      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-        <DialogContent className="max-md p-8 rounded-3xl border-none shadow-2xl">
-          {selectedProject && (
-            <div className="space-y-6">
-              <DialogHeader>
-                <div className="flex items-center gap-4 mb-4">
-                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-red-100"><LinkIcon className="w-6 h-6 text-white" /></div>
-                  <div>
-                    <DialogTitle className="text-2xl font-black">{selectedProject.brand}</DialogTitle>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedProject.fileCode}</p>
-                  </div>
-                </div>
-              </DialogHeader>
-              <div className="space-y-6 pt-4 border-t">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Asset Link (Canvas/Reel)</Label>
-                  {!isIntern ? (
-                    <div className="flex gap-2">
-                      <Input placeholder="https://link-to-asset.com" value={editingLink} onChange={(e) => setEditingLink(e.target.value)} className="h-10 rounded-xl bg-slate-50 border-slate-200" />
-                      <Button onClick={handleUpdateLink} className="bg-primary hover:bg-primary/90 text-white font-bold h-10 px-3 shrink-0 rounded-xl"><Save className="w-4 h-4" /></Button>
-                    </div>
-                  ) : <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-mono break-all text-slate-600">{selectedProject.canvasLink || 'No link synchronized.'}</div>}
-                  {selectedProject.canvasLink && (
-                    <Button variant="outline" className="w-full gap-2 border-primary/20 text-primary hover:bg-primary/5 h-10 rounded-xl" asChild>
-                      <a href={selectedProject.canvasLink} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" />Jump to Asset</a>
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Type</p><p className="font-bold">{selectedProject.type}</p></div>
-                  <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Artist</p><p className="font-bold">{selectedProject.artist}</p></div>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-4"><Button onClick={() => setSelectedProject(null)} className="w-full h-12 rounded-xl font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-100">Close Link Details</Button></div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -82,7 +81,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useAuth } from '@/components/auth-context';
@@ -148,6 +147,7 @@ export default function AdminPage() {
     }
   }, [isEnrollModalOpen, selectedRole]);
 
+  // MEMOIZED QUERIES for performance stability
   const staffQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
     return query(collection(firestore, 'users'), orderBy('systemId', 'asc'));
@@ -171,7 +171,7 @@ export default function AdminPage() {
     );
   }, [staff, searchQuery]);
 
-  // Payroll Calculation Logic
+  // Payroll Calculation Logic (Memoized)
   const payrollData = useMemo(() => {
     if (!staff || !verifications) return [];
 
@@ -238,7 +238,7 @@ export default function AdminPage() {
         path: usersRef.path,
         operation: 'create',
         requestResourceData: newUserData
-      }));
+      } satisfies SecurityRuleContext));
     });
 
     toast({
@@ -272,7 +272,7 @@ export default function AdminPage() {
           path: userRef.path,
           operation: 'update',
           requestResourceData: updates
-        }));
+        } satisfies SecurityRuleContext));
       });
   };
 
@@ -299,7 +299,7 @@ export default function AdminPage() {
         path: tasksRef.path,
         operation: 'create',
         requestResourceData: taskData
-      }));
+      } satisfies SecurityRuleContext));
     });
 
     toast({
@@ -322,15 +322,8 @@ export default function AdminPage() {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: userRef.path,
         operation: 'delete'
-      }));
+      } satisfies SecurityRuleContext));
     });
-  };
-
-  const copyToken = (id: string, token: string) => {
-    navigator.clipboard.writeText(token);
-    setCopiedTokenId(id);
-    setTimeout(() => setCopiedTokenId(null), 2000);
-    toast({ title: "Token Copied", description: "Security Token copied to clipboard." });
   };
 
   if (!mounted) return null;
@@ -666,7 +659,12 @@ export default function AdminPage() {
               <Label>Hourly Rate (PHP)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">₱</span>
-                <Input type="number" value={editingRateValue} onChange={(e) => setEditingRateValue(e.target.value)} className="pl-10 h-12 text-lg font-bold" />
+                <input 
+                  type="number" 
+                  value={editingRateValue} 
+                  onChange={(e) => setEditingRateValue(e.target.value)} 
+                  className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 text-lg font-bold" 
+                />
               </div>
             </div>
           </div>

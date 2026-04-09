@@ -1,77 +1,28 @@
-
 {
   "entities": {
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents an authorized user within the CONEX Gateway system, storing their profile information and linking to their roles and preferences.",
+      "description": "Authorized staff member.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the User entity."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's primary email address, often used as a unique identifier for contact purposes.",
-          "format": "email"
-        },
-        "name": {
-          "type": "string",
-          "description": "The full name of the user."
-        },
-        "systemId": {
-          "type": "string",
-          "description": "The tactical system ID (e.g., CX-AD-01)."
-        },
-        "securityToken": {
-          "type": "string",
-          "description": "The unique high-entropy passcode for internal access."
-        },
-        "role": {
-          "type": "string",
-          "description": "The primary role assigned to this user.",
-          "enum": ["ADMIN", "BRAND_MANAGER", "VIDEOGRAPHER", "EDITOR", "INTERN"]
-        },
-        "hourlyRate": {
-          "type": "number",
-          "description": "The customized hourly rate for this user (PHP)."
-        },
-        "status": {
-          "type": "string",
-          "description": "Current operational status.",
-          "enum": ["Office", "WFH", "Offline"]
-        },
-        "avatarUrl": {
-          "type": "string",
-          "description": "URL to the user's avatar image."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the user account was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the profile was last updated.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "systemId": { "type": "string" },
+        "securityToken": { "type": "string" },
+        "role": { "type": "string", "enum": ["ADMIN", "BRAND_MANAGER", "VIDEOGRAPHER", "EDITOR", "INTERN"] },
+        "hourlyRate": { "type": "number" },
+        "status": { "type": "string", "enum": ["Office", "WFH", "Offline"] },
+        "avatarUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "email",
-        "name",
-        "systemId",
-        "securityToken",
-        "role",
-        "createdAt",
-        "updatedAt"
-      ]
+      "required": ["id", "email", "name", "systemId", "securityToken", "role", "createdAt", "updatedAt"]
     },
     "Verification": {
       "title": "Verification",
       "type": "object",
-      "description": "Biometric verification log for WFH compliance.",
+      "description": "Biometric verification log.",
       "properties": {
         "userId": { "type": "string" },
         "userName": { "type": "string" },
@@ -85,13 +36,12 @@
     "Task": {
       "title": "Task",
       "type": "object",
-      "description": "Tactical directive assigned to personnel.",
+      "description": "Tactical directive.",
       "properties": {
         "title": { "type": "string" },
-        "category": { "type": "string" },
-        "priority": { "type": "string", "enum": ["URGENT", "HIGH", "NORMAL"] },
         "dueDate": { "type": "string" },
         "status": { "type": "string" },
+        "priority": { "type": "string", "enum": ["URGENT", "HIGH", "NORMAL"] },
         "assignedToId": { "type": "string" },
         "assignedToName": { "type": "string" },
         "assignedById": { "type": "string" },
@@ -103,7 +53,7 @@
     "Project": {
       "title": "Project",
       "type": "object",
-      "description": "Production item in the hub.",
+      "description": "Production item.",
       "properties": {
         "fileCode": { "type": "string" },
         "brand": { "type": "string" },
@@ -124,17 +74,18 @@
     "Brand": {
       "title": "Brand",
       "type": "object",
-      "description": "Authorized client brand.",
+      "description": "Authorized brand.",
       "properties": {
         "name": { "type": "string" },
         "prefix": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       }
     },
     "Schedule": {
       "title": "Schedule",
       "type": "object",
-      "description": "Calendar event or shoot.",
+      "description": "Calendar event.",
       "properties": {
         "title": { "type": "string" },
         "type": { "type": "string" },
@@ -150,15 +101,12 @@
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/backend/entities/User" },
-      "description": "Primary user profiles."
+      "description": "User profiles."
     },
     "/verifications/{verificationId}": {
       "schema": { "$ref": "#/backend/entities/Verification" },
@@ -166,19 +114,19 @@
     },
     "/tasks/{taskId}": {
       "schema": { "$ref": "#/backend/entities/Task" },
-      "description": "Assigned internal tasks."
+      "description": "Tasks."
     },
     "/projects/{projectId}": {
       "schema": { "$ref": "#/backend/entities/Project" },
-      "description": "Production hub items."
+      "description": "Projects."
     },
     "/brands/{brandId}": {
       "schema": { "$ref": "#/backend/entities/Brand" },
-      "description": "Registered clients."
+      "description": "Brands."
     },
     "/schedules/{scheduleId}": {
       "schema": { "$ref": "#/backend/entities/Schedule" },
-      "description": "Calendar events."
+      "description": "Schedules."
     }
   }
 }
