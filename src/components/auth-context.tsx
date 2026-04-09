@@ -18,7 +18,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/mock-data';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
-import { collection, query, where, getDocs, limit, doc, updateDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, setDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -132,17 +132,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (userData.securityToken !== securityToken) {
           throw new Error('Invalid Security Token: Access denied.');
         }
+
+        // AUTOMATIC STATUS SYNCHRONIZATION
+        // Use setDoc with merge to handle cases where the doc might have been purged
+        const userRef = doc(firestore, 'users', userId);
+        const newStatus = wfhStatus ? 'WFH' : 'Office';
+        
+        await setDoc(userRef, { 
+          status: newStatus,
+          updatedAt: serverTimestamp() 
+        }, { merge: true });
+        
+        userData.status = newStatus;
       }
       
-      // AUTOMATIC STATUS SYNCHRONIZATION
-      const userRef = doc(firestore, 'users', userId);
-      const newStatus = wfhStatus ? 'WFH' : 'Office';
-      
-      await updateDoc(userRef, { 
-        status: newStatus,
-        updatedAt: serverTimestamp() 
-      });
-
       // ATTENDANCE LOGGING (Crucial for Payroll Node)
       if (!wfhStatus) {
         const verificationsRef = collection(firestore, 'verifications');
@@ -160,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      const updatedUser = { id: userId, ...userData, status: newStatus } as User;
+      const updatedUser = { id: userId, ...userData } as User;
 
       setUser(updatedUser);
       setIsWfh(wfhStatus);
@@ -196,7 +199,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('conex_session', JSON.stringify(updatedUser));
     
     const userRef = doc(firestore, 'users', user.id);
-    updateDoc(userRef, { ...sanitizedUpdates, updatedAt: serverTimestamp() }).catch(async (e) => {
+    // Use setDoc with merge: true to avoid "No document to update" error
+    setDoc(userRef, { ...sanitizedUpdates, updatedAt: serverTimestamp() }, { merge: true }).catch(async (e) => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: userRef.path,
         operation: 'update',
@@ -213,12 +217,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user && firestore) {
       const userRef = doc(firestore, 'users', user.id);
       try {
-        await updateDoc(userRef, { 
+        // Use setDoc with merge to ensure offline status sync even if doc was moved/deleted
+        await setDoc(userRef, { 
           status: 'Offline',
           updatedAt: serverTimestamp() 
-        });
+        }, { merge: true });
       } catch (e) {
-        console.error("Failed to sync offline status", e);
+        console.warn("Could not sync offline status (document may have been removed)", e);
       }
     }
 
