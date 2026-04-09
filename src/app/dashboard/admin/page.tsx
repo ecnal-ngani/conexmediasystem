@@ -9,7 +9,7 @@
  * 2. Manage high-security internal Security Tokens.
  * 3. Assign tasks (directives) to personnel.
  * 4. View attendance and biometric logs with Visual ID.
- * 5. Compute Payroll based on attendance data and hourly rates.
+ * 5. Compute Payroll based on real-time attendance data and custom hourly rates.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -38,7 +38,9 @@ import {
   Mail,
   ShieldAlert,
   Smartphone,
-  Wifi
+  Wifi,
+  DollarSign,
+  Edit2
 } from 'lucide-react';
 import { 
   Table, 
@@ -79,7 +81,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
@@ -88,8 +90,8 @@ import { useAuth } from '@/components/auth-context';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import staffRegistry from '@/app/lib/initial-staff.json';
 
-// Hourly rates configuration derived from registry file
-const HOURLY_RATES: Record<string, number> = staffRegistry.roles.reduce((acc, role) => {
+// Default Hourly rates configuration derived from registry file
+const DEFAULT_RATES: Record<string, number> = staffRegistry.roles.reduce((acc, role) => {
   acc[role.id] = role.rate;
   return acc;
 }, {} as Record<string, number>);
@@ -113,9 +115,15 @@ export default function AdminPage() {
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newSecurityToken, setNewSecurityToken] = useState('');
+  const [newHourlyRate, setNewHourlyRate] = useState<string>('');
   const [mounted, setMounted] = useState(false);
   const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
   
+  // Rate Edit State
+  const [isRateModalOpen, setIsRateModalOpen] = useState(false);
+  const [rateEditingUser, setRateEditingUser] = useState<any>(null);
+  const [editingRateValue, setEditingRateValue] = useState<string>('');
+
   // Task state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskTargetUser, setTaskTargetUser] = useState<any>(null);
@@ -137,8 +145,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (isEnrollModalOpen) {
       setNewSecurityToken(generateSecurityToken());
+      setNewHourlyRate(DEFAULT_RATES[selectedRole]?.toString() || '0');
     }
-  }, [isEnrollModalOpen]);
+  }, [isEnrollModalOpen, selectedRole]);
 
   const staffQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
@@ -182,7 +191,7 @@ export default function AdminPage() {
       const daysActive = uniqueDays.size;
       const hoursPerDay = 8;
       const totalHours = daysActive * hoursPerDay;
-      const rate = HOURLY_RATES[emp.role] || 0;
+      const rate = emp.hourlyRate || DEFAULT_RATES[emp.role] || 0;
       const netSalary = totalHours * rate;
 
       return {
@@ -218,6 +227,7 @@ export default function AdminPage() {
       email: newUserEmail.toLowerCase(),
       securityToken: newSecurityToken,
       role: selectedRole,
+      hourlyRate: parseFloat(newHourlyRate) || 0,
       status: 'Offline',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -241,6 +251,30 @@ export default function AdminPage() {
     setNewUserName('');
     setNewUserEmail('');
     setNewSecurityToken('');
+  };
+
+  const handleUpdateRate = () => {
+    if (!firestore || !rateEditingUser) return;
+
+    const userRef = doc(firestore, 'users', rateEditingUser.id);
+    const updates = { 
+      hourlyRate: parseFloat(editingRateValue) || 0,
+      updatedAt: serverTimestamp() 
+    };
+
+    setDoc(userRef, updates, { merge: true })
+      .then(() => {
+        toast({ title: "Rate Synchronized", description: `Hourly rate for ${rateEditingUser.name} updated to ₱${editingRateValue}.` });
+        setIsRateModalOpen(false);
+        setRateEditingUser(null);
+      })
+      .catch(async (e) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: userRef.path,
+          operation: 'update',
+          requestResourceData: updates
+        }));
+      });
   };
 
   const handleCreateTask = () => {
@@ -321,7 +355,7 @@ export default function AdminPage() {
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Enroll New Personnel</DialogTitle>
-                <DialogDescription>Assign system credentials and security token clearance.</DialogDescription>
+                <DialogDescription>Assign system credentials and payroll parameters.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -332,29 +366,29 @@ export default function AdminPage() {
                   <Label>Work Email</Label>
                   <Input placeholder="john@conex.private" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Key className="w-3 h-3 text-primary" />
-                    Security Token
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      placeholder="e.g. CX-9988-ABC" 
-                      value={newSecurityToken} 
-                      onChange={(e) => setNewSecurityToken(e.target.value)} 
-                      className="font-mono text-sm uppercase"
-                    />
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => setNewSecurityToken(generateSecurityToken())}
-                      className="shrink-0"
-                      title="Regenerate Token"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </Button>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Key className="w-3 h-3 text-primary" />
+                      Security Token
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="CX-ABCD-1234" 
+                        value={newSecurityToken} 
+                        onChange={(e) => setNewSecurityToken(e.target.value)} 
+                        className="font-mono text-sm uppercase"
+                      />
+                      <Button variant="outline" size="icon" onClick={() => setNewSecurityToken(generateSecurityToken())} className="shrink-0"><RefreshCw className="w-4 h-4" /></Button>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium italic">Auto-generated high-entropy passcode.</p>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <DollarSign className="w-3 h-3 text-primary" />
+                      Hourly Rate (PHP)
+                    </Label>
+                    <Input type="number" placeholder="500" value={newHourlyRate} onChange={(e) => setNewHourlyRate(e.target.value)} />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -399,23 +433,6 @@ export default function AdminPage() {
                 className="pl-10"
               />
             </div>
-            
-            {/* Mobile Preview Intelligence Card */}
-            <Card className="w-full md:w-auto border-dashed border-primary/30 bg-primary/5">
-              <CardContent className="p-3 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-white border border-primary/20 flex items-center justify-center shrink-0">
-                  <Smartphone className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">Mobile Preview Protocol</p>
-                  <p className="text-[9px] text-slate-500 font-medium">Use your PC's IP address on port 9002 for mobile access.</p>
-                </div>
-                <div className="hidden lg:flex items-center gap-2 text-[9px] font-bold text-slate-400 ml-4">
-                  <Wifi className="w-3 h-3" />
-                  SAME WIFI REQ
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
@@ -424,17 +441,16 @@ export default function AdminPage() {
                 <TableRow>
                   <TableHead className="font-bold text-slate-500">System ID</TableHead>
                   <TableHead className="font-bold text-slate-500">Name</TableHead>
-                  <TableHead className="font-bold text-slate-500">Email/Role</TableHead>
-                  <TableHead className="font-bold text-slate-500">Security Token</TableHead>
+                  <TableHead className="font-bold text-slate-500">Role / Rate</TableHead>
                   <TableHead className="font-bold text-slate-500">Status</TableHead>
                   <TableHead className="text-right font-bold text-slate-500">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {staffLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
                 ) : filteredStaff.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400">No personnel found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-400">No personnel found.</TableCell></TableRow>
                 ) : (
                   filteredStaff.map((emp) => (
                     <TableRow key={emp.id} className="hover:bg-slate-50">
@@ -442,28 +458,12 @@ export default function AdminPage() {
                       <TableCell className="font-bold text-slate-900">{emp.name}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="text-xs text-slate-600 flex items-center gap-1.5">
-                            <Mail className="w-3 h-3 text-slate-400" />
-                            {emp.email}
-                          </span>
-                          <span className="text-[9px] font-black uppercase tracking-widest text-primary mt-1">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-primary">
                             {emp.role.replace('_', ' ')}
                           </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <code className="font-mono text-[10px] font-bold text-primary bg-slate-50 px-2 py-0.5 rounded tracking-tighter border border-slate-100">
-                            {emp.securityToken}
-                          </code>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6" 
-                            onClick={() => copyToken(emp.id, emp.securityToken)}
-                          >
-                            {copiedTokenId === emp.id ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-slate-400" />}
-                          </Button>
+                          <span className="text-xs text-slate-500 font-mono mt-0.5">
+                            ₱{emp.hourlyRate || DEFAULT_RATES[emp.role]}/hr
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -473,15 +473,14 @@ export default function AdminPage() {
                             emp.status === 'Office' ? "bg-green-500" : 
                             emp.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
                           )} />
-                          <Badge variant="outline" className={cn(
-                            "text-[9px] font-bold uppercase",
-                            emp.status === 'Office' ? "text-green-600 bg-green-50 border-green-200" :
-                            emp.status === 'WFH' ? "text-orange-600 bg-orange-50 border-orange-200" : "text-slate-400"
-                          )}>{emp.status}</Badge>
+                          <Badge variant="outline" className="text-[9px] font-bold uppercase">{emp.status}</Badge>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setRateEditingUser(emp); setEditingRateValue((emp.hourlyRate || DEFAULT_RATES[emp.role]).toString()); setIsRateModalOpen(true); }} title="Edit Hourly Rate">
+                            <DollarSign className="w-4 h-4 text-slate-400" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setTaskTargetUser(emp); setIsTaskModalOpen(true); }}>
                             <ClipboardList className="w-4 h-4 text-slate-400" />
                           </Button>
@@ -632,7 +631,14 @@ export default function AdminPage() {
                       </TableCell>
                       <TableCell className="text-center font-bold text-slate-700">{data.daysActive} days</TableCell>
                       <TableCell className="text-center font-bold text-slate-700">{data.totalHours} hrs</TableCell>
-                      <TableCell className="text-center text-slate-500 font-mono text-xs">₱{data.rate}/hr</TableCell>
+                      <TableCell className="text-center">
+                         <div className="flex items-center justify-center gap-2">
+                           <span className="text-slate-500 font-mono text-xs">₱{data.rate}/hr</span>
+                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setRateEditingUser(data); setEditingRateValue(data.rate.toString()); setIsRateModalOpen(true); }}>
+                             <Edit2 className="w-3 h-3" />
+                           </Button>
+                         </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <span className="font-black text-primary">₱{data.netSalary.toLocaleString()}</span>
                       </TableCell>
@@ -642,9 +648,32 @@ export default function AdminPage() {
               </TableBody>
             </Table>
           </div>
-          <p className="text-[10px] text-slate-400 font-medium italic text-right">*Calculations are based on 8-hour shifts per logged working day.</p>
+          <p className="text-[10px] text-slate-400 font-medium italic text-right">*Calculations are based on 8-hour shifts per logged working day (WFH Biometric verified).</p>
         </TabsContent>
       </Tabs>
+
+      {/* Hourly Rate Dialog */}
+      <Dialog open={isRateModalOpen} onOpenChange={setIsRateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configure Hourly Rate</DialogTitle>
+            <DialogDescription>Adjust tactical compensation for {rateEditingUser?.name}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Hourly Rate (PHP)</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input type="number" value={editingRateValue} onChange={(e) => setEditingRateValue(e.target.value)} className="pl-10 h-12 text-lg font-bold" />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsRateModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateRate} className="bg-primary text-white font-bold">Synchronize Rate</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Biometric Asset Viewer */}
       <Dialog open={!!selectedLogPhoto} onOpenChange={(open) => !open && setSelectedLogPhoto(null)}>

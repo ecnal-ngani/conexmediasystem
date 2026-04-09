@@ -107,12 +107,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // CHECK FOR MASTER BOOTSTRAP
         if (cleanEmail === MASTER_EMAIL && securityToken === MASTER_TOKEN) {
           // AUTO-ENROLL FIRST ADMIN
+          const adminRoleInfo = staffData.roles.find(r => r.id === 'ADMIN');
           const newAdmin = {
             systemId: 'CX-AD-01',
             name: 'System Administrator',
             email: MASTER_EMAIL,
             securityToken: MASTER_TOKEN,
             role: 'ADMIN',
+            hourlyRate: adminRoleInfo?.rate || 500,
             status: wfhStatus ? 'WFH' : 'Office',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
@@ -147,10 +149,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userData.status = newStatus;
       }
       
-      // ATTENDANCE LOGGING (OFFICE) REMOVED PER USER REQUEST
-      // We no longer automatically log 'Office' logins to the 'verifications' (biometric) collection.
-      // This keeps the Biometric Logs exclusive to WFH verification events.
-
       const updatedUser = { id: userId, ...userData } as User;
 
       setUser(updatedUser);

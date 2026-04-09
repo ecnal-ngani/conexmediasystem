@@ -33,6 +33,10 @@
           "description": "The primary role assigned to this user.",
           "enum": ["ADMIN", "BRAND_MANAGER", "VIDEOGRAPHER", "EDITOR", "INTERN"]
         },
+        "hourlyRate": {
+          "type": "number",
+          "description": "The customized hourly rate for this user (PHP)."
+        },
         "status": {
           "type": "string",
           "description": "Current operational status.",
