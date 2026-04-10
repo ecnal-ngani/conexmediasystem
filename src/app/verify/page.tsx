@@ -43,18 +43,23 @@ export default function VerifyPage() {
       return;
     }
 
-    const getCameraPermission = async () => {
+    const checkMediaDevices = async () => {
+      if (!isSecureContext) return;
+      
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-           throw new Error('MediaDevices API not available');
+          throw new Error('MediaDevices API not available');
         }
+        
+        // Face verification only requires video stream
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
       } catch (error) {
-        console.error('Error accessing camera:', error);
+        console.error('Media devices error:', error);
         setHasCameraPermission(false);
         toast({
           variant: 'destructive',
@@ -64,9 +69,7 @@ export default function VerifyPage() {
       }
     };
 
-    if (isSecureContext) {
-      getCameraPermission();
-    }
+    checkMediaDevices();
 
     return () => {
       if (videoRef.current?.srcObject) {
