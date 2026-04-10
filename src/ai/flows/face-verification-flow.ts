@@ -77,7 +77,7 @@ export async function verifyFace(input: FaceVerificationInput): Promise<FaceVeri
   return {
     isVerified: false,
     confidence: 0,
-    message: 'Verification service is temporarily unavailable. Please try again in a moment.',
+    message: `Verification service is temporarily unavailable: ${lastError?.message || 'Unknown Error'}`,
   };
 }
 
