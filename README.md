@@ -18,12 +18,33 @@ To bypass the 401 error and test on your phone with **no restrictions**:
 
 *Note: Camera features require a "Secure Context". Browser security allows this on 'localhost' or 'https'. If testing via Local IP, you may need to enable "Insecure origins treated as secure" in Chrome Flags (chrome://flags/#unsafely-treat-insecure-origin-as-secure) and add your Local IP address there.*
 
-## 📂 Operational Workflow (How to Edit)
+## 📂 How to Connect to GitHub
 
-Once you have connected this project to GitHub and deployed via **Firebase App Hosting**, your editing loop is as follows:
+To take this project from "Preview" to a live website, you must link it to GitHub:
 
-1. **Modify**: Request changes here in the AI Studio or edit files manually in the workstation.
-2. **Commit & Push**: Use the terminal to push your changes to GitHub:
+1. **Create Repo**: Go to [GitHub](https://github.com/new) and create a new **Private** repository (e.g., `conex-media-system`). Do NOT initialize it with a README or License.
+2. **Open Terminal**: In this workstation, open the terminal.
+3. **Initialize & Link**:
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial Command: System Deployment"
+   git branch -M main
+   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+   git push -u origin main
+   ```
+4. **Deploy with Firebase**:
+   - Go to the [Firebase Console](https://console.firebase.google.com/).
+   - Select **App Hosting** from the sidebar.
+   - Click "Get Started" and connect your GitHub account.
+   - Select your repository and Firebase will handle the rest.
+
+## 🛠 Operational Workflow (Editing Cycle)
+
+Once linked, your editing loop is as follows:
+
+1. **Modify**: Request changes here in AI Studio or edit files manually.
+2. **Commit & Push**: Use the terminal to send changes to GitHub:
    ```bash
    git add .
    git commit -m "Update: [Description of changes]"
@@ -31,6 +52,6 @@ Once you have connected this project to GitHub and deployed via **Firebase App H
    ```
 3. **Auto-Deploy**: Firebase App Hosting monitors your GitHub. Within minutes of your `push`, the live website will update automatically.
 
-## 🛠 Bootstrap Credentials
+## 🔑 Bootstrap Credentials
 - **Email**: `admin@conex.media`
 - **Security Token**: `CONEX-ADMIN-INIT`
