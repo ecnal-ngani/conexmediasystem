@@ -122,7 +122,7 @@ export default function VerifyPage() {
   });
 
   // Optimized image compression
-  const compressImage = useCallback((dataUri: string, maxWidth = 480, quality = 0.4): Promise<string> => {
+  const compressImage = useCallback((dataUri: string, maxWidth = 800, quality = 0.8): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -245,7 +245,7 @@ export default function VerifyPage() {
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(videoRef.current, 0, 0);
-      const dataUri = canvas.toDataURL('image/jpeg', 0.5);
+      const dataUri = canvas.toDataURL('image/jpeg', 0.9);
       canvas.width = 0;
       canvas.height = 0;
       await processVerification(dataUri);
