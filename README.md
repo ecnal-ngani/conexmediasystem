@@ -16,13 +16,20 @@ To bypass the 401 error and test on your phone with **no restrictions**:
    - **macOS/Linux**: Open Terminal, type `ipconfig getifaddr en0`.
 3. **Browse**: On your phone, open your browser and type: `http://YOUR_IP_ADDRESS:9002` (e.g., `http://192.168.1.15:9002`).
 
-*Note: Camera/Biometric features require a "Secure Context". Browser security allows this on 'localhost' or 'https'. If testing via Local IP, you may need to enable "Insecure origins treated as secure" in Chrome Flags (chrome://flags/#unsafely-treat-insecure-origin-as-secure) and add your Local IP address there.*
+*Note: Camera features require a "Secure Context". Browser security allows this on 'localhost' or 'https'. If testing via Local IP, you may need to enable "Insecure origins treated as secure" in Chrome Flags (chrome://flags/#unsafely-treat-insecure-origin-as-secure) and add your Local IP address there.*
 
-## 📂 Production Deployment (Public Access)
+## 📂 Operational Workflow (How to Edit)
 
-To make this project publicly accessible with **zero restrictions**:
-1. **GitHub**: Push your code to a GitHub repository.
-2. **Firebase App Hosting**: Connect your repository in the Firebase Console under "App Hosting". Firebase will provide a permanent, public HTTPS URL.
+Once you have connected this project to GitHub and deployed via **Firebase App Hosting**, your editing loop is as follows:
+
+1. **Modify**: Request changes here in the AI Studio or edit files manually in the workstation.
+2. **Commit & Push**: Use the terminal to push your changes to GitHub:
+   ```bash
+   git add .
+   git commit -m "Update: [Description of changes]"
+   git push origin main
+   ```
+3. **Auto-Deploy**: Firebase App Hosting monitors your GitHub. Within minutes of your `push`, the live website will update automatically.
 
 ## 🛠 Bootstrap Credentials
 - **Email**: `admin@conex.media`
