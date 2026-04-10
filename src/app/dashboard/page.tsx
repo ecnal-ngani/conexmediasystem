@@ -52,80 +52,92 @@ export default function DashboardPage() {
     setIsMounted(true);
   }, []);
 
-  // Tactical Data Queries
+  // Tactical Data Queries - Global access for command overview
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !user.id) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'users'), orderBy('name', 'asc'));
   }, [firestore, user]);
 
   const projectsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !user.id) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'projects'));
   }, [firestore, user]);
 
   const tasksQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !user.id) return null;
+    if (!firestore || !user) return null;
     return query(collection(firestore, 'tasks'));
   }, [firestore, user]);
 
   const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
-  const { data: projects } = useCollection<any>(projectsQuery);
-  const { data: tasks } = useCollection<any>(tasksQuery);
+  const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
+  const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
 
-  // Gamified Performance Calculation Logic
+  // Gamified Performance Calculation Logic (Global for Admin, Personal for Others)
   const performanceMatrix = useMemo(() => {
     if (!user || !projects || !tasks) return [];
 
-    const calculateStatsForUser = (targetUserId: string, targetUserName?: string) => {
-      const userProjects = projects.filter(p => p.artist === (targetUserName || user.name));
-      const userTasks = tasks.filter(t => t.assignedToId === targetUserId);
-      const allItems = [...userProjects, ...userTasks];
+    const isAdmin = user.role === 'ADMIN';
+
+    const calculateStats = (targetProjects: any[], targetTasks: any[]) => {
+      const allItems = [...targetProjects, ...targetTasks];
       const completedItems = allItems.filter(i => i.status === 'Approved' || i.status === 'completed');
 
-      // 1. SPEED (Completion time vs Due Date)
-      const speed = Math.min(100, (completedItems.length * 15) + 30);
+      // 1. SPEED (Volume relative to time)
+      const speed = Math.min(100, (completedItems.length * 5) + 40);
 
       // 2. ACCURACY (Approved without Revisions)
-      const revisions = userProjects.filter(p => p.status === 'Client Revision').length;
-      const accuracy = Math.max(0, 100 - (revisions * 20));
+      const revisions = targetProjects.filter(p => p.status === 'Client Revision').length;
+      const accuracy = Math.max(0, 100 - (revisions * 15));
 
-      // 3. IMPACT (Based on XP and activity)
-      const impact = Math.min(100, (allItems.length * 5) + (completedItems.length * 5));
+      // 3. IMPACT (Total output volume)
+      const impact = Math.min(100, (allItems.length * 3) + 30);
 
-      // 4. VOLUME (Raw output)
-      const volume = Math.min(100, allItems.length * 10);
+      // 4. VOLUME (Raw completed count)
+      const volume = Math.min(100, completedItems.length * 8);
 
-      // 5. RELIABILITY (Meeting deadlines)
-      const reliability = 90; // Default baseline for tactical personnel
+      // 5. RELIABILITY (Baseline stability)
+      const reliability = 85; 
 
       return { speed, accuracy, impact, volume, reliability };
     };
 
-    const userStats = calculateStatsForUser(user.id);
-    
-    // Calculate Squad Average
-    const squadStats = {
-      speed: 65,
-      accuracy: 78,
-      impact: 55,
-      volume: 45,
-      reliability: 82
-    };
+    let seriesA;
+    let seriesB;
+    let labelA = "Your Stats";
+    let labelB = "Squad Average";
+
+    if (isAdmin) {
+      // Admin sees Company Overall vs Tactical Target
+      seriesA = calculateStats(projects, tasks);
+      seriesB = { speed: 80, accuracy: 90, impact: 75, volume: 70, reliability: 95 }; // Fixed tactical target
+      labelA = "Company Overall";
+      labelB = "Tactical Target";
+    } else {
+      // Others see Personal vs Company Average
+      const userProjects = projects.filter(p => p.artist === user.name);
+      const userTasks = tasks.filter(t => t.assignedToId === user.id);
+      seriesA = calculateStats(userProjects, userTasks);
+      seriesB = calculateStats(projects, tasks); // Squad average
+    }
 
     return [
-      { subject: 'Speed', A: userStats.speed, B: squadStats.speed, fullMark: 100 },
-      { subject: 'Accuracy', A: userStats.accuracy, B: squadStats.accuracy, fullMark: 100 },
-      { subject: 'Impact', A: userStats.impact, B: squadStats.impact, fullMark: 100 },
-      { subject: 'Volume', A: userStats.volume, B: squadStats.volume, fullMark: 100 },
-      { subject: 'Reliability', A: userStats.reliability, B: squadStats.reliability, fullMark: 100 },
+      { subject: 'Speed', A: seriesA.speed, B: seriesB.speed, fullMark: 100 },
+      { subject: 'Accuracy', A: seriesA.accuracy, B: seriesB.accuracy, fullMark: 100 },
+      { subject: 'Impact', A: seriesA.impact, B: seriesB.impact, fullMark: 100 },
+      { subject: 'Volume', A: seriesA.volume, B: seriesB.volume, fullMark: 100 },
+      { subject: 'Reliability', A: seriesA.reliability, B: seriesB.reliability, fullMark: 100 },
+      { labelA, labelB } // Meta info for legend
     ];
   }, [user, projects, tasks]);
 
   const roleConfig = useMemo(() => {
     const role = user?.role || 'EDITOR';
     const activeProjectsCount = projects?.filter(p => p.status !== 'Approved').length || 0;
+    const deliveredProjectsCount = projects?.filter(p => p.status === 'Approved').length || 0;
     const staffOnlineCount = staff?.filter(s => s.status !== 'Offline').length || 0;
     const totalStaff = staff?.length || 0;
+    const userTasks = tasks?.filter(t => t.assignedToId === user.id) || [];
+    const completedTasks = userTasks.filter(t => t.status === 'completed').length;
 
     switch (role) {
       case 'ADMIN':
@@ -133,10 +145,10 @@ export default function DashboardPage() {
           title: 'Global Command Center',
           subtitle: "Company-wide operational overview.",
           stats: [
-            { label: 'Active Projects', value: activeProjectsCount, sub: '+3 this week', icon: Briefcase, color: 'text-red-500', bg: 'bg-red-50', subColor: 'text-green-600' },
-            { label: 'Staff Online', value: staffOnlineCount, sub: `of ${totalStaff} total`, icon: Users, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-slate-400' },
-            { label: 'Projects Delivered', value: '47', sub: 'this month', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-50', subColor: 'text-green-600' },
-            { label: 'Client Satisfaction', value: '96%', sub: '+4% vs last month', icon: Trophy, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-green-600' },
+            { label: 'Active Projects', value: activeProjectsCount, sub: 'In production pipeline', icon: Briefcase, color: 'text-red-500', bg: 'bg-red-50', subColor: 'text-slate-400' },
+            { label: 'Personnel Online', value: staffOnlineCount, sub: `of ${totalStaff} total staff`, icon: Users, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-slate-400' },
+            { label: 'Projects Delivered', value: deliveredProjectsCount, sub: 'Lifetime approved assets', icon: ShieldCheck, color: 'text-blue-500', bg: 'bg-blue-50', subColor: 'text-green-600' },
+            { label: 'Command Accuracy', value: `${performanceMatrix[1]?.A || 0}%`, sub: 'No revision rate', icon: Trophy, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
           ]
         };
       case 'INTERN':
@@ -146,7 +158,7 @@ export default function DashboardPage() {
           stats: [
             { label: 'Hours Required', value: '300', sub: 'Standard Program', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', subColor: 'text-slate-400' },
             { label: 'Hours Rendered', value: '140', sub: '47% of target', icon: TrendingUp, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
-            { label: 'Tasks Completed', value: tasks?.filter(t => t.assignedToId === user.id && t.status === 'completed').length || 0, sub: 'Across active brands', icon: Award, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
+            { label: 'Tasks Completed', value: completedTasks, sub: 'Assigned mission objectives', icon: Award, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
             { label: 'Current XP', value: user.xp || 120, sub: 'Rank: Specialist', icon: Rocket, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
           ]
         };
@@ -155,14 +167,14 @@ export default function DashboardPage() {
           title: 'Post-Production Suite',
           subtitle: "Mastering creative assets and render cycles.",
           stats: [
-            { label: 'Pending Edits', value: activeProjectsCount, sub: 'Rush priority: 4', icon: Scissors, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
+            { label: 'My Active Edits', value: projects?.filter(p => p.artist === user.name && p.status !== 'Approved').length || 0, sub: 'Assigned to you', icon: Scissors, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
             { label: 'Render Efficiency', value: '91%', sub: 'Average speed', icon: Zap, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
-            { label: 'Approved Assets', value: '142', sub: 'Lifetime count', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
+            { label: 'Approved Assets', value: projects?.filter(p => p.artist === user.name && p.status === 'Approved').length || 0, sub: 'Your delivery count', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
             { label: 'Revision Rate', value: '8%', sub: 'Target: <15%', icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
           ]
         };
     }
-  }, [user, staff, projects, tasks]);
+  }, [user, staff, projects, tasks, performanceMatrix]);
 
   const onlineCount = useMemo(() => staff?.filter((s: any) => s.status !== 'Offline').length || 0, [staff]);
   const totalCount = useMemo(() => staff?.length || 0, [staff]);
@@ -183,7 +195,6 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-bold text-slate-900 mb-1">Welcome back, {user?.name || 'Authorized User'}</h2>
               <p className="text-sm text-slate-500 font-medium">{roleConfig.subtitle}</p>
             </div>
-            {/* Tactical Rank Node decommissioned per user request */}
           </div>
         </CardContent>
       </Card>
@@ -203,7 +214,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400">{stat.label}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
                   <h3 className="text-3xl font-bold text-slate-900">{stat.value}</h3>
                   <p className={cn("text-[10px] font-bold", stat.subColor)}>{stat.sub}</p>
                 </div>
@@ -217,10 +228,10 @@ export default function DashboardPage() {
         <div className="xl:col-span-3 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Multi-Player Performance Matrix
+              {user.role === 'ADMIN' ? 'Company Operational Health' : 'Multi-Player Performance Matrix'}
             </h3>
             <Badge variant="outline" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-primary/20">
-              Live Squad Comparison
+              {user.role === 'ADMIN' ? 'Live Command Feed' : 'Live Squad Comparison'}
             </Badge>
           </div>
           
@@ -228,7 +239,7 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="h-[450px] w-full mt-4 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={performanceMatrix}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={performanceMatrix.slice(0, 5)}>
                     <PolarGrid stroke="#f1f5f9" />
                     <PolarAngleAxis 
                       dataKey="subject" 
@@ -241,7 +252,7 @@ export default function DashboardPage() {
                       axisLine={false}
                     />
                     <Radar
-                      name="Your Stats"
+                      name={performanceMatrix[5]?.labelA || "Subject"}
                       dataKey="A"
                       stroke="#E11D48"
                       strokeWidth={3}
@@ -249,12 +260,12 @@ export default function DashboardPage() {
                       fillOpacity={0.5}
                     />
                     <Radar
-                      name="Network Average"
+                      name={performanceMatrix[5]?.labelB || "Average"}
                       dataKey="B"
                       stroke="#0f172a"
                       strokeWidth={2}
                       fill="#0f172a"
-                      fillOpacity={0.15}
+                      fillOpacity={0.1}
                       strokeDasharray="4 4"
                     />
                     <Tooltip 
@@ -336,19 +347,19 @@ export default function DashboardPage() {
           <Card className="border shadow-none rounded-none bg-slate-900 text-white p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Zap className="w-4 h-4 text-white" />
+                <Target className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Mission</p>
-                <p className="text-xs font-bold truncate">{tasks?.filter(t => t.assignedToId === user.id && t.status !== 'completed')[0]?.title || 'Awaiting Orders'}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Company Target</p>
+                <p className="text-xs font-bold truncate">Q4 Content Objectives</p>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-[9px] font-black uppercase">
-                <span>Mission Progress</span>
-                <span className="text-primary">65%</span>
+                <span>Production Progress</span>
+                <span className="text-primary">{Math.min(100, Math.round(((deliveredProjectsCount || 1) / (projects?.length || 10)) * 100))}%</span>
               </div>
-              <Progress value={65} className="h-1 bg-slate-800" />
+              <Progress value={Math.min(100, Math.round(((deliveredProjectsCount || 1) / (projects?.length || 10)) * 100))} className="h-1 bg-slate-800" />
             </div>
           </Card>
         </div>
