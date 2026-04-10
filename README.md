@@ -1,59 +1,29 @@
 
 # CONEX MEDIA | Professional Internal Network
 
-A clean, professional media management system built for staff coordination and production tracking. This project uses a modern tech stack (Next.js, Firebase, and AI) to handle real-time data and security.
+A clean, professional media management system built for staff coordination and production tracking.
 
 ## 🚀 CRITICAL: Mobile Access & 401 Errors
 
-If you see a **401: Workstation does not exist** or **Permission Denied** error on your phone:
-**This is NOT a bug in the code.** It is a security gate from Google Cloud. To bypass it and test on your phone:
+If you see a **401: Workstation does not exist** or **Permission Denied** error on your phone while scanning the QR code:
+**This is NOT a bug in the code.** It is a security gate from the Google Cloud Workstation.
 
-### The "Local IP" Method (Recommended)
-1. **Connect**: Put your phone and computer on the **same Wi-Fi network**.
+### The "Local IP" Method (Recommended Fix)
+To bypass the 401 error and test on your phone with **no restrictions**:
+1. **Connect**: Ensure your phone and computer are on the **same Wi-Fi network**.
 2. **Identify IP**:
-   - **Windows**: Open Command Prompt, type `ipconfig`, look for `IPv4 Address`.
+   - **Windows**: Open Command Prompt, type `ipconfig`, look for `IPv4 Address` (e.g., 192.168.1.15).
    - **macOS/Linux**: Open Terminal, type `ipconfig getifaddr en0`.
-3. **Browse**: On your phone, type: `http://YOUR_IP_ADDRESS:9002` (e.g., `http://192.168.1.15:9002`).
+3. **Browse**: On your phone, open your browser and type: `http://YOUR_IP_ADDRESS:9002` (e.g., `http://192.168.1.15:9002`).
 
-*Note: Camera access is restricted on non-HTTPS connections. If the camera fails via Local IP, you must use the "Share Preview" link on a browser logged into your Google account, or test on a secure localhost connection.*
+*Note: Camera/Biometric features require a "Secure Context". Browser security allows this on 'localhost' or 'https'. If testing via Local IP, you may need to enable "Insecure origins treated as secure" in Chrome Flags (chrome://flags/#unsafely-treat-insecure-origin-as-secure) and add your Local IP address there.*
 
-## 🌐 Production Deployment (GitHub)
+## 📂 Production Deployment (Public Access)
 
-To move this project from development to a live production environment:
+To make this project publicly accessible with **zero restrictions**:
+1. **GitHub**: Push your code to a GitHub repository.
+2. **Firebase App Hosting**: Connect your repository in the Firebase Console under "App Hosting". Firebase will provide a permanent, public HTTPS URL.
 
-1. **Initialize Git**: In the terminal, run `git init`, `git add .`, and `git commit -m "Initial tactical deployment"`.
-2. **GitHub Link**: Create a new repository on GitHub and follow the instructions to `git remote add origin` and `git push`.
-3. **Firebase App Hosting**:
-   - Go to the [Firebase Console](https://console.firebase.google.com/).
-   - Select **App Hosting** from the sidebar.
-   - Click "Get Started" and connect your GitHub repository.
-   - Firebase will handle the build and provide a production-grade URL.
-
-## 📂 Project Structure
-
-### 1. The Core Application (`src/app`)
-- **`/login`**: Secure entry point with Mobile Access troubleshooting.
-- **`/verify`**: Biometric AI check for WFH users.
-- **`/dashboard`**: Master Hub with Real-time Presence and Gamified Stats.
-
-### 2. UI Components (`src/components`)
-- **`MobileNav`**: Professional bottom navigation bar for one-handed operation.
-- **`DashboardSidebar`**: Optimized desktop navigation.
-- **`QuickActions`**: Floating tactical shortcuts.
-
-### 3. Data & Security (`src/firebase`)
-- **`AuthContext`**: Manages sessions and Security Token validation.
-- **`Firestore Hooks`**: Real-time listeners for projects, tasks, and presence.
-
----
-
-## 🛠 Troubleshooting
-
-### Fixing "401: Workstation does not exist"
-- **Cause**: Your phone's browser is not signed into the same Google account as your PC, or it is blocking required authentication cookies.
-- **Fix**: Use the **Local IP Method** described above. It is faster and bypasses the Google Cloud workstation proxy.
-
-### Initial Access (First-Time Login)
-Use the **Master Bootstrap Credentials**:
+## 🛠 Bootstrap Credentials
 - **Email**: `admin@conex.media`
 - **Security Token**: `CONEX-ADMIN-INIT`

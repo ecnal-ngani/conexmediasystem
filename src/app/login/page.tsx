@@ -15,7 +15,10 @@ import {
   Home, 
   Building2,
   HelpCircle,
-  Wifi
+  Wifi,
+  ChevronDown,
+  ChevronUp,
+  Smartphone
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
@@ -65,16 +68,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {showHelp && (
-          <Alert className="bg-blue-50 border-blue-200 animate-in slide-in-from-top-2 duration-300">
-            <Wifi className="h-4 w-4 text-blue-600" />
-            <AlertTitle className="text-blue-800 font-bold">Mobile Access Tip</AlertTitle>
-            <AlertDescription className="text-blue-700 text-xs">
-              Seeing a <strong>401 Error</strong> on your phone? Connect to the same Wi-Fi as your PC and use your computer's <strong>Local IP address</strong> (e.g., http://192.168.1.XX:9002) to bypass the workstation security gate.
-            </AlertDescription>
-          </Alert>
-        )}
-
         <Card className="border shadow-2xl bg-white rounded-3xl overflow-hidden">
           <CardHeader className="space-y-1 bg-slate-50/50 p-8 border-b">
             <div className="flex items-center justify-between">
@@ -84,18 +77,39 @@ export default function LoginPage() {
               </CardTitle>
               <Button 
                 variant="ghost" 
-                size="icon" 
-                className="rounded-full h-8 w-8"
+                size="sm" 
+                className="rounded-full h-8 gap-1.5 px-3 text-primary hover:text-primary hover:bg-primary/10"
                 onClick={() => setShowHelp(!showHelp)}
-                title="Login Help"
               >
-                <HelpCircle className="w-4 h-4 text-slate-400" />
+                <Smartphone className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Mobile Access</span>
+                {showHelp ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               </Button>
             </div>
             <CardDescription className="font-medium">
               Enter credentials to initialize security check.
             </CardDescription>
           </CardHeader>
+          
+          {showHelp && (
+            <div className="bg-blue-600 p-6 text-white animate-in slide-in-from-top-4 duration-300">
+              <div className="flex items-start gap-3 mb-4">
+                <Wifi className="w-5 h-5 shrink-0" />
+                <div className="space-y-1">
+                  <h4 className="text-sm font-black uppercase tracking-widest">Bypass 401 Error</h4>
+                  <p className="text-xs text-blue-100 font-medium leading-relaxed">
+                    To access this app on your phone with <strong>no restrictions</strong>:
+                  </p>
+                </div>
+              </div>
+              <ol className="text-[11px] space-y-3 font-medium text-blue-50 list-decimal pl-4">
+                <li>Connect your phone to the <strong>same Wi-Fi</strong> as your computer.</li>
+                <li>Find your computer's <strong>Local IP Address</strong> (e.g., 192.168.1.15).</li>
+                <li>On your phone browser, go to <code>http://[YOUR_IP]:9002</code></li>
+              </ol>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-6 p-8">
               <div className="space-y-2">
