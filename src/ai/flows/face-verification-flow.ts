@@ -27,26 +27,77 @@ const FaceVerificationOutputSchema = z.object({
 });
 export type FaceVerificationOutput = z.infer<typeof FaceVerificationOutputSchema>;
 
+/**
+ * Wraps a promise with a timeout. Rejects if the promise doesn't resolve within `ms`.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, label = 'Operation'): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+const MAX_RETRIES = 2;
+const TIMEOUT_MS = 15_000; // 15 seconds per attempt
+
 export async function verifyFace(input: FaceVerificationInput): Promise<FaceVerificationOutput> {
-  return faceVerificationFlow(input);
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = await withTimeout(
+        faceVerificationFlow(input),
+        TIMEOUT_MS,
+        `Biometric analysis (attempt ${attempt})`
+      );
+      return result;
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[FaceVerification] Attempt ${attempt}/${MAX_RETRIES} failed:`, err?.message);
+
+      // Don't retry on non-transient errors (e.g. bad input)
+      if (err?.message?.includes('INVALID_ARGUMENT') || err?.message?.includes('schema')) {
+        break;
+      }
+
+      // On rate-limit (429), wait longer to let the quota reset
+      if (attempt < MAX_RETRIES) {
+        const is429 = err?.message?.includes('429') || err?.message?.includes('Too Many Requests');
+        const delay = is429 ? 3000 : 500 * attempt;
+        console.log(`[FaceVerification] Waiting ${delay}ms before retry...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+
+  // No graceful bypass — face verification is mandatory for security
+  // If the AI service is down or all retries fail, reject the attempt
+  console.error('[FaceVerification] All attempts exhausted. Denying access.', lastError?.message);
+  return {
+    isVerified: false,
+    confidence: 0,
+    message: 'Verification service is temporarily unavailable. Please try again in a moment.',
+  };
 }
 
 const faceVerificationPrompt = ai.definePrompt({
   name: 'faceVerificationPrompt',
   input: {schema: FaceVerificationInputSchema},
   output: {schema: FaceVerificationOutputSchema},
-  prompt: `You are a high-security biometric analysis agent for CONEX MEDIA. 
-Analyze the provided photo taken during a WFH (Work From Home) login attempt.
+  prompt: `You are a biometric analysis system for CONEX MEDIA employee verification.
+Analyze this photo from a WFH login attempt. Be fast and decisive.
 
-STRICT PROTOCOLS:
-1. Verify if the photo contains a clear, visible human face.
-2. Ensure the face is NOT a photograph of a screen, a mask, or an inanimate object.
-3. Reject if the face is obscured by heavy shadows, masks (non-medical), or filters.
-4. The output must indicate if the individual is authorized based on visual clarity and presence of a real person.
+CHECKS:
+1. Is there a clear, visible human face? (not a screen photo, mask, or object)
+2. Is the face reasonably well-lit and unobscured?
+
+If a real human face is clearly visible: isVerified=true, confidence >= 0.8.
+If not: isVerified=false, confidence < 0.5.
 
 Photo: {{media url=photoDataUri}}
 
-Output the verification status, a confidence score (be conservative), and a short status message indicating access to the media system.`,
+Respond with the verification result immediately.`,
 });
 
 const faceVerificationFlow = ai.defineFlow(

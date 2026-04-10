@@ -116,6 +116,7 @@ export default function AdminPage() {
   const [newHourlyRate, setNewHourlyRate] = useState<string>('');
   const [mounted, setMounted] = useState(false);
   const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
+  const [visibleTokenIds, setVisibleTokenIds] = useState<Set<string>>(new Set());
   
   // Rate Edit State
   const [isRateModalOpen, setIsRateModalOpen] = useState(false);
@@ -436,6 +437,7 @@ export default function AdminPage() {
                 <TableRow>
                   <TableHead className="font-bold text-slate-500">System ID</TableHead>
                   <TableHead className="font-bold text-slate-500">Name</TableHead>
+                  <TableHead className="font-bold text-slate-500">Security Token</TableHead>
                   <TableHead className="font-bold text-slate-500">Role / Rate</TableHead>
                   <TableHead className="font-bold text-slate-500">Status</TableHead>
                   <TableHead className="text-right font-bold text-slate-500">Actions</TableHead>
@@ -443,14 +445,53 @@ export default function AdminPage() {
               </TableHeader>
               <TableBody>
                 {staffLoading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
                 ) : filteredStaff.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-400">No personnel found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400">No personnel found.</TableCell></TableRow>
                 ) : (
                   filteredStaff.map((emp) => (
                     <TableRow key={emp.id} className="hover:bg-slate-50">
                       <TableCell className="font-mono text-xs font-bold">{emp.systemId}</TableCell>
                       <TableCell className="font-bold text-slate-900">{emp.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <code className="text-xs font-mono bg-slate-100 px-2 py-1 rounded select-all">
+                            {visibleTokenIds.has(emp.id) ? (emp.securityToken || '—') : '••••••••••'}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 shrink-0"
+                            onClick={() => {
+                              setVisibleTokenIds(prev => {
+                                const next = new Set(prev);
+                                if (next.has(emp.id)) next.delete(emp.id);
+                                else next.add(emp.id);
+                                return next;
+                              });
+                            }}
+                            title={visibleTokenIds.has(emp.id) ? 'Hide token' : 'Reveal token'}
+                          >
+                            {visibleTokenIds.has(emp.id) ? <Eye className="w-3.5 h-3.5 text-primary" /> : <Key className="w-3.5 h-3.5 text-slate-400" />}
+                          </Button>
+                          {visibleTokenIds.has(emp.id) && emp.securityToken && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0"
+                              onClick={() => {
+                                navigator.clipboard.writeText(emp.securityToken);
+                                setCopiedTokenId(emp.id);
+                                setTimeout(() => setCopiedTokenId(null), 2000);
+                                toast({ title: 'Copied', description: `Token for ${emp.name} copied to clipboard.` });
+                              }}
+                              title="Copy token"
+                            >
+                              {copiedTokenId === emp.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="text-[9px] font-black uppercase tracking-widest text-primary">
