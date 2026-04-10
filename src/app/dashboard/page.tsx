@@ -71,13 +71,9 @@ export default function DashboardPage() {
   const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
   const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
 
-  // Global project metrics for progress tracking
+  // Global project metrics
   const deliveredProjectsCount = useMemo(() => {
     return projects?.filter(p => p.status === 'Approved').length || 0;
-  }, [projects]);
-
-  const totalProjectsCount = useMemo(() => {
-    return projects?.length || 0;
   }, [projects]);
 
   // Gamified Performance Calculation Logic (Global for Admin, Personal for Others)
@@ -349,25 +345,6 @@ export default function DashboardPage() {
                 )}
               </div>
             </CardContent>
-          </Card>
-
-          <Card className="border shadow-none rounded-none bg-slate-900 text-white p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Target className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Company Target</p>
-                <p className="text-xs font-bold truncate">Q4 Content Objectives</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-[9px] font-black uppercase">
-                <span>Production Progress</span>
-                <span className="text-primary">{Math.min(100, Math.round(((deliveredProjectsCount || 0) / (totalProjectsCount || 10)) * 100))}%</span>
-              </div>
-              <Progress value={Math.min(100, Math.round(((deliveredProjectsCount || 0) / (totalProjectsCount || 10)) * 100))} className="h-1 bg-slate-800" />
-            </div>
           </Card>
         </div>
       </div>
