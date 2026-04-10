@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/components/auth-context';
@@ -72,6 +71,15 @@ export default function DashboardPage() {
   const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
   const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
 
+  // Global project metrics for progress tracking
+  const deliveredProjectsCount = useMemo(() => {
+    return projects?.filter(p => p.status === 'Approved').length || 0;
+  }, [projects]);
+
+  const totalProjectsCount = useMemo(() => {
+    return projects?.length || 0;
+  }, [projects]);
+
   // Gamified Performance Calculation Logic (Global for Admin, Personal for Others)
   const performanceMatrix = useMemo(() => {
     if (!user || !projects || !tasks) return [];
@@ -133,7 +141,6 @@ export default function DashboardPage() {
   const roleConfig = useMemo(() => {
     const role = user?.role || 'EDITOR';
     const activeProjectsCount = projects?.filter(p => p.status !== 'Approved').length || 0;
-    const deliveredProjectsCount = projects?.filter(p => p.status === 'Approved').length || 0;
     const staffOnlineCount = staff?.filter(s => s.status !== 'Offline').length || 0;
     const totalStaff = staff?.length || 0;
     const userTasks = tasks?.filter(t => t.assignedToId === user.id) || [];
@@ -174,7 +181,7 @@ export default function DashboardPage() {
           ]
         };
     }
-  }, [user, staff, projects, tasks, performanceMatrix]);
+  }, [user, staff, projects, tasks, performanceMatrix, deliveredProjectsCount]);
 
   const onlineCount = useMemo(() => staff?.filter((s: any) => s.status !== 'Offline').length || 0, [staff]);
   const totalCount = useMemo(() => staff?.length || 0, [staff]);
@@ -357,9 +364,9 @@ export default function DashboardPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-[9px] font-black uppercase">
                 <span>Production Progress</span>
-                <span className="text-primary">{Math.min(100, Math.round(((deliveredProjectsCount || 1) / (projects?.length || 10)) * 100))}%</span>
+                <span className="text-primary">{Math.min(100, Math.round(((deliveredProjectsCount || 0) / (totalProjectsCount || 10)) * 100))}%</span>
               </div>
-              <Progress value={Math.min(100, Math.round(((deliveredProjectsCount || 1) / (projects?.length || 10)) * 100))} className="h-1 bg-slate-800" />
+              <Progress value={Math.min(100, Math.round(((deliveredProjectsCount || 0) / (totalProjectsCount || 10)) * 100))} className="h-1 bg-slate-800" />
             </div>
           </Card>
         </div>
