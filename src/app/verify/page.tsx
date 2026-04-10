@@ -29,7 +29,6 @@ export default function VerifyPage() {
   const [cameraState, setCameraState] = useState<CameraState>('loading');
   const [stage, setStage] = useState<VerificationStage>('idle');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [hasAutoCaptured, setHasAutoCaptured] = useState(false);
   const [progress, setProgress] = useState(0);
 
   const isVerifying = stage === 'capturing' || stage === 'compressing' || stage === 'analyzing';
@@ -267,24 +266,12 @@ export default function VerifyPage() {
     reader.readAsDataURL(file);
   }, [user, firestore, processVerification]);
 
-  // Auto-capture when camera is ready
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (cameraState === 'active' && !isVerifying && !capturedImage && !hasAutoCaptured) {
-      setHasAutoCaptured(true);
-      timer = setTimeout(() => {
-        handleCapture();
-      }, 1500);
-    }
-    return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraState, isVerifying, capturedImage, hasAutoCaptured]);
+
 
   const handleRetake = useCallback(() => {
     setCapturedImage(null);
     setStage('idle');
     setProgress(0);
-    setHasAutoCaptured(false);
     // Reset file input so same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
