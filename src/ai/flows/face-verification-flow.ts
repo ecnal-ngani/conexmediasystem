@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {gemini15Flash} from '@genkit-ai/google-genai';
 
 const FaceVerificationInputSchema = z.object({
   photoDataUri: z
@@ -83,6 +84,7 @@ export async function verifyFace(input: FaceVerificationInput): Promise<FaceVeri
 
 const faceVerificationPrompt = ai.definePrompt({
   name: 'faceVerificationPrompt',
+  model: gemini15Flash,
   input: {schema: FaceVerificationInputSchema},
   output: {schema: FaceVerificationOutputSchema},
   prompt: `You are a biometric analysis system for CONEX MEDIA employee verification.
