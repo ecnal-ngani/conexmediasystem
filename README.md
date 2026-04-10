@@ -17,6 +17,18 @@ If you see a **401: Workstation does not exist** or **Permission Denied** error 
 
 *Note: Camera access is restricted on non-HTTPS connections. If the camera fails via Local IP, you must use the "Share Preview" link on a browser logged into your Google account, or test on a secure localhost connection.*
 
+## 🌐 Production Deployment (GitHub)
+
+To move this project from development to a live production environment:
+
+1. **Initialize Git**: In the terminal, run `git init`, `git add .`, and `git commit -m "Initial tactical deployment"`.
+2. **GitHub Link**: Create a new repository on GitHub and follow the instructions to `git remote add origin` and `git push`.
+3. **Firebase App Hosting**:
+   - Go to the [Firebase Console](https://console.firebase.google.com/).
+   - Select **App Hosting** from the sidebar.
+   - Click "Get Started" and connect your GitHub repository.
+   - Firebase will handle the build and provide a production-grade URL.
+
 ## 📂 Project Structure
 
 ### 1. The Core Application (`src/app`)
