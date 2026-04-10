@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const storedUser = localStorage.getItem('conex_session');
     const storedWfh = localStorage.getItem('conex_wfh') === 'true';
+    const storedVerified = localStorage.getItem('conex_verified') === 'true';
     
     const unsubscribe = onAuthStateChanged(firebaseAuth, (fbUser) => {
       if (fbUser) {
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             setIsWfh(storedWfh);
-            setIsVerified(!storedWfh);
+            setIsVerified(storedWfh ? storedVerified : true);
           } catch (e) {
             console.error('Session restoration failed', e);
           }
@@ -158,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       localStorage.setItem('conex_session', JSON.stringify(updatedUser));
       localStorage.setItem('conex_wfh', wfhStatus.toString());
+      localStorage.setItem('conex_verified', verifiedStatus.toString());
       
       if (wfhStatus) {
         router.push('/verify');
@@ -197,6 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setVerified = (status: boolean) => {
     setIsVerified(status);
+    localStorage.setItem('conex_verified', status.toString());
   };
 
   const logout = async () => {
@@ -218,6 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsVerified(false);
     localStorage.removeItem('conex_session');
     localStorage.removeItem('conex_wfh');
+    localStorage.removeItem('conex_verified');
     router.push('/login');
   };
 
