@@ -184,6 +184,26 @@ export default function ProductionPage() {
       });
   };
 
+  const handleUpdatePriority = (projectId: string, newPriority: string) => {
+    if (!firestore) return;
+    const projectRef = doc(firestore, 'projects', projectId);
+    const updateData = { 
+      priority: newPriority, 
+      updatedAt: serverTimestamp() 
+    };
+    updateDoc(projectRef, updateData)
+      .then(() => {
+        toast({ title: "Priority Updated", description: `Priority set to ${newPriority}.` });
+      })
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: projectRef.path,
+          operation: 'update',
+          requestResourceData: updateData
+        } satisfies SecurityRuleContext));
+      });
+  };
+
   const handleAddProject = () => {
     if (!firestore || !fileCode || !selectedBrandId) {
       toast({ variant: "destructive", title: "Missing Information", description: "File Code and Authorized Brand are required." });
@@ -597,7 +617,21 @@ export default function ProductionPage() {
                     ) : <Badge variant="outline" className="text-[8px] font-bold uppercase">{item.status}</Badge>}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="outline" className={cn("text-[8px] font-bold", item.priority === 'RUSH' ? 'text-red-600 bg-red-50' : 'text-slate-500')}>{item.priority}</Badge>
+                    {canEditStatus ? (
+                      <Select value={item.priority} onValueChange={(val) => handleUpdatePriority(item.id, val)}>
+                        <SelectTrigger className="h-7 text-[8px] font-black uppercase min-w-[90px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="REGULAR">REGULAR</SelectItem>
+                          <SelectItem value="HIGH">HIGH</SelectItem>
+                          <SelectItem value="URGENT">URGENT</SelectItem>
+                          <SelectItem value="RUSH">RUSH</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="outline" className={cn("text-[8px] font-bold", item.priority === 'RUSH' || item.priority === 'URGENT' ? 'text-red-600 bg-red-50' : 'text-slate-500')}>{item.priority}</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-[10px] font-medium text-slate-700">{item.artist}</TableCell>
                   <TableCell className="text-[10px] font-bold text-slate-800">{item.dueDate}</TableCell>
