@@ -205,8 +205,8 @@ export default function ProductionPage() {
   };
 
   const handleAddProject = () => {
-    if (!firestore || !fileCode || !selectedBrandId) {
-      toast({ variant: "destructive", title: "Missing Information", description: "File Code and Authorized Brand are required." });
+    if (!firestore || !fileCode || !selectedBrandId || !artist || !dueDate) {
+      toast({ variant: "destructive", title: "Missing Information", description: "Brand, Artist, and Due Date are required." });
       return;
     }
     const brand = brands?.find(b => b.id === selectedBrandId);

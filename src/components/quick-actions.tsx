@@ -256,7 +256,10 @@ export function QuickActions() {
   }, [recentSchedules, recentTasks, user, isMounted]);
 
   const handleCreateProject = () => {
-    if (!firestore || !fileCode || !projectBrandId) return;
+    if (!firestore || !fileCode || !projectBrandId || !artist || !projectDueDate) {
+      toast({ variant: "destructive", title: "Missing Information", description: "Brand, Artist, and Due Date are required." });
+      return;
+    }
     const brandObj = brands?.find((b: any) => b.id === projectBrandId);
     if (!brandObj) return;
     const ref = collection(firestore, 'projects');
