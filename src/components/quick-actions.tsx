@@ -420,7 +420,40 @@ export function QuickActions() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
+                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
+                    <User className="w-3.5 h-3.5" />
+                  </div>
+                  ARTIST
+                </Label>
+                <Input
+                  placeholder="Artist / Talent name"
+                  value={artist}
+                  onChange={e => setArtist(e.target.value)}
+                  className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
+                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  DUE DATE
+                </Label>
+                <Input
+                  type="date"
+                  value={projectDueDate}
+                  onChange={e => setProjectDueDate(e.target.value)}
+                  className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-900 font-medium px-4 focus-visible:ring-primary/20 shadow-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label className="text-sm font-bold text-slate-900 px-1">Status</Label>
+
                 <Select value={projectStatus} onValueChange={setProjectStatus}>
                   <SelectTrigger className="h-[50px] bg-white border border-slate-200 rounded-xl text-[15px] font-medium text-slate-900 px-4 shadow-none focus:ring-0">
                     <SelectValue placeholder="Status" />
