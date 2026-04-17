@@ -68,7 +68,8 @@ export default function CalendarPage() {
 
   const [editingDate, setEditingDate] = useState('');
 
-  const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
+  const [eventType, setEventType] = useState<string>('Shoot');
+  const [customEventType, setCustomEventType] = useState('');
   const [eventPriority, setEventPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [eventDate, setEventDate] = useState('');
@@ -170,7 +171,8 @@ export default function CalendarPage() {
   }, [schedules, projects, tasks]);
 
   const handleCreateEvent = () => {
-    if (!firestore || !selectedBrandId || !eventDate) {
+    const resolvedType = eventType === 'Custom' ? customEventType.trim() : eventType;
+    if (!firestore || !selectedBrandId || !eventDate || !resolvedType) {
       toast({
         variant: "destructive",
         title: "Incomplete Intel",
@@ -184,8 +186,8 @@ export default function CalendarPage() {
 
     const schedulesRef = collection(firestore, 'schedules');
     const scheduleData = {
-      title: `${eventType}: ${brand.name}`,
-      type: eventType,
+      title: `${resolvedType}: ${brand.name}`,
+      type: resolvedType,
       priority: eventPriority,
       client: brand.name,
       brandId: selectedBrandId,
@@ -328,7 +330,7 @@ export default function CalendarPage() {
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Event Type</Label>
-                        <Select value={eventType} onValueChange={(val: any) => setEventType(val)}>
+                        <Select value={eventType} onValueChange={(val: any) => { setEventType(val); if (val !== 'Custom') setCustomEventType(''); }}>
                           <SelectTrigger className="h-14 border-slate-200 rounded-2xl">
                             <SelectValue />
                           </SelectTrigger>
@@ -336,8 +338,18 @@ export default function CalendarPage() {
                             <SelectItem value="Shoot">Shoot</SelectItem>
                             <SelectItem value="Meeting">Meeting</SelectItem>
                             <SelectItem value="Deadline">Deadline</SelectItem>
+                            <SelectItem value="Custom" className="text-primary font-semibold">✏ Custom...</SelectItem>
                           </SelectContent>
                         </Select>
+                        {eventType === 'Custom' && (
+                          <Input
+                            autoFocus
+                            placeholder="e.g. Product Launch, BTS..."
+                            value={customEventType}
+                            onChange={e => setCustomEventType(e.target.value)}
+                            className="mt-2 h-12 border-primary border-2 rounded-2xl text-sm font-medium px-4 focus-visible:ring-0 placeholder:font-normal"
+                          />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">

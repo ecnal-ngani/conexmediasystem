@@ -161,7 +161,8 @@ export function QuickActions() {
   const { data: staffList } = useCollection<any>(usersQuery);
 
   // States for Schedule
-  const [eventType, setEventType] = useState<'Shoot' | 'Meeting' | 'Deadline'>('Shoot');
+  const [eventType, setEventType] = useState<string>('Shoot');
+  const [customEventType, setCustomEventType] = useState('');
   const [schedulePriority, setSchedulePriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [eventDate, setEventDate] = useState('');
@@ -268,11 +269,12 @@ export function QuickActions() {
   };
 
   const handleCreateSchedule = () => {
-    if (!firestore || !eventType || !eventDate || !user) return;
+    const resolvedType = eventType === 'Custom' ? customEventType.trim() : eventType;
+    if (!firestore || !resolvedType || !eventDate || !user) return;
     const ref = collection(firestore, 'schedules');
     const brandObj = brands?.find((b: any) => b.id === selectedBrandId);
     const data = { 
-      type: eventType, 
+      type: resolvedType, 
       priority: schedulePriority, 
       brandId: selectedBrandId || null, 
       brandName: brandObj ? brandObj.name : null,
@@ -479,12 +481,12 @@ export function QuickActions() {
 
           <div className="space-y-6 mt-2">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
                   EVENT TYPE
                 </Label>
                 <div className="relative">
-                  <Select value={eventType} onValueChange={(v: any) => setEventType(v)}>
+                  <Select value={eventType} onValueChange={(v: any) => { setEventType(v); if (v !== 'Custom') setCustomEventType(''); }}>
                     <SelectTrigger className="h-[50px] bg-white border-2 border-[#E31D3B] rounded-xl text-[15px] font-medium text-slate-900 px-4 focus:ring-0 focus:ring-offset-0 focus:border-[#E31D3B]">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -492,8 +494,18 @@ export function QuickActions() {
                       <SelectItem value="Shoot" className="font-medium">Shoot</SelectItem>
                       <SelectItem value="Meeting" className="font-medium">Meeting</SelectItem>
                       <SelectItem value="Deadline" className="font-medium">Deadline</SelectItem>
+                      <SelectItem value="Custom" className="font-medium text-[#E31D3B]">✏ Custom...</SelectItem>
                     </SelectContent>
                   </Select>
+                  {eventType === 'Custom' && (
+                    <Input
+                      autoFocus
+                      placeholder="e.g. Product Launch, BTS..."
+                      value={customEventType}
+                      onChange={e => setCustomEventType(e.target.value)}
+                      className="mt-2 h-[44px] rounded-xl border-[#E31D3B] border-2 text-[14px] text-slate-900 font-medium px-4 focus-visible:ring-0 shadow-none placeholder:font-normal"
+                    />
+                  )}
                 </div>
               </div>
 
