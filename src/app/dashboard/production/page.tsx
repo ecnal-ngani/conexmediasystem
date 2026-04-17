@@ -243,6 +243,19 @@ export default function ProductionPage() {
     setNewBrandPrefix('');
   };
 
+  const handleDeleteBrand = (brandId: string, brandName: string) => {
+    if (!firestore) return;
+    const brandRef = doc(firestore, 'brands', brandId);
+    deleteDoc(brandRef).then(() => {
+      toast({ title: "Brand Removed", description: `${brandName} has been deauthorized.` });
+    }).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: brandRef.path,
+        operation: 'delete'
+      } satisfies SecurityRuleContext));
+    });
+  };
+
   const handleUpdateLink = () => {
     if (!firestore || !selectedProject || !editingLink) return;
     const projectRef = doc(firestore, 'projects', selectedProject.id);
@@ -371,8 +384,29 @@ export default function ProductionPage() {
                            !brands || brands.length === 0 ? <p className="text-xs text-slate-400 text-center py-4">No brands registered.</p> :
                            brands.map((b: any) => (
                              <div key={b.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                               <span className="text-xs font-bold text-slate-700">{b.name}</span>
-                               <Badge className="bg-white border-slate-200 text-primary font-mono text-[10px]">{b.prefix}</Badge>
+                               <div className="flex items-center gap-2">
+                                 <span className="text-xs font-bold text-slate-700">{b.name}</span>
+                                 <Badge className="bg-white border-slate-200 text-primary font-mono text-[10px]">{b.prefix}</Badge>
+                               </div>
+                               <AlertDialog>
+                                 <AlertDialogTrigger asChild>
+                                   <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0">
+                                     <Trash2 className="w-3.5 h-3.5" />
+                                   </Button>
+                                 </AlertDialogTrigger>
+                                 <AlertDialogContent>
+                                   <AlertDialogHeader>
+                                     <AlertDialogTitle>Remove Brand</AlertDialogTitle>
+                                     <AlertDialogDescription>
+                                       Are you sure you want to remove <strong>{b.name}</strong>? This will deauthorize the brand but won't delete existing projects.
+                                     </AlertDialogDescription>
+                                   </AlertDialogHeader>
+                                   <AlertDialogFooter>
+                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                     <AlertDialogAction onClick={() => handleDeleteBrand(b.id, b.name)} className="bg-red-600 hover:bg-red-700 text-white">Remove</AlertDialogAction>
+                                   </AlertDialogFooter>
+                                 </AlertDialogContent>
+                               </AlertDialog>
                              </div>
                            ))
                           }
