@@ -239,6 +239,30 @@ export function QuickActions() {
     setIsProjectOpen(false);
   };
 
+  const handleCreateSchedule = () => {
+    if (!firestore || !eventType || !eventDate || !user) return;
+    const ref = collection(firestore, 'schedules');
+    const brandObj = brands?.find((b: any) => b.id === selectedBrandId);
+    const data = { 
+      type: eventType, 
+      priority: schedulePriority, 
+      brandId: selectedBrandId || null, 
+      brandName: brandObj ? brandObj.name : null,
+      date: eventDate, 
+      location: eventLocation, 
+      notes: eventNotes,
+      createdBy: user.id,
+      createdByName: user.name,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp() 
+    };
+    addDoc(ref, data).catch(e => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data } satisfies SecurityRuleContext));
+    });
+    toast({ title: "Event Scheduled" });
+    setIsScheduleOpen(false);
+  };
+
   const handleCreateTask = () => {
     if (!firestore || !taskTitle || !assignedToId || !user) return;
     const assignee = staffList?.find(s => s.id === assignedToId);
@@ -401,6 +425,129 @@ export function QuickActions() {
                </DialogClose>
                <Button onClick={handleCreateProject} className="w-full h-[54px] rounded-xl bg-[#E31D3B] hover:bg-[#C91A34] text-white text-[15px] font-bold shadow-sm transition-colors">
                  Add to Hub
+               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
+        <DialogContent className="max-w-[500px] rounded-[16px] p-8 gap-6 border-none shadow-2xl">
+          <button onClick={() => setIsScheduleOpen(false)} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground outline-none">
+             <X className="h-4 w-4" />
+             <span className="sr-only">Close</span>
+          </button>
+          <DialogHeader className="flex flex-row items-center gap-4 space-y-0 text-left">
+            <div className="w-[50px] h-[50px] rounded-full bg-[#E31D3B] flex items-center justify-center shrink-0 shadow-sm shadow-[#E31D3B]/40">
+              <Calendar className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <DialogTitle className="text-[#0B1527] text-[22px] font-bold leading-none tracking-tight">New Event Schedule</DialogTitle>
+              <DialogDescription className="text-slate-500 font-medium text-[15px]">
+                Synchronize a new event with the master calendar.
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
+                  EVENT TYPE
+                </Label>
+                <div className="relative">
+                  <Select value={eventType} onValueChange={(v: any) => setEventType(v)}>
+                    <SelectTrigger className="h-[50px] bg-white border-2 border-[#E31D3B] rounded-xl text-[15px] font-medium text-slate-900 px-4 focus:ring-0 focus:ring-offset-0 focus:border-[#E31D3B]">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                      <SelectItem value="Shoot" className="font-medium">Shoot</SelectItem>
+                      <SelectItem value="Meeting" className="font-medium">Meeting</SelectItem>
+                      <SelectItem value="Deadline" className="font-medium">Deadline</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
+                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
+                   <Zap className="w-3.5 h-3.5" />
+                  </div>
+                  PRIORITY
+                </Label>
+                <Select value={schedulePriority} onValueChange={(v: any) => setSchedulePriority(v)}>
+                  <SelectTrigger className="h-[50px] bg-white border border-slate-200 rounded-xl text-[15px] font-bold text-slate-900 px-4 shadow-none focus:ring-0">
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                    <SelectItem value="NORMAL" className="font-bold cursor-pointer">NORMAL</SelectItem>
+                    <SelectItem value="HIGH" className="font-bold cursor-pointer">HIGH</SelectItem>
+                    <SelectItem value="URGENT" className="font-bold text-red-600 cursor-pointer">URGENT</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
+                <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
+                  <Building2 className="w-3.5 h-3.5" />
+                </div>
+                AUTHORIZED BRAND
+              </Label>
+              <div className="relative">
+                 <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+                   <SelectTrigger className="h-[50px] bg-white border border-slate-200 rounded-xl text-[15px] font-medium text-slate-900 px-4 shadow-none focus:ring-0">
+                     <SelectValue placeholder="Select authorized client" />
+                   </SelectTrigger>
+                   <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                     {brands?.map((b: any) => (<SelectItem key={b.id} value={b.id} className="font-medium">{b.name}</SelectItem>))}
+                   </SelectContent>
+                 </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">EVENT DATE</Label>
+                <Input 
+                  type="date"
+                  value={eventDate} 
+                  onChange={e => setEventDate(e.target.value)} 
+                  className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-900 font-medium px-4 focus-visible:ring-primary/20 shadow-none" 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">LOCATION</Label>
+                <Input 
+                  placeholder="Studio A / Site" 
+                  value={eventLocation} 
+                  onChange={e => setEventLocation(e.target.value)} 
+                  className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal" 
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+               <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">OPERATIONAL NOTES</Label>
+               <Input 
+                  placeholder="Special instructions or gear required..." 
+                  value={eventNotes} 
+                  onChange={e => setEventNotes(e.target.value)} 
+                  className="h-[52px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal" 
+               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-4">
+               <DialogClose asChild>
+                 <Button variant="outline" className="w-full h-[54px] rounded-xl text-[15px] font-bold border-slate-200 text-slate-900 hover:bg-slate-50 hover:text-slate-900 shadow-none">
+                   Cancel
+                 </Button>
+               </DialogClose>
+               <Button onClick={handleCreateSchedule} className="w-full h-[54px] rounded-xl bg-[#E31D3B] hover:bg-[#C91A34] text-white text-[15px] font-bold shadow-sm transition-colors">
+                 Deploy to Calendar
                </Button>
             </div>
           </div>
