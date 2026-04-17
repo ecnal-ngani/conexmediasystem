@@ -164,6 +164,8 @@ export function QuickActions() {
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [eventNotes, setEventNotes] = useState('');
 
   // States for Task
@@ -183,6 +185,29 @@ export function QuickActions() {
   const [projectDueDate, setProjectDueDate] = useState('');
   const [bm, setBm] = useState('');
   const [canvasLink, setCanvasLink] = useState('');
+
+  // OpenStreetMap Location Autocomplete
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (eventLocation && eventLocation.length > 2 && isScheduleOpen) {
+        setIsSearchingLocation(true);
+        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(eventLocation)}&format=json&addressdetails=1&limit=5`)
+          .then(res => res.json())
+          .then(data => {
+            setLocationSuggestions(data);
+            setIsSearchingLocation(false);
+          })
+          .catch(() => {
+            setIsSearchingLocation(false);
+            setLocationSuggestions([]);
+          });
+      } else {
+        setLocationSuggestions([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [eventLocation, isScheduleOpen]);
 
   // Dynamic File Code Logic (useEffect memoization)
   useEffect(() => {
@@ -521,12 +546,44 @@ export function QuickActions() {
 
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">LOCATION</Label>
-                <Input 
-                  placeholder="Studio A / Site" 
-                  value={eventLocation} 
-                  onChange={e => setEventLocation(e.target.value)} 
-                  className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal" 
-                />
+                <div className="relative z-50">
+                  <Input 
+                    placeholder="Studio A / Site" 
+                    value={eventLocation} 
+                    onChange={e => {
+                      setEventLocation(e.target.value);
+                      if (e.target.value.length === 0) setLocationSuggestions([]);
+                    }} 
+                    className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal" 
+                  />
+                  {isSearchingLocation && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                    </div>
+                  )}
+                  {locationSuggestions.length > 0 && eventLocation.length > 2 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50">
+                      {locationSuggestions.map((suggestion: any, idx: number) => (
+                        <div 
+                          key={idx} 
+                          className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b last:border-0 truncate"
+                          onClick={() => {
+                            setEventLocation(suggestion.display_name);
+                            setLocationSuggestions([]);
+                          }}
+                        >
+                          <div className="font-bold flex items-center gap-2">
+                            <MapPin className="w-3.5 h-3.5 text-[#E31D3B] shrink-0" />
+                            <span className="truncate">{suggestion.display_name.split(',')[0]}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate ml-[22px]">
+                            {suggestion.display_name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
