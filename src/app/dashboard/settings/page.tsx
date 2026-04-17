@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useAuth } from '@/components/auth-context';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -28,10 +29,16 @@ export default function SettingsPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
-  if (!user) return null;
+  // Prevent hydration mismatch
+  useEffect(() => setMounted(true), []);
+
+  if (!user || !mounted) return null;
+
+  const isDark = resolvedTheme === 'dark';
 
   const handleLogout = async () => {
     await logout();
@@ -39,33 +46,12 @@ export default function SettingsPage() {
     toast({ title: "Signed Out", description: "You have been logged out successfully." });
   };
 
-  const SettingRow = ({ icon: Icon, label, description, children, onClick }: any) => (
-    <div 
-      className={cn("flex items-center justify-between p-4 rounded-2xl transition-colors", onClick ? "hover:bg-slate-50 cursor-pointer" : "")}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
-          <Icon className="w-5 h-5 text-slate-600" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-slate-900">{label}</p>
-          {description && <p className="text-xs text-slate-500 font-medium mt-0.5">{description}</p>}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        {children}
-        {onClick && <ChevronRight className="w-4 h-4 text-slate-300" />}
-      </div>
-    </div>
-  );
-
   const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: () => void }) => (
     <button
       onClick={onChange}
       className={cn(
         "w-12 h-6 rounded-full transition-colors relative shrink-0",
-        enabled ? "bg-primary" : "bg-slate-200"
+        enabled ? "bg-primary" : "bg-slate-200 dark:bg-slate-700"
       )}
     >
       <span className={cn(
@@ -75,6 +61,30 @@ export default function SettingsPage() {
     </button>
   );
 
+  const SettingRow = ({ icon: Icon, label, description, children, onClick }: any) => (
+    <div
+      className={cn(
+        "flex items-center justify-between p-4 rounded-2xl transition-colors",
+        onClick ? "hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer" : ""
+      )}
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0">
+          <Icon className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{label}</p>
+          {description && <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">{description}</p>}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {children}
+        {onClick && <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600" />}
+      </div>
+    </div>
+  );
+
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center gap-3 px-1">
@@ -82,14 +92,14 @@ export default function SettingsPage() {
           <Settings className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-black tracking-tight text-slate-900">Settings</h1>
+          <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Settings</h1>
           <p className="text-xs text-slate-400 font-medium">System preferences & account controls</p>
         </div>
       </div>
 
       {/* Account Info */}
-      <Card className="border shadow-none rounded-[28px] bg-white overflow-hidden">
-        <CardHeader className="border-b bg-slate-50/50 pb-4">
+      <Card className="border shadow-none rounded-[28px] bg-white dark:bg-slate-900 overflow-hidden">
+        <CardHeader className="border-b bg-slate-50/50 dark:bg-slate-800/50 pb-4">
           <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
             <User className="w-3.5 h-3.5 text-primary" />
             Account
@@ -115,8 +125,8 @@ export default function SettingsPage() {
       </Card>
 
       {/* Preferences */}
-      <Card className="border shadow-none rounded-[28px] bg-white overflow-hidden">
-        <CardHeader className="border-b bg-slate-50/50 pb-4">
+      <Card className="border shadow-none rounded-[28px] bg-white dark:bg-slate-900 overflow-hidden">
+        <CardHeader className="border-b bg-slate-50/50 dark:bg-slate-800/50 pb-4">
           <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
             <Settings className="w-3.5 h-3.5 text-primary" />
             Preferences
@@ -129,11 +139,12 @@ export default function SettingsPage() {
               toast({ title: notifications ? "Notifications Off" : "Notifications On" });
             }} />
           </SettingRow>
-          <SettingRow icon={darkMode ? Moon : Sun} label="Dark Mode" description="Coming soon">
-            <Toggle enabled={darkMode} onChange={() => {
-              setDarkMode(!darkMode);
-              toast({ title: "Dark mode coming soon!", description: "This feature is under development." });
-            }} />
+          <SettingRow
+            icon={isDark ? Moon : Sun}
+            label="Dark Mode"
+            description={isDark ? "Currently dark" : "Currently light"}
+          >
+            <Toggle enabled={isDark} onChange={() => setTheme(isDark ? 'light' : 'dark')} />
           </SettingRow>
           <SettingRow icon={Globe} label="Language" description="English (Default)" />
           <SettingRow icon={Smartphone} label="Mobile App" description="Access from any device" />
@@ -141,8 +152,8 @@ export default function SettingsPage() {
       </Card>
 
       {/* Security */}
-      <Card className="border shadow-none rounded-[28px] bg-white overflow-hidden">
-        <CardHeader className="border-b bg-slate-50/50 pb-4">
+      <Card className="border shadow-none rounded-[28px] bg-white dark:bg-slate-900 overflow-hidden">
+        <CardHeader className="border-b bg-slate-50/50 dark:bg-slate-800/50 pb-4">
           <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
             <Shield className="w-3.5 h-3.5 text-primary" />
             Security
@@ -157,8 +168,8 @@ export default function SettingsPage() {
       </Card>
 
       {/* About */}
-      <Card className="border shadow-none rounded-[28px] bg-white overflow-hidden">
-        <CardHeader className="border-b bg-slate-50/50 pb-4">
+      <Card className="border shadow-none rounded-[28px] bg-white dark:bg-slate-900 overflow-hidden">
+        <CardHeader className="border-b bg-slate-50/50 dark:bg-slate-800/50 pb-4">
           <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
             <Info className="w-3.5 h-3.5 text-primary" />
             About

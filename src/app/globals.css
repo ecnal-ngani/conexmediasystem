@@ -56,6 +56,16 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 346.8 77.2% 49.8%;
+
+    /* Sidebar dark mode */
+    --sidebar-background: 222.2 84% 6%;
+    --sidebar-foreground: 215 20% 70%;
+    --sidebar-primary: 346.8 77.2% 49.8%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217.2 32.6% 14%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 346.8 77.2% 49.8%;
   }
 }
 
