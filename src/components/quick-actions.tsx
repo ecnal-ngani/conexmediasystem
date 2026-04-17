@@ -293,11 +293,116 @@ export function QuickActions() {
       </div>
 
       <Dialog open={isProjectOpen} onOpenChange={setIsProjectOpen}>
-        <DialogContent className="max-w-lg rounded-3xl p-8"><DialogHeader><DialogTitle>New Project</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <Select value={projectBrandId} onValueChange={setProjectBrandId}><SelectTrigger className="h-12"><SelectValue placeholder="Brand" /></SelectTrigger><SelectContent>{brands?.map((b: any) => (<SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>))}</SelectContent></Select>
-            <Input placeholder="Idea" value={contentIdea} onChange={e => setContentIdea(e.target.value)} className="h-12" />
-            <Button onClick={handleCreateProject} className="w-full h-12 bg-primary text-white font-bold">Add to Hub</Button>
+        <DialogContent className="max-w-[500px] rounded-[16px] p-8 gap-6 border-none shadow-2xl">
+          <button onClick={() => setIsProjectOpen(false)} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground outline-none">
+             <X className="h-4 w-4" />
+             <span className="sr-only">Close</span>
+          </button>
+          <DialogHeader className="flex flex-row items-center gap-4 space-y-0 text-left">
+            <div className="w-[50px] h-[50px] rounded-full bg-[#E31D3B] flex items-center justify-center shrink-0 shadow-sm shadow-[#E31D3B]/40">
+              <Plus className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <DialogTitle className="text-[#0B1527] text-[22px] font-bold leading-none tracking-tight">Add New Project</DialogTitle>
+              <DialogDescription className="text-slate-500 font-medium text-[15px]">
+                Configure a new production item for the hub.
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
+                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
+                    <Building2 className="w-3.5 h-3.5" />
+                  </div>
+                  BRAND SELECTION
+                </Label>
+                <div className="relative">
+                  <Select value={projectBrandId} onValueChange={setProjectBrandId}>
+                    <SelectTrigger className="h-[50px] bg-white border-2 border-[#E31D3B] rounded-xl text-[15px] font-medium text-slate-900 px-4 focus:ring-0 focus:ring-offset-0 focus:border-[#E31D3B]">
+                      <SelectValue placeholder="Select Brand" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                      {brands?.map((b: any) => (<SelectItem key={b.id} value={b.id} className="font-medium">{b.name}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
+                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
+                   <FileText className="w-3.5 h-3.5" />
+                  </div>
+                  FILE CODE
+                </Label>
+                <Input 
+                  readOnly 
+                  value={fileCode || 'Generated automatically...'} 
+                  className={cn(
+                    "h-[50px] rounded-xl font-mono text-[13px] border-slate-200 bg-slate-50 shadow-none focus-visible:ring-0",
+                    !fileCode && "text-slate-400 italic"
+                  )} 
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
+                <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
+                  <Lightbulb className="w-3.5 h-3.5" />
+                </div>
+                CONTENT IDEA
+              </Label>
+              <Input 
+                placeholder="Product showcase reel" 
+                value={contentIdea} 
+                onChange={e => setContentIdea(e.target.value)} 
+                className="h-[52px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal" 
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900 px-1">Status</Label>
+                <Select value={projectStatus} onValueChange={setProjectStatus}>
+                  <SelectTrigger className="h-[50px] bg-white border border-slate-200 rounded-xl text-[15px] font-medium text-slate-900 px-4 shadow-none focus:ring-0">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                    <SelectItem value="In Production" className="font-medium">In Production</SelectItem>
+                    <SelectItem value="On Deck" className="font-medium">On Deck</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900 px-1">Priority</Label>
+                <Select value={projectPriority} onValueChange={setProjectPriority}>
+                  <SelectTrigger className="h-[50px] bg-white border border-slate-200 rounded-xl text-[15px] font-semibold text-slate-900 px-4 shadow-none focus:ring-0">
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                    <SelectItem value="REGULAR" className="font-semibold">REGULAR</SelectItem>
+                    <SelectItem value="HIGH" className="font-semibold">HIGH</SelectItem>
+                    <SelectItem value="URGENT" className="font-semibold text-red-600">URGENT</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-4">
+               <DialogClose asChild>
+                 <Button variant="outline" className="w-full h-[54px] rounded-xl text-[15px] font-bold border-slate-200 text-slate-900 hover:bg-slate-50 hover:text-slate-900 shadow-none">
+                   Cancel
+                 </Button>
+               </DialogClose>
+               <Button onClick={handleCreateProject} className="w-full h-[54px] rounded-xl bg-[#E31D3B] hover:bg-[#C91A34] text-white text-[15px] font-bold shadow-sm transition-colors">
+                 Add to Hub
+               </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
