@@ -113,6 +113,12 @@ export default function ProductionPage() {
   }, [firestore, user]);
   const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
 
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'users'), orderBy('name', 'asc'));
+  }, [firestore, user]);
+  const { data: staffList } = useCollection<any>(usersQuery);
+
   // Tactical File Code Logic (Memoized calculation via useEffect)
   useEffect(() => {
     if (selectedBrandId && brands && projects) {
@@ -441,7 +447,16 @@ export default function ProductionPage() {
                               <User className="w-3 h-3 text-primary" />
                               Artist
                             </Label>
-                            <Input placeholder="Artist / Talent name" value={artist} onChange={(e) => setArtist(e.target.value)} className="h-12 rounded-xl" />
+                            <Select value={artist} onValueChange={setArtist}>
+                              <SelectTrigger className="h-12 rounded-xl border-slate-200">
+                                <SelectValue placeholder="Select employee" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {staffList?.map((s: any) => (
+                                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                           <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">

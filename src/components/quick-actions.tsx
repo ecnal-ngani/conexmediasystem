@@ -426,12 +426,16 @@ export function QuickActions() {
                   </div>
                   ARTIST
                 </Label>
-                <Input
-                  placeholder="Artist / Talent name"
-                  value={artist}
-                  onChange={e => setArtist(e.target.value)}
-                  className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal"
-                />
+                <Select value={artist} onValueChange={setArtist}>
+                  <SelectTrigger className="h-[50px] rounded-xl border-slate-200 text-[15px] font-medium text-slate-900 px-4 shadow-none focus:ring-0">
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                    {staffList?.map((s: any) => (
+                      <SelectItem key={s.id} value={s.name} className="font-medium">{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
