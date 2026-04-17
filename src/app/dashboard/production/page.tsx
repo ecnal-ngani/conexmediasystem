@@ -437,7 +437,24 @@ export default function ProductionPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <User className="w-3 h-3 text-primary" />
+                              Artist
+                            </Label>
+                            <Input placeholder="Artist / Talent name" value={artist} onChange={(e) => setArtist(e.target.value)} className="h-12 rounded-xl" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <Calendar className="w-3 h-3 text-primary" />
+                              Due Date
+                            </Label>
+                            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-12 rounded-xl" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
                             <Label>Status</Label>
+
                             <Select value={status} onValueChange={setStatus}>
                               <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
                               <SelectContent>
