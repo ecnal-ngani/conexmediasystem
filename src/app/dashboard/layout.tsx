@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-context';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { DashboardSidebar } from '@/components/dashboard-sidebar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings } from 'lucide-react';
 import { QuickActions } from '@/components/quick-actions';
 import { MobileNav } from '@/components/mobile-nav';
+import Link from 'next/link';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isWfh, isVerified } = useAuth();
@@ -57,9 +58,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </div>
             </div>
+            <Link href="/dashboard/settings" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 hover:text-primary transition-colors">
+              <Settings className="w-5 h-5" />
+            </Link>
           </header>
 
           <div className="w-full p-4 md:p-6 lg:p-10 pb-24 lg:pb-12">
+            {/* PC Settings Button - top right, desktop only */}
+            <div className="hidden lg:flex justify-end mb-4">
+              <Link href="/dashboard/settings" className="flex items-center gap-2 h-9 px-4 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-primary hover:border-primary/30 transition-colors text-sm font-bold shadow-sm">
+                <Settings className="w-4 h-4" />
+                Settings
+              </Link>
+            </div>
             {children}
           </div>
           
