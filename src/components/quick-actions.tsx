@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+const MapPicker = dynamic(() => import('@/components/map-picker'), { ssr: false });
 import { 
   Bell, 
   Plus, 
@@ -167,6 +169,7 @@ export function QuickActions() {
   const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [eventNotes, setEventNotes] = useState('');
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
 
   // States for Task
   const [taskTitle, setTaskTitle] = useState('');
@@ -546,8 +549,9 @@ export function QuickActions() {
 
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">LOCATION</Label>
-                <div className="relative z-50">
-                  <Input 
+                <div className="flex gap-2 relative z-50">
+                  <div className="relative flex-1 z-50">
+                    <Input 
                     placeholder="Studio A / Site" 
                     value={eventLocation} 
                     onChange={e => {
@@ -583,6 +587,16 @@ export function QuickActions() {
                       ))}
                     </div>
                   )}
+                  </div>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    className="h-[50px] w-[50px] p-0 flex items-center justify-center shrink-0 rounded-xl border-slate-200 hover:bg-slate-50" 
+                    onClick={() => setIsMapPickerOpen(true)}
+                    title="Open Interactive Map"
+                  >
+                     <MapPin className="w-5 h-5 text-[#E31D3B]" />
+                  </Button>
                 </div>
               </div>
             </div>
@@ -618,6 +632,18 @@ export function QuickActions() {
             <Select value={assignedToId} onValueChange={setAssignedToId}><SelectTrigger className="h-12"><SelectValue placeholder="Assignee" /></SelectTrigger><SelectContent>{staffList?.map((s: any) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}</SelectContent></Select>
             <Button onClick={handleCreateTask} className="w-full h-12 bg-primary text-white font-bold">Assign Mission</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isMapPickerOpen} onOpenChange={setIsMapPickerOpen}>
+        <DialogContent className="max-w-[800px] w-[90vw] p-0 border-none bg-transparent shadow-none [&>button]:hidden sm:rounded-xl">
+           <MapPicker 
+             onLocationSelect={(addr) => {
+               setEventLocation(addr);
+               setIsMapPickerOpen(false);
+             }} 
+             onCancel={() => setIsMapPickerOpen(false)} 
+           />
         </DialogContent>
       </Dialog>
     </>
