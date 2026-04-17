@@ -306,7 +306,7 @@ export function QuickActions() {
           <DialogContent className="max-w-md rounded-2xl"><DialogHeader><DialogTitle>Quick Actions</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
               {filteredActions.map((action, i) => (
-                <button key={i} onClick={() => { setIsActionsOpen(false); if(action.action === 'project') setIsProjectOpen(true); else if(action.action === 'task') setIsTaskOpen(true); else if(action.href) router.push(action.href); }} className="p-4 bg-white border rounded-xl hover:border-primary">
+                <button key={i} onClick={() => { setIsActionsOpen(false); if(action.action === 'project') setIsProjectOpen(true); else if(action.action === 'schedule') setIsScheduleOpen(true); else if(action.action === 'task') setIsTaskOpen(true); else if(action.href) router.push(action.href); }} className="p-4 bg-white border rounded-xl hover:border-primary">
                   <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center mb-3", action.bg)}><action.icon className={cn("w-4 h-4", action.color)} /></div>
                   <h4 className="text-sm font-bold">{action.title}</h4>
                 </button>
