@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+const MapPicker = dynamic(() => import('@/components/map-picker'), { ssr: false });
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,7 +18,8 @@ import {
   Zap,
   Trash2,
   Building2,
-  Check
+  Check,
+  MapPin
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -70,12 +73,37 @@ export default function CalendarPage() {
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
   const [eventNotes, setEventNotes] = useState('');
 
   useEffect(() => {
     setMounted(true);
     setViewDate(new Date());
   }, []);
+
+  // OpenStreetMap Location Autocomplete
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (eventLocation && eventLocation.length > 2 && isAddEventOpen) {
+        setIsSearchingLocation(true);
+        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(eventLocation)}&format=json&addressdetails=1&limit=5`)
+          .then(res => res.json())
+          .then(data => {
+            setLocationSuggestions(data);
+            setIsSearchingLocation(false);
+          })
+          .catch(() => {
+            setIsSearchingLocation(false);
+            setLocationSuggestions([]);
+          });
+      } else {
+        setLocationSuggestions([]);
+      }
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [eventLocation, isAddEventOpen]);
 
   useEffect(() => {
     if (selectedEvent) {
@@ -358,12 +386,53 @@ export default function CalendarPage() {
                       </div>
                       <div className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</Label>
-                        <Input 
-                          placeholder="Studio A / Site" 
-                          value={eventLocation} 
-                          onChange={(e) => setEventLocation(e.target.value)}
-                          className="h-14 border-slate-200 rounded-2xl"
-                        />
+                        <div className="flex gap-2 relative">
+                          <div className="relative flex-1">
+                            <Input 
+                              placeholder="Studio A / Site" 
+                              value={eventLocation} 
+                              onChange={(e) => {
+                                setEventLocation(e.target.value);
+                                if (e.target.value.length === 0) setLocationSuggestions([]);
+                              }}
+                              className="h-14 border-slate-200 rounded-2xl"
+                            />
+                            {isSearchingLocation && (
+                              <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                              </div>
+                            )}
+                            {locationSuggestions.length > 0 && eventLocation.length > 2 && (
+                              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50">
+                                {locationSuggestions.map((suggestion: any, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b last:border-0"
+                                    onClick={() => {
+                                      setEventLocation(suggestion.display_name);
+                                      setLocationSuggestions([]);
+                                    }}
+                                  >
+                                    <div className="font-bold flex items-center gap-2">
+                                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                                      <span className="truncate">{suggestion.display_name.split(',')[0]}</span>
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 truncate ml-[22px]">{suggestion.display_name}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-14 w-14 p-0 flex items-center justify-center shrink-0 rounded-2xl border-slate-200 hover:bg-slate-50"
+                            onClick={() => setIsMapPickerOpen(true)}
+                            title="Open Interactive Map"
+                          >
+                            <MapPin className="w-5 h-5 text-primary" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
@@ -478,6 +547,18 @@ export default function CalendarPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isMapPickerOpen} onOpenChange={setIsMapPickerOpen}>
+        <DialogContent className="max-w-[800px] w-[90vw] p-0 border-none bg-transparent shadow-none [&>button]:hidden sm:rounded-xl">
+          <MapPicker
+            onLocationSelect={(addr) => {
+              setEventLocation(addr);
+              setIsMapPickerOpen(false);
+            }}
+            onCancel={() => setIsMapPickerOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>
