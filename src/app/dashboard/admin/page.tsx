@@ -87,7 +87,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc, setDoc, limit } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
@@ -159,8 +159,12 @@ export default function AdminPage() {
   const [manualAdjReason, setManualAdjReason] = useState('');
   const [manualAdjType, setManualAdjType] = useState<'DEDUCTION' | 'ADDITION'>('DEDUCTION');
 
-  // Biometric Photo state
+  // Biometric Logs State
   const [selectedLogPhoto, setSelectedLogPhoto] = useState<string | null>(null);
+  const [logSearchQuery, setLogSearchQuery] = useState('');
+  const [logDateFilter, setLogDateFilter] = useState('');
+  const [logStatusFilter, setLogStatusFilter] = useState('ALL');
+  const [logsLimit, setLogsLimit] = useState(20);
 
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -183,11 +187,27 @@ export default function AdminPage() {
   }, [firestore, currentUser]);
   const { data: staff, isLoading: staffLoading } = useCollection<any>(staffQuery);
 
+  // Note: historyQuery is used for both Biometric Logs UI and Payroll Calculation. 
+  // To satisfy pagination for the UI without breaking payroll (which needs all logs for the month), 
+  // we will fetch logs with the limit applied. 
+  // (In a true production app, payroll calculation should be a server function, not client-side.)
   const historyQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
-    return query(collection(firestore, 'verifications'), orderBy('timestamp', 'desc'));
-  }, [firestore, currentUser]);
+    return query(collection(firestore, 'verifications'), orderBy('timestamp', 'desc'), limit(logsLimit));
+  }, [firestore, currentUser, logsLimit]);
   const { data: verifications, isLoading: historyLoading } = useCollection<any>(historyQuery);
+
+  const filteredLogs = useMemo(() => {
+    if (!verifications) return [];
+    return verifications.filter(log => {
+       const q = logSearchQuery.toLowerCase();
+       const matchesSearch = log.userName?.toLowerCase().includes(q) || log.email?.toLowerCase().includes(q) || log.userSystemId?.toLowerCase().includes(q);
+       const matchesStatus = logStatusFilter === 'ALL' || log.status === logStatusFilter;
+       const dateStr = log.timestamp?.toDate ? format(log.timestamp.toDate(), 'yyyy-MM-dd') : '';
+       const matchesDate = !logDateFilter || dateStr === logDateFilter;
+       return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [verifications, logSearchQuery, logStatusFilter, logDateFilter]);
 
   const globalSettingsQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
@@ -746,39 +766,91 @@ export default function AdminPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="attendance">
+        <TabsContent value="attendance" className="space-y-4">
+           {/* Control Bar */}
+           <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border">
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input 
+                  placeholder="Search Email or ID..." 
+                  value={logSearchQuery}
+                  onChange={(e) => setLogSearchQuery(e.target.value)}
+                  className="pl-10 w-full"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Label className="text-xs font-bold whitespace-nowrap">Date:</Label>
+                  <Input type="date" value={logDateFilter} onChange={(e) => setLogDateFilter(e.target.value)} className="w-full sm:w-auto" />
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Label className="text-xs font-bold whitespace-nowrap">Status:</Label>
+                  <Select value={logStatusFilter} onValueChange={setLogStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-40"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Outcomes</SelectItem>
+                      <SelectItem value="Success">Success</SelectItem>
+                      <SelectItem value="Failed">Failed</SelectItem>
+                      <SelectItem value="System Error">System Error</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+           </div>
+
            <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
             <Table>
               <TableHeader className="bg-slate-50">
                 <TableRow>
-                  <TableHead className="font-bold text-slate-500">Personnel</TableHead>
                   <TableHead className="font-bold text-slate-500">Timestamp</TableHead>
-                  <TableHead className="font-bold text-slate-500">Method</TableHead>
+                  <TableHead className="font-bold text-slate-500">User Details</TableHead>
+                  <TableHead className="font-bold text-slate-500">Biometric Method</TableHead>
+                  <TableHead className="font-bold text-slate-500">Device/Platform</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-center">Status</TableHead>
                   <TableHead className="text-right font-bold text-slate-500">Visual ID</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {historyLoading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
-                ) : !verifications || verifications.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-10 text-slate-400">No logs found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : !filteredLogs || filteredLogs.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400">No logs match the criteria.</TableCell></TableRow>
                 ) : (
-                  verifications.map((log) => (
-                    <TableRow key={log.id}>
+                  filteredLogs.map((log) => (
+                    <TableRow key={log.id} className="hover:bg-slate-50">
+                      <TableCell className="text-xs font-bold text-slate-700 whitespace-nowrap">
+                        {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'PPP p') : 'Pending...'}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-900">{log.userName}</span>
-                          <span className="text-[10px] text-slate-400">{log.userSystemId}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">{log.email || log.userSystemId}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs text-slate-500">
-                        {log.timestamp?.toDate ? format(log.timestamp.toDate(), 'PPP p') : 'Pending...'}
+                      <TableCell>
+                        <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                          {log.method || 'Facial Recognition'}
+                        </span>
                       </TableCell>
-                      <TableCell><Badge className="bg-slate-100 text-slate-600 font-bold text-[9px]">BIOMETRIC FEED</Badge></TableCell>
+                      <TableCell>
+                        <span className="text-[10px] text-slate-500 max-w-[150px] truncate block" title={log.devicePlatform || 'Unknown Web'}>
+                          {log.devicePlatform || 'Unknown Web'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                         <Badge className={cn(
+                           "text-[10px] font-black uppercase shadow-none",
+                           (log.status || 'Success') === 'Success' ? "bg-green-100 text-green-700 border-green-200" :
+                           (log.status || 'Success') === 'Failed' ? "bg-red-100 text-red-700 border-red-200" :
+                           "bg-orange-100 text-orange-700 border-orange-200"
+                         )} variant="outline">
+                           {log.status || 'Success'}
+                         </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
                         <button 
                           onClick={() => log.photoUrl && setSelectedLogPhoto(log.photoUrl)}
-                          className="group relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 hover:border-primary transition-colors inline-block"
+                          className="group relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 hover:border-primary transition-colors inline-block"
                         >
                           {log.photoUrl ? (
                             <img src={log.photoUrl} alt="Visual ID" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
@@ -799,6 +871,13 @@ export default function AdminPage() {
                 )}
               </TableBody>
             </Table>
+            {(!filteredLogs || filteredLogs.length >= logsLimit) && (
+              <div className="p-4 border-t bg-slate-50 flex justify-center">
+                 <Button variant="outline" onClick={() => setLogsLimit(prev => prev + 20)} className="font-bold text-slate-600">
+                    Load More Logs
+                 </Button>
+              </div>
+            )}
           </div>
         </TabsContent>
 

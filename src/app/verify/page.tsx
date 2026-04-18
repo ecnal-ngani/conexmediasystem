@@ -179,9 +179,13 @@ export default function VerifyPage() {
           userId: user.id,
           userName: user.name,
           userSystemId: user.systemId,
+          email: user.email || '',
           timestamp: serverTimestamp(),
           isVerified: true,
           confidence: result.confidence,
+          method: 'Facial Recognition',
+          devicePlatform: navigator.userAgent,
+          status: 'Success'
         };
 
         addDoc(verificationsRef, verificationData).catch(async () => {
@@ -203,6 +207,22 @@ export default function VerifyPage() {
         setTimeout(() => router.push('/dashboard'), 800);
       } else {
         setStage('failed');
+        
+        const verificationsRef = collection(firestore, 'verifications');
+        const verificationData = {
+          userId: user.id,
+          userName: user.name,
+          userSystemId: user.systemId,
+          email: user.email || '',
+          timestamp: serverTimestamp(),
+          isVerified: false,
+          confidence: result.confidence || 0,
+          method: 'Facial Recognition',
+          devicePlatform: navigator.userAgent,
+          status: 'Failed'
+        };
+        addDoc(verificationsRef, verificationData).catch(console.error);
+
         toast({
           variant: "destructive",
           title: "Verification Failed",
@@ -218,6 +238,23 @@ export default function VerifyPage() {
     } catch (error) {
       console.error('Verification error:', error);
       setStage('failed');
+
+      if (user && firestore) {
+        const verificationsRef = collection(firestore, 'verifications');
+        addDoc(verificationsRef, {
+          userId: user.id,
+          userName: user.name,
+          userSystemId: user.systemId,
+          email: user.email || '',
+          timestamp: serverTimestamp(),
+          isVerified: false,
+          confidence: 0,
+          method: 'Facial Recognition',
+          devicePlatform: navigator.userAgent,
+          status: 'System Error'
+        }).catch(console.error);
+      }
+
       toast({
         variant: "destructive",
         title: "System Error",
