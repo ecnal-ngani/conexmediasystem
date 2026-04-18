@@ -805,16 +805,15 @@ export default function AdminPage() {
                   <TableHead className="font-bold text-slate-500">Timestamp</TableHead>
                   <TableHead className="font-bold text-slate-500">User Details</TableHead>
                   <TableHead className="font-bold text-slate-500">Biometric Method</TableHead>
-                  <TableHead className="font-bold text-slate-500">Device/Platform</TableHead>
                   <TableHead className="font-bold text-slate-500 text-center">Status</TableHead>
                   <TableHead className="text-right font-bold text-slate-500">Visual ID</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {historyLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
                 ) : !filteredLogs || filteredLogs.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400">No logs match the criteria.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-400">No logs match the criteria.</TableCell></TableRow>
                 ) : (
                   filteredLogs.map((log) => (
                     <TableRow key={log.id} className="hover:bg-slate-50">
@@ -829,12 +828,7 @@ export default function AdminPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                          {log.method || 'Facial Recognition'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-[10px] text-slate-500 max-w-[150px] truncate block" title={log.devicePlatform || 'Unknown Web'}>
-                          {log.devicePlatform || 'Unknown Web'}
+                          Login - {log.method || 'Facial Recognition'}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
