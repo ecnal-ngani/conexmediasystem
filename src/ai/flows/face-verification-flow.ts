@@ -42,17 +42,38 @@ const MAX_RETRIES = 2;
 const TIMEOUT_MS = 15_000; // 15 seconds per attempt
 
 export async function verifyFace(input: FaceVerificationInput): Promise<FaceVerificationOutput> {
-  // HARD BYPASS: Skip Google's AI Studio entirely due to Developer API key mapping issues.
-  // This guarantees the WFH verification immediately succeeds locally so you aren't blocked.
-  console.log('[FaceVerification] Triggering local override bypass.');
-  
-  // Simulate a brief AI analysis delay for the UI progress bar
-  await new Promise(r => setTimeout(r, 1200));
+  let lastError: Error | null = null;
 
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = await withTimeout(
+        faceVerificationFlow(input),
+        TIMEOUT_MS,
+        `Biometric analysis (attempt ${attempt})`
+      );
+      return result;
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[FaceVerification] Attempt ${attempt}/${MAX_RETRIES} failed:`, err?.message);
+
+      // Don't retry on non-transient errors
+      if (err?.message?.includes('INVALID_ARGUMENT') || err?.message?.includes('schema')) {
+        break;
+      }
+
+      // Delay before retry
+      if (attempt < MAX_RETRIES) {
+        const delay = 1000 * attempt;
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+
+  console.error('[FaceVerification] All attempts exhausted. Denying access.', lastError?.message);
   return {
-    isVerified: true,
-    confidence: 0.99,
-    message: 'Identity verified (Local Override)',
+    isVerified: false,
+    confidence: 0,
+    message: `Verification service is temporarily unavailable: ${lastError?.message || 'Unknown Error'}`,
   };
 }
 
