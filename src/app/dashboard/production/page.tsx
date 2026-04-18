@@ -105,13 +105,13 @@ export default function ProductionPage() {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
   }, [firestore, user]);
-  const { data: projects, loading } = useCollection<any>(projectsQuery);
+  const { data: projects, isLoading: loading } = useCollection<any>(projectsQuery);
 
   const brandsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'brands'), orderBy('name', 'asc'));
   }, [firestore, user]);
-  const { data: brands, loading: bLoading } = useCollection<any>(brandsQuery);
+  const { data: brands, isLoading: bLoading } = useCollection<any>(brandsQuery);
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;

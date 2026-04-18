@@ -67,9 +67,9 @@ export default function DashboardPage() {
     return query(collection(firestore, 'tasks'));
   }, [firestore, user]);
 
-  const { data: staff, loading: sLoading } = useCollection<any>(usersQuery);
-  const { data: projects, loading: pLoading } = useCollection<any>(projectsQuery);
-  const { data: tasks, loading: tLoading } = useCollection<any>(tasksQuery);
+  const { data: staff, isLoading: sLoading } = useCollection<any>(usersQuery);
+  const { data: projects, isLoading: pLoading } = useCollection<any>(projectsQuery);
+  const { data: tasks, isLoading: tLoading } = useCollection<any>(tasksQuery);
 
   // Global project metrics
   const deliveredProjectsCount = useMemo(() => {
@@ -139,7 +139,7 @@ export default function DashboardPage() {
     const activeProjectsCount = projects?.filter(p => p.status !== 'Approved').length || 0;
     const staffOnlineCount = staff?.filter(s => s.status !== 'Offline').length || 0;
     const totalStaff = staff?.length || 0;
-    const userTasks = tasks?.filter(t => t.assignedToId === user.id) || [];
+    const userTasks = tasks?.filter(t => t.assignedToId === user?.id) || [];
     const completedTasks = userTasks.filter(t => t.status === 'completed').length;
 
     switch (role) {
@@ -162,7 +162,7 @@ export default function DashboardPage() {
             { label: 'Hours Required', value: '300', sub: 'Standard Program', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', subColor: 'text-slate-400' },
             { label: 'Hours Rendered', value: '140', sub: '47% of target', icon: TrendingUp, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
             { label: 'Tasks Completed', value: completedTasks, sub: 'Assigned mission objectives', icon: Award, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
-            { label: 'Current XP', value: user.xp || 120, sub: 'Rank: Specialist', icon: Rocket, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
+            { label: 'Current XP', value: (user as any)?.xp || 120, sub: 'Rank: Specialist', icon: Rocket, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
           ]
         };
       default:
@@ -170,9 +170,9 @@ export default function DashboardPage() {
           title: 'Post-Production Suite',
           subtitle: "Mastering creative assets and render cycles.",
           stats: [
-            { label: 'My Active Edits', value: projects?.filter(p => p.artist === user.name && p.status !== 'Approved').length || 0, sub: 'Assigned to you', icon: Scissors, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
+            { label: 'My Active Edits', value: projects?.filter(p => p.artist === user?.name && p.status !== 'Approved').length || 0, sub: 'Assigned to you', icon: Scissors, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
             { label: 'Render Efficiency', value: '91%', sub: 'Average speed', icon: Zap, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
-            { label: 'Approved Assets', value: projects?.filter(p => p.artist === user.name && p.status === 'Approved').length || 0, sub: 'Your delivery count', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
+            { label: 'Approved Assets', value: projects?.filter(p => p.artist === user?.name && p.status === 'Approved').length || 0, sub: 'Your delivery count', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
             { label: 'Revision Rate', value: '8%', sub: 'Target: <15%', icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
           ]
         };

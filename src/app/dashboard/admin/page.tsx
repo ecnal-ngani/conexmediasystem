@@ -153,13 +153,13 @@ export default function AdminPage() {
     if (!firestore || !currentUser) return null;
     return query(collection(firestore, 'users'), orderBy('systemId', 'asc'));
   }, [firestore, currentUser]);
-  const { data: staff, loading: staffLoading } = useCollection<any>(staffQuery);
+  const { data: staff, isLoading: staffLoading } = useCollection<any>(staffQuery);
 
   const historyQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
     return query(collection(firestore, 'verifications'), orderBy('timestamp', 'desc'));
   }, [firestore, currentUser]);
-  const { data: verifications, loading: historyLoading } = useCollection<any>(historyQuery);
+  const { data: verifications, isLoading: historyLoading } = useCollection<any>(historyQuery);
 
   const filteredStaff = useMemo(() => {
     if (!staff) return [];

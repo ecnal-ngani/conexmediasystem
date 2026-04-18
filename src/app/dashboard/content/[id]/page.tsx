@@ -7,7 +7,7 @@ import { AUTHORIZED_CONTENT, ContentItem } from '@/lib/mock-data';
 import { useAuth } from '@/components/auth-context';
 import { summarizeDocument } from '@/ai/flows/document-summarization-flow';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
