@@ -969,10 +969,10 @@ export default function AdminPage() {
                    </TableRow>
                  </TableHeader>
                  <TableBody>
-                   {payrollTransactions?.filter((tx: any) => tx.employeeId === selectedEmployeeProfile?.id).length === 0 ? (
+                   {(payrollTransactions?.filter((tx: any) => tx.employeeId === selectedEmployeeProfile?.id) || []).length === 0 ? (
                       <TableRow><TableCell colSpan={5} className="text-center text-slate-400 py-4">No payroll history.</TableCell></TableRow>
                    ) : (
-                      payrollTransactions?.filter((tx: any) => tx.employeeId === selectedEmployeeProfile?.id).map((tx: any) => (
+                      (payrollTransactions?.filter((tx: any) => tx.employeeId === selectedEmployeeProfile?.id) || []).map((tx: any) => (
                         <TableRow key={tx.id}>
                           <TableCell className="font-bold">{tx.period}</TableCell>
                           <TableCell>{tx.totalHours}h</TableCell>
@@ -998,7 +998,7 @@ export default function AdminPage() {
 
       {/* Hidden PDF Printable Payslips */}
       <div className="hidden print:block space-y-8">
-         {payrollTransactions?.filter((tx: any) => selectedPayrolls.has(tx.id)).map((tx: any) => (
+         {(payrollTransactions?.filter((tx: any) => selectedPayrolls.has(tx.id)) || []).map((tx: any) => (
             <div key={tx.id} className="border-2 border-slate-900 p-8 rounded-xl relative break-inside-avoid">
                {tx.is_paid && (
                   <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none z-0">
