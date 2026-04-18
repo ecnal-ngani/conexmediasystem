@@ -44,5 +44,13 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
+    match /global_settings/{id} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /payroll_transactions/{id} {
+      allow read, write: if isAuthenticated();
+    }
+
   }
 }

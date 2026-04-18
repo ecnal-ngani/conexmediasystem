@@ -38,8 +38,16 @@ import {
   ShieldAlert,
   Smartphone,
   Wifi,
-  Edit2
+  Edit2,
+  Settings,
+  Printer,
+  FileText,
+  User,
+  Plus,
+  Calculator
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Table, 
   TableBody, 
@@ -131,6 +139,25 @@ export default function AdminPage() {
   const [taskCategory, setTaskCategory] = useState('Operations');
   const [taskDueDate, setTaskDueDate] = useState('');
 
+  // Payroll System State
+  const [selectedPayrollPeriod, setSelectedPayrollPeriod] = useState(format(new Date(), 'yyyy-MM'));
+  const [selectedPayrolls, setSelectedPayrolls] = useState<Set<string>>(new Set());
+  const [selectedEmployeeProfile, setSelectedEmployeeProfile] = useState<any>(null);
+  const [isGeneratingPayroll, setIsGeneratingPayroll] = useState(false);
+
+  // Tax Configuration State
+  const [isTaxConfigModalOpen, setIsTaxConfigModalOpen] = useState(false);
+  const [editingTaxConfig, setEditingTaxConfig] = useState<any>({
+    sssRate: '5', sssCeiling: '35000', philHealthRate: '5', philHealthCap: '100000', pagIbigShare: '200', withholdingTaxRate: '15'
+  });
+
+  // Manual Adjustments State
+  const [isManualAdjModalOpen, setIsManualAdjModalOpen] = useState(false);
+  const [manualAdjTarget, setManualAdjTarget] = useState<any>(null);
+  const [manualAdjAmount, setManualAdjAmount] = useState('');
+  const [manualAdjReason, setManualAdjReason] = useState('');
+  const [manualAdjType, setManualAdjType] = useState<'DEDUCTION' | 'ADDITION'>('DEDUCTION');
+
   // Biometric Photo state
   const [selectedLogPhoto, setSelectedLogPhoto] = useState<string | null>(null);
 
@@ -161,6 +188,30 @@ export default function AdminPage() {
   }, [firestore, currentUser]);
   const { data: verifications, isLoading: historyLoading } = useCollection<any>(historyQuery);
 
+  const globalSettingsQuery = useMemoFirebase(() => {
+    if (!firestore || !currentUser) return null;
+    return query(collection(firestore, 'global_settings'));
+  }, [firestore, currentUser]);
+  const { data: globalSettings } = useCollection<any>(globalSettingsQuery);
+
+  const payrollTransactionsQuery = useMemoFirebase(() => {
+    if (!firestore || !currentUser) return null;
+    return query(collection(firestore, 'payroll_transactions'), orderBy('generatedAt', 'desc'));
+  }, [firestore, currentUser]);
+  const { data: payrollTransactions, isLoading: payrollLoading } = useCollection<any>(payrollTransactionsQuery);
+
+  const taxConfig = useMemo(() => {
+    const defaultTaxConfig = {
+      sssRate: 5, sssCeiling: 35000,
+      philHealthRate: 5, philHealthCap: 100000,
+      pagIbigShare: 200,
+      withholdingTaxRate: 15
+    };
+    if (!globalSettings) return defaultTaxConfig;
+    const dbConfig = globalSettings.find((doc: any) => doc.id === 'payroll_tax_config');
+    return dbConfig ? { ...defaultTaxConfig, ...dbConfig } : defaultTaxConfig;
+  }, [globalSettings]);
+
   const filteredStaff = useMemo(() => {
     if (!staff) return [];
     const q = searchQuery.toLowerCase();
@@ -177,10 +228,8 @@ export default function AdminPage() {
     if (!staff || !verifications) return [];
 
     return staff.map(emp => {
-      // Find all verification logs for this employee
       const empLogs = verifications.filter(log => log.userId === emp.id);
       
-      // Count unique working days from logs
       const uniqueDays = new Set();
       empLogs.forEach(log => {
         if (log.timestamp?.toDate) {
@@ -192,17 +241,46 @@ export default function AdminPage() {
       const hoursPerDay = 8;
       const totalHours = daysActive * hoursPerDay;
       const rate = emp.hourlyRate || DEFAULT_RATES[emp.role] || 0;
-      const netSalary = totalHours * rate;
+      
+      const grossSalary = totalHours * rate;
+      
+      // Statutory Deductions
+      const sssDeduction = Math.min(grossSalary, taxConfig.sssCeiling) * (taxConfig.sssRate / 100);
+      const philHealthDeduction = Math.min(grossSalary, taxConfig.philHealthCap) * (taxConfig.philHealthRate / 100) / 2; // Employee share is half
+      const pagIbigDeduction = grossSalary > 0 ? taxConfig.pagIbigShare : 0;
+      
+      const totalStatutory = grossSalary > 0 ? (sssDeduction + philHealthDeduction + pagIbigDeduction) : 0;
+      
+      // Taxable Income & Withholding Tax
+      const taxableIncome = Math.max(0, grossSalary - totalStatutory);
+      const withholdingTax = taxableIncome * (taxConfig.withholdingTaxRate / 100);
+
+      // Manual Adjustments filtering (specific to the selected period)
+      const periodAdjustments = emp.manualAdjustments?.[selectedPayrollPeriod] || [];
+      const totalAdjustments = periodAdjustments.reduce((acc: number, adj: any) => {
+         return adj.type === 'ADDITION' ? acc + adj.amount : acc - adj.amount;
+      }, 0);
+      
+      const netSalary = Math.max(0, taxableIncome - withholdingTax + totalAdjustments);
 
       return {
         ...emp,
         daysActive,
         totalHours,
         rate,
+        grossSalary,
+        sssDeduction,
+        philHealthDeduction,
+        pagIbigDeduction,
+        totalStatutory,
+        taxableIncome,
+        withholdingTax,
+        periodAdjustments,
+        totalAdjustments,
         netSalary
       };
     });
-  }, [staff, verifications]);
+  }, [staff, verifications, taxConfig, selectedPayrollPeriod]);
 
   const nextSystemId = useMemo(() => {
     if (!staff) return "CX-LOAD-00";
@@ -251,6 +329,120 @@ export default function AdminPage() {
     setNewUserName('');
     setNewUserEmail('');
     setNewSecurityToken('');
+  };
+
+  const handleSaveTaxConfig = async () => {
+    if (!firestore) return;
+    const configRef = doc(firestore, 'global_settings', 'payroll_tax_config');
+    try {
+      await setDoc(configRef, {
+        sssRate: parseFloat(editingTaxConfig.sssRate),
+        sssCeiling: parseFloat(editingTaxConfig.sssCeiling),
+        philHealthRate: parseFloat(editingTaxConfig.philHealthRate),
+        philHealthCap: parseFloat(editingTaxConfig.philHealthCap),
+        pagIbigShare: parseFloat(editingTaxConfig.pagIbigShare),
+        withholdingTaxRate: parseFloat(editingTaxConfig.withholdingTaxRate),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      toast({ title: "Tax Configuration Saved", description: "Global payroll tax rules updated." });
+      setIsTaxConfigModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "Update Failed", description: "Could not save tax config." });
+    }
+  };
+
+  const handleSaveManualAdjustment = async () => {
+    if (!firestore || !manualAdjTarget) return;
+    const userRef = doc(firestore, 'users', manualAdjTarget.id);
+    const amount = parseFloat(manualAdjAmount);
+    if (isNaN(amount) || amount <= 0 || !manualAdjReason) {
+      toast({ variant: "destructive", title: "Invalid Input", description: "Provide a valid amount and reason." });
+      return;
+    }
+
+    const currentAdjustments = manualAdjTarget.manualAdjustments || {};
+    const periodAdjs = currentAdjustments[selectedPayrollPeriod] || [];
+    
+    periodAdjs.push({
+       id: Math.random().toString(36).substring(2, 9),
+       amount,
+       reason: manualAdjReason,
+       type: manualAdjType,
+       dateAdded: new Date().toISOString()
+    });
+
+    try {
+      await setDoc(userRef, {
+        manualAdjustments: {
+          ...currentAdjustments,
+          [selectedPayrollPeriod]: periodAdjs
+        }
+      }, { merge: true });
+      toast({ title: "Adjustment Added", description: `Added ${manualAdjType} of ₱${amount} to ${manualAdjTarget.name}.` });
+      setIsManualAdjModalOpen(false);
+      setManualAdjAmount('');
+      setManualAdjReason('');
+    } catch (e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "Update Failed", description: "Could not save manual adjustment." });
+    }
+  };
+
+  const handleGenerateSnapshot = async () => {
+    if (!firestore || !payrollData || payrollData.length === 0) return;
+    setIsGeneratingPayroll(true);
+    try {
+      const batch = [];
+      for (const emp of payrollData) {
+        if (emp.grossSalary === 0) continue; 
+        const docId = `${emp.id}_${selectedPayrollPeriod}`;
+        const txRef = doc(firestore, 'payroll_transactions', docId);
+        batch.push(
+          setDoc(txRef, {
+            employeeId: emp.id,
+            employeeName: emp.name,
+            systemId: emp.systemId,
+            role: emp.role,
+            period: selectedPayrollPeriod,
+            historical_rate: emp.rate,
+            daysActive: emp.daysActive,
+            totalHours: emp.totalHours,
+            grossSalary: emp.grossSalary,
+            sssDeduction: emp.sssDeduction,
+            philHealthDeduction: emp.philHealthDeduction,
+            pagIbigDeduction: emp.pagIbigDeduction,
+            withholdingTax: emp.withholdingTax,
+            taxRateApplied: taxConfig.withholdingTaxRate,
+            manualAdjustments: emp.periodAdjustments,
+            netSalary: emp.netSalary,
+            is_paid: false,
+            generatedAt: serverTimestamp(),
+          }, { merge: true })
+        );
+      }
+      await Promise.all(batch);
+      toast({ title: "Payroll Snapshots Generated", description: `Captured salary versions for ${selectedPayrollPeriod}.` });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: "destructive", title: "Generation Failed", description: "Could not create payroll snapshots." });
+    } finally {
+      setIsGeneratingPayroll(false);
+    }
+  };
+
+  const handleTogglePaid = (txId: string, currentStatus: boolean) => {
+    if (!firestore) return;
+    const txRef = doc(firestore, 'payroll_transactions', txId);
+    setDoc(txRef, { is_paid: !currentStatus }, { merge: true }).catch(console.error);
+  };
+
+  const handleExportPDF = () => {
+    if (selectedPayrolls.size === 0) {
+      toast({ variant: "destructive", title: "No Selection", description: "Select at least one payroll record to export." });
+      return;
+    }
+    window.print();
   };
 
   const handleUpdateRate = () => {
@@ -514,6 +706,12 @@ export default function AdminPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedEmployeeProfile(emp)} title="View Profile">
+                            <User className="w-4 h-4 text-slate-400" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setManualAdjTarget(emp); setIsManualAdjModalOpen(true); }} title="Add Manual Adjustment">
+                            <Plus className="w-4 h-4 text-slate-400" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setRateEditingUser(emp); setEditingRateValue((emp.hourlyRate || DEFAULT_RATES[emp.role]).toString()); setIsRateModalOpen(true); }} title="Edit Hourly Rate">
                             <Banknote className="w-4 h-4 text-slate-400" />
                           </Button>
@@ -642,20 +840,42 @@ export default function AdminPage() {
             </Card>
           </div>
 
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border">
+            <div className="flex items-center gap-3">
+              <Label className="font-bold">Period:</Label>
+              <Input 
+                type="month" 
+                value={selectedPayrollPeriod} 
+                onChange={(e) => setSelectedPayrollPeriod(e.target.value)} 
+                className="w-40"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => { setEditingTaxConfig(taxConfig); setIsTaxConfigModalOpen(true); }} variant="outline" className="font-bold text-slate-700">
+                <Settings className="w-4 h-4 mr-2" /> Tax Rules
+              </Button>
+              <Button onClick={handleGenerateSnapshot} disabled={isGeneratingPayroll} className="bg-primary text-white font-bold">
+                {isGeneratingPayroll ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Printer className="w-4 h-4 mr-2" />}
+                Generate Snapshots
+              </Button>
+            </div>
+          </div>
+
           <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
             <Table>
               <TableHeader className="bg-slate-50">
                 <TableRow>
                   <TableHead className="font-bold text-slate-500">Personnel</TableHead>
-                  <TableHead className="font-bold text-slate-500 text-center">Days Active</TableHead>
-                  <TableHead className="font-bold text-slate-500 text-center">Total Hours</TableHead>
-                  <TableHead className="font-bold text-slate-500 text-center">Hourly Rate</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-center">Gross Pay</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-center">Statutory Ded.</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-center">Taxable Income</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-center">WHT & Adj</TableHead>
                   <TableHead className="text-right font-bold text-slate-500">Net Salary</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payrollData.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-400">No payroll data available.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400">No payroll data available.</TableCell></TableRow>
                 ) : (
                   payrollData.map((data) => (
                     <TableRow key={data.id} className="hover:bg-slate-50">
@@ -665,18 +885,19 @@ export default function AdminPage() {
                           <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{data.role.replace('_', ' ')}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-bold text-slate-700">{data.daysActive} days</TableCell>
-                      <TableCell className="text-center font-bold text-slate-700">{data.totalHours} hrs</TableCell>
-                      <TableCell className="text-center">
-                         <div className="flex items-center justify-center gap-2">
-                           <span className="text-slate-500 font-mono text-xs">₱{data.rate}/hr</span>
-                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setRateEditingUser(data); setEditingRateValue(data.rate.toString()); setIsRateModalOpen(true); }}>
-                             <Edit2 className="w-3 h-3" />
-                           </Button>
-                         </div>
+                      <TableCell className="text-center font-bold text-slate-700">₱{data.grossSalary?.toLocaleString()}</TableCell>
+                      <TableCell className="text-center font-bold text-red-500">-₱{data.totalStatutory?.toLocaleString()}</TableCell>
+                      <TableCell className="text-center font-bold text-slate-700">₱{data.taxableIncome?.toLocaleString()}</TableCell>
+                      <TableCell className="text-center font-bold">
+                        <span className="text-red-500">-₱{data.withholdingTax?.toLocaleString()}</span>
+                        {data.totalAdjustments !== 0 && (
+                           <span className={cn("ml-2 text-[10px]", data.totalAdjustments > 0 ? "text-green-500" : "text-red-500")}>
+                             {data.totalAdjustments > 0 ? '+' : ''}₱{data.totalAdjustments.toLocaleString()}
+                           </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="font-black text-primary">₱{data.netSalary.toLocaleString()}</span>
+                        <span className="font-black text-primary">₱{data.netSalary?.toLocaleString()}</span>
                       </TableCell>
                     </TableRow>
                   ))
@@ -684,7 +905,74 @@ export default function AdminPage() {
               </TableBody>
             </Table>
           </div>
-          <p className="text-[10px] text-slate-400 font-medium italic text-right">*Calculations are based on 8-hour shifts per logged working day (WFH Biometric verified).</p>
+          <p className="text-[10px] text-slate-400 font-medium italic text-right">*Calculations based on 8-hour shifts per verified logs. WHT and statutory deds applied via tax settings.</p>
+
+          <h3 className="text-xl font-bold mt-10 mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-slate-500" /> Generated Payroll History
+          </h3>
+          <div className="flex justify-between items-center mb-4">
+             <div className="text-sm text-slate-500">{selectedPayrolls.size} record(s) selected</div>
+             <Button variant="outline" onClick={handleExportPDF} disabled={selectedPayrolls.size === 0} className="font-bold border-primary text-primary hover:bg-primary/5">
+                <Printer className="w-4 h-4 mr-2" /> Export Payslips (PDF)
+             </Button>
+          </div>
+
+          <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
+            <Table>
+              <TableHeader className="bg-slate-50">
+                <TableRow>
+                  <TableHead className="w-12"><Checkbox onCheckedChange={(c) => {
+                     if (c) setSelectedPayrolls(new Set((payrollTransactions || [])?.map((tx: any) => tx.id)));
+                     else setSelectedPayrolls(new Set());
+                  }} checked={!!payrollTransactions && payrollTransactions.length > 0 && selectedPayrolls.size === payrollTransactions.length} /></TableHead>
+                  <TableHead className="font-bold text-slate-500">Period</TableHead>
+                  <TableHead className="font-bold text-slate-500">Personnel</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-right">Net Salary</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payrollLoading ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : !payrollTransactions || payrollTransactions.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-400">No transactions found.</TableCell></TableRow>
+                ) : (
+                  payrollTransactions.map((tx: any) => (
+                    <TableRow key={tx.id} className="hover:bg-slate-50">
+                      <TableCell>
+                         <Checkbox 
+                           checked={selectedPayrolls.has(tx.id)} 
+                           onCheckedChange={(c) => {
+                             const next = new Set(selectedPayrolls);
+                             if (c) next.add(tx.id); else next.delete(tx.id);
+                             setSelectedPayrolls(next);
+                           }} 
+                         />
+                      </TableCell>
+                      <TableCell className="font-bold text-slate-700">{tx.period}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-900">{tx.employeeName}</span>
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{tx.systemId}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="font-black text-primary">₱{tx.netSalary?.toLocaleString()}</span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-3">
+                           <span className={cn("text-xs font-bold uppercase", tx.is_paid ? "text-green-600" : "text-orange-500")}>
+                             {tx.is_paid ? "Paid" : "Pending"}
+                           </span>
+                           <Switch checked={tx.is_paid} onCheckedChange={() => handleTogglePaid(tx.id, tx.is_paid)} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -782,6 +1070,119 @@ export default function AdminPage() {
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsTaskModalOpen(false)}>Cancel</Button>
             <Button onClick={handleCreateTask} className="bg-primary text-white font-bold">Assign Mission</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Tax Rules Modal */}
+      <Dialog open={isTaxConfigModalOpen} onOpenChange={setIsTaxConfigModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Global Tax & Deductions</DialogTitle>
+            <DialogDescription>Apply global configuration for statutory rates and withholding.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4 grid grid-cols-2 gap-4">
+            <div className="space-y-2 col-span-1">
+              <Label>SSS Rate (%)</Label>
+              <Input type="number" value={editingTaxConfig.sssRate} onChange={(e) => setEditingTaxConfig({ ...editingTaxConfig, sssRate: e.target.value })} />
+            </div>
+            <div className="space-y-2 col-span-1">
+              <Label>SSS Ceiling (PHP)</Label>
+              <Input type="number" value={editingTaxConfig.sssCeiling} onChange={(e) => setEditingTaxConfig({ ...editingTaxConfig, sssCeiling: e.target.value })} />
+            </div>
+            <div className="space-y-2 col-span-1">
+              <Label>PhilHealth Rate (%)</Label>
+              <Input type="number" value={editingTaxConfig.philHealthRate} onChange={(e) => setEditingTaxConfig({ ...editingTaxConfig, philHealthRate: e.target.value })} />
+            </div>
+            <div className="space-y-2 col-span-1">
+              <Label>PhilHealth Cap (PHP)</Label>
+              <Input type="number" value={editingTaxConfig.philHealthCap} onChange={(e) => setEditingTaxConfig({ ...editingTaxConfig, philHealthCap: e.target.value })} />
+            </div>
+            <div className="space-y-2 col-span-1">
+              <Label>Pag-IBIG Share (PHP)</Label>
+              <Input type="number" value={editingTaxConfig.pagIbigShare} onChange={(e) => setEditingTaxConfig({ ...editingTaxConfig, pagIbigShare: e.target.value })} />
+            </div>
+            <div className="space-y-2 col-span-1">
+              <Label>Withholding Tax (%)</Label>
+              <Input type="number" value={editingTaxConfig.withholdingTaxRate} onChange={(e) => setEditingTaxConfig({ ...editingTaxConfig, withholdingTaxRate: e.target.value })} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setIsTaxConfigModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveTaxConfig} className="bg-primary text-white font-bold">Apply Rules</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Adjustments Modal */}
+      <Dialog open={isManualAdjModalOpen} onOpenChange={setIsManualAdjModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manual Adjustment ({selectedPayrollPeriod})</DialogTitle>
+            <DialogDescription>Add a one-time adjustment to {manualAdjTarget?.name}'s net pay.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={manualAdjType} onValueChange={(v: any) => setManualAdjType(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DEDUCTION">Deduction (Decrease Net Pay)</SelectItem>
+                  <SelectItem value="ADDITION">Addition (Increase Net Pay)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Amount (PHP)</Label>
+              <Input type="number" placeholder="500" value={manualAdjAmount} onChange={(e) => setManualAdjAmount(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Reason</Label>
+              <Input placeholder="Late Penalty, Bonus..." value={manualAdjReason} onChange={(e) => setManualAdjReason(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsManualAdjModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveManualAdjustment} className="bg-primary text-white font-bold">Add Adjustment</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Employee Profile View Modal */}
+      <Dialog open={!!selectedEmployeeProfile} onOpenChange={(open) => !open && setSelectedEmployeeProfile(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Employee Profile</DialogTitle>
+            <DialogDescription>{selectedEmployeeProfile?.systemId} | {selectedEmployeeProfile?.role?.replace('_', ' ')}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-6">
+             <div className="flex items-center gap-4">
+                <img src={selectedEmployeeProfile?.avatarUrl || PlaceHolderImages[0].imageUrl} alt="Avatar" className="w-16 h-16 rounded-full border bg-slate-50" />
+                <div>
+                   <h2 className="text-xl font-bold">{selectedEmployeeProfile?.name}</h2>
+                   <p className="text-sm text-slate-500">{selectedEmployeeProfile?.email}</p>
+                   <p className="text-sm font-mono mt-1 text-primary font-bold">₱{selectedEmployeeProfile?.hourlyRate || DEFAULT_RATES[selectedEmployeeProfile?.role || 'EDITOR']}/hr</p>
+                </div>
+             </div>
+             <div className="border rounded-xl p-4 bg-slate-50">
+               <h4 className="font-bold text-sm mb-2 text-slate-700">Manual Adjustments ({selectedPayrollPeriod})</h4>
+               {(!selectedEmployeeProfile?.manualAdjustments?.[selectedPayrollPeriod] || selectedEmployeeProfile.manualAdjustments[selectedPayrollPeriod].length === 0) ? (
+                 <p className="text-xs text-slate-400 italic">No adjustments for this period.</p>
+               ) : (
+                 <div className="space-y-2">
+                   {selectedEmployeeProfile.manualAdjustments[selectedPayrollPeriod].map((adj: any, i: number) => (
+                     <div key={i} className="flex justify-between items-center bg-white p-2 border rounded text-xs font-bold">
+                        <span>{adj.reason}</span>
+                        <span className={adj.type === 'ADDITION' ? 'text-green-500' : 'text-red-500'}>
+                          {adj.type === 'ADDITION' ? '+' : '-'}₱{adj.amount.toLocaleString()}
+                        </span>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+          </div>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setSelectedEmployeeProfile(null)}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>
