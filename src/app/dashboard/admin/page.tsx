@@ -141,6 +141,7 @@ export default function AdminPage() {
 
   // Payroll System State
   const [selectedPayrollPeriod, setSelectedPayrollPeriod] = useState(format(new Date(), 'yyyy-MM'));
+  const [payrollSearchQuery, setPayrollSearchQuery] = useState('');
   const [selectedPayrolls, setSelectedPayrolls] = useState<Set<string>>(new Set());
   const [selectedEmployeeProfile, setSelectedEmployeeProfile] = useState<any>(null);
   const [isGeneratingPayroll, setIsGeneratingPayroll] = useState(false);
@@ -910,9 +911,20 @@ export default function AdminPage() {
           <h3 className="text-xl font-bold mt-10 mb-4 flex items-center gap-2">
             <FileText className="w-5 h-5 text-slate-500" /> Generated Payroll History
           </h3>
-          <div className="flex justify-between items-center mb-4">
-             <div className="text-sm text-slate-500">{selectedPayrolls.size} record(s) selected</div>
-             <Button variant="outline" onClick={handleExportPDF} disabled={selectedPayrolls.size === 0} className="font-bold border-primary text-primary hover:bg-primary/5">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+             <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input 
+                    placeholder="Search NAME, DATE, TIMESTAMP..." 
+                    value={payrollSearchQuery}
+                    onChange={(e) => setPayrollSearchQuery(e.target.value)}
+                    className="pl-10 w-full"
+                  />
+                </div>
+                <div className="text-sm text-slate-500 whitespace-nowrap">{selectedPayrolls.size} record(s) selected</div>
+             </div>
+             <Button variant="outline" onClick={handleExportPDF} disabled={selectedPayrolls.size === 0} className="font-bold border-primary text-primary hover:bg-primary/5 w-full md:w-auto">
                 <Printer className="w-4 h-4 mr-2" /> Export Payslips (PDF)
              </Button>
           </div>
@@ -922,9 +934,15 @@ export default function AdminPage() {
               <TableHeader className="bg-slate-50">
                 <TableRow>
                   <TableHead className="w-12"><Checkbox onCheckedChange={(c) => {
-                     if (c) setSelectedPayrolls(new Set((payrollTransactions || [])?.map((tx: any) => tx.id)));
+                     const filteredTxs = (payrollTransactions || []).filter((tx: any) => {
+                        if (!payrollSearchQuery) return true;
+                        const q = payrollSearchQuery.toLowerCase();
+                        const dateStr = tx.generatedAt?.toDate ? format(tx.generatedAt.toDate(), 'PPP p').toLowerCase() : '';
+                        return (tx.employeeName?.toLowerCase().includes(q) || tx.period?.toLowerCase().includes(q) || dateStr.includes(q));
+                     });
+                     if (c) setSelectedPayrolls(new Set(filteredTxs.map((tx: any) => tx.id)));
                      else setSelectedPayrolls(new Set());
-                  }} checked={!!payrollTransactions && payrollTransactions.length > 0 && selectedPayrolls.size === payrollTransactions.length} /></TableHead>
+                  }} checked={!!payrollTransactions && payrollTransactions.length > 0 && selectedPayrolls.size > 0} /></TableHead>
                   <TableHead className="font-bold text-slate-500">Period</TableHead>
                   <TableHead className="font-bold text-slate-500">Personnel</TableHead>
                   <TableHead className="font-bold text-slate-500 text-right">Net Salary</TableHead>
@@ -937,7 +955,16 @@ export default function AdminPage() {
                 ) : !payrollTransactions || payrollTransactions.length === 0 ? (
                   <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-400">No transactions found.</TableCell></TableRow>
                 ) : (
-                  payrollTransactions.map((tx: any) => (
+                  (payrollTransactions.filter((tx: any) => {
+                    if (!payrollSearchQuery) return true;
+                    const q = payrollSearchQuery.toLowerCase();
+                    const dateStr = tx.generatedAt?.toDate ? format(tx.generatedAt.toDate(), 'PPP p').toLowerCase() : '';
+                    return (
+                       tx.employeeName?.toLowerCase().includes(q) || 
+                       tx.period?.toLowerCase().includes(q) || 
+                       dateStr.includes(q)
+                    );
+                  })).map((tx: any) => (
                     <TableRow key={tx.id} className="hover:bg-slate-50">
                       <TableCell>
                          <Checkbox 
@@ -949,7 +976,14 @@ export default function AdminPage() {
                            }} 
                          />
                       </TableCell>
-                      <TableCell className="font-bold text-slate-700">{tx.period}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-700">{tx.period}</span>
+                          <span className="text-[10px] text-slate-400">
+                             {tx.generatedAt?.toDate ? format(tx.generatedAt.toDate(), 'PP p') : 'Pending...'}
+                          </span>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-900">{tx.employeeName}</span>
