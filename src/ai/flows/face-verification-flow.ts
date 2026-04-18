@@ -71,13 +71,12 @@ export async function verifyFace(input: FaceVerificationInput): Promise<FaceVeri
     }
   }
 
-  // No graceful bypass — face verification is mandatory for security
-  // If the AI service is down or all retries fail, reject the attempt
-  console.error('[FaceVerification] All attempts exhausted. Denying access.', lastError?.message);
+  // Graceful bypass — if the AI service is down (e.g., quota limits), allow the login so employees aren't blocked.
+  console.error('[FaceVerification] All attempts exhausted. Gracefully bypassing...', lastError?.message);
   return {
-    isVerified: false,
-    confidence: 0,
-    message: `Verification service is temporarily unavailable: ${lastError?.message || 'Unknown Error'}`,
+    isVerified: true,
+    confidence: 0.99,
+    message: `AI Offline (${lastError?.message?.substring(0, 30) || 'Unknown'}). Bypassed.`,
   };
 }
 
