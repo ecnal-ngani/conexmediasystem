@@ -38,13 +38,8 @@ import {
   ShieldAlert,
   Smartphone,
   Wifi,
-  Edit2,
-  Printer,
-  FileText,
-  User
+  Edit2
 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Table, 
   TableBody, 
@@ -136,12 +131,6 @@ export default function AdminPage() {
   const [taskCategory, setTaskCategory] = useState('Operations');
   const [taskDueDate, setTaskDueDate] = useState('');
 
-  // Payroll / Employee Profile state
-  const [selectedPayrollPeriod, setSelectedPayrollPeriod] = useState(format(new Date(), 'yyyy-MM'));
-  const [selectedPayrolls, setSelectedPayrolls] = useState<Set<string>>(new Set());
-  const [selectedEmployeeProfile, setSelectedEmployeeProfile] = useState<any>(null);
-  const [isGeneratingPayroll, setIsGeneratingPayroll] = useState(false);
-
   // Biometric Photo state
   const [selectedLogPhoto, setSelectedLogPhoto] = useState<string | null>(null);
 
@@ -171,12 +160,6 @@ export default function AdminPage() {
     return query(collection(firestore, 'verifications'), orderBy('timestamp', 'desc'));
   }, [firestore, currentUser]);
   const { data: verifications, isLoading: historyLoading } = useCollection<any>(historyQuery);
-
-  const payrollTransactionsQuery = useMemoFirebase(() => {
-    if (!firestore || !currentUser) return null;
-    return query(collection(firestore, 'payroll_transactions'), orderBy('generatedAt', 'desc'));
-  }, [firestore, currentUser]);
-  const { data: payrollTransactions, isLoading: payrollLoading } = useCollection<any>(payrollTransactionsQuery);
 
   const filteredStaff = useMemo(() => {
     if (!staff) return [];
@@ -219,7 +202,7 @@ export default function AdminPage() {
         netSalary
       };
     });
-  }, [staff, verifications, selectedPayrollPeriod]);
+  }, [staff, verifications]);
 
   const nextSystemId = useMemo(() => {
     if (!staff) return "CX-LOAD-00";
@@ -342,56 +325,6 @@ export default function AdminPage() {
         operation: 'delete'
       } satisfies SecurityRuleContext));
     });
-  };
-
-  const handleGenerateSnapshot = async () => {
-    if (!firestore || !payrollData || payrollData.length === 0) return;
-    setIsGeneratingPayroll(true);
-    try {
-      const batch = [];
-      for (const emp of payrollData) {
-        if (emp.netSalary === 0) continue; // Skip employees with 0 salary for the period
-        const docId = `${emp.id}_${selectedPayrollPeriod}`;
-        const txRef = doc(firestore, 'payroll_transactions', docId);
-        batch.push(
-          setDoc(txRef, {
-            employeeId: emp.id,
-            employeeName: emp.name,
-            systemId: emp.systemId,
-            role: emp.role,
-            period: selectedPayrollPeriod,
-            historical_rate: emp.rate,
-            daysActive: emp.daysActive,
-            totalHours: emp.totalHours,
-            netSalary: emp.netSalary,
-            is_paid: false,
-            generatedAt: serverTimestamp(),
-          }, { merge: true })
-        );
-      }
-      await Promise.all(batch);
-      toast({ title: "Payroll Snapshots Generated", description: `Captured salary versions for ${selectedPayrollPeriod}.` });
-    } catch (error) {
-      console.error(error);
-      toast({ variant: "destructive", title: "Generation Failed", description: "Could not create payroll snapshots." });
-    } finally {
-      setIsGeneratingPayroll(false);
-    }
-  };
-
-  const handleTogglePaid = (txId: string, currentStatus: boolean) => {
-    if (!firestore) return;
-    const txRef = doc(firestore, 'payroll_transactions', txId);
-    setDoc(txRef, { is_paid: !currentStatus }, { merge: true }).catch(console.error);
-  };
-
-  const handleExportPDF = () => {
-    if (selectedPayrolls.size === 0) {
-      toast({ variant: "destructive", title: "No Selection", description: "Select at least one payroll record to export." });
-      return;
-    }
-    // Triggers browser print, which we style via CSS for PDF export
-    window.print();
   };
 
   if (!mounted) return null;
@@ -581,9 +514,6 @@ export default function AdminPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedEmployeeProfile(emp)} title="View Profile">
-                            <User className="w-4 h-4 text-slate-400" />
-                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setRateEditingUser(emp); setEditingRateValue((emp.hourlyRate || DEFAULT_RATES[emp.role]).toString()); setIsRateModalOpen(true); }} title="Edit Hourly Rate">
                             <Banknote className="w-4 h-4 text-slate-400" />
                           </Button>
@@ -712,24 +642,6 @@ export default function AdminPage() {
             </Card>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-xl border">
-            <div className="flex items-center gap-3">
-              <Label className="font-bold">Period:</Label>
-              <Input 
-                type="month" 
-                value={selectedPayrollPeriod} 
-                onChange={(e) => setSelectedPayrollPeriod(e.target.value)} 
-                className="w-40"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={handleGenerateSnapshot} disabled={isGeneratingPayroll} className="bg-primary text-white font-bold">
-                {isGeneratingPayroll ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Printer className="w-4 h-4 mr-2" />}
-                Generate Snapshots
-              </Button>
-            </div>
-          </div>
-
           <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
             <Table>
               <TableHeader className="bg-slate-50">
@@ -773,77 +685,6 @@ export default function AdminPage() {
             </Table>
           </div>
           <p className="text-[10px] text-slate-400 font-medium italic text-right">*Calculations are based on 8-hour shifts per logged working day (WFH Biometric verified).</p>
-
-          <h3 className="text-xl font-bold mt-10 mb-4 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-slate-500" /> Generated Payroll History
-          </h3>
-          <div className="flex justify-between items-center mb-4">
-             <div className="text-sm text-slate-500">{selectedPayrolls.size} record(s) selected</div>
-             <Button variant="outline" onClick={handleExportPDF} disabled={selectedPayrolls.size === 0} className="font-bold border-primary text-primary hover:bg-primary/5">
-                <Printer className="w-4 h-4 mr-2" /> Export Payslips (PDF)
-             </Button>
-          </div>
-
-          <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
-            <Table>
-              <TableHeader className="bg-slate-50">
-                <TableRow>
-                  <TableHead className="w-12"><Checkbox onCheckedChange={(c) => {
-                     if (c) setSelectedPayrolls(new Set(payrollTransactions?.map((tx: any) => tx.id) || []));
-                     else setSelectedPayrolls(new Set());
-                  }} checked={!!payrollTransactions && payrollTransactions.length > 0 && selectedPayrolls.size === payrollTransactions.length} /></TableHead>
-                  <TableHead className="font-bold text-slate-500">Period</TableHead>
-                  <TableHead className="font-bold text-slate-500">Personnel</TableHead>
-                  <TableHead className="font-bold text-slate-500 text-center">Historical Rate</TableHead>
-                  <TableHead className="font-bold text-slate-500 text-right">Net Salary</TableHead>
-                  <TableHead className="font-bold text-slate-500 text-right">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payrollLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
-                ) : !payrollTransactions || payrollTransactions.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400">No transactions found.</TableCell></TableRow>
-                ) : (
-                  payrollTransactions.map((tx: any) => (
-                    <TableRow key={tx.id} className="hover:bg-slate-50">
-                      <TableCell>
-                         <Checkbox 
-                           checked={selectedPayrolls.has(tx.id)} 
-                           onCheckedChange={(c) => {
-                             const next = new Set(selectedPayrolls);
-                             if (c) next.add(tx.id); else next.delete(tx.id);
-                             setSelectedPayrolls(next);
-                           }} 
-                         />
-                      </TableCell>
-                      <TableCell className="font-bold text-slate-700">{tx.period}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-900">{tx.employeeName}</span>
-                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{tx.systemId}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                         <span className="text-slate-500 font-mono text-xs">₱{tx.historical_rate}/hr</span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span className="font-black text-primary">₱{tx.netSalary.toLocaleString()}</span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-3">
-                           <span className={cn("text-xs font-bold uppercase", tx.is_paid ? "text-green-600" : "text-orange-500")}>
-                             {tx.is_paid ? "Paid" : "Pending"}
-                           </span>
-                           <Switch checked={tx.is_paid} onCheckedChange={() => handleTogglePaid(tx.id, tx.is_paid)} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
         </TabsContent>
       </Tabs>
 
@@ -944,122 +785,6 @@ export default function AdminPage() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Employee Profile / History Dialog */}
-      <Dialog open={!!selectedEmployeeProfile} onOpenChange={(open) => !open && setSelectedEmployeeProfile(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">{selectedEmployeeProfile?.name}</DialogTitle>
-            <DialogDescription>
-              Date Added: {selectedEmployeeProfile?.createdAt?.toDate ? format(selectedEmployeeProfile.createdAt.toDate(), 'PPP') : 'Unknown'} <br/>
-              System ID: {selectedEmployeeProfile?.systemId}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-             <h4 className="font-bold border-b pb-2">Payroll History</h4>
-             <div className="max-h-[300px] overflow-y-auto border rounded-lg">
-               <Table>
-                 <TableHeader className="bg-slate-50 sticky top-0">
-                   <TableRow>
-                     <TableHead>Period</TableHead>
-                     <TableHead>Hours</TableHead>
-                     <TableHead>Rate</TableHead>
-                     <TableHead className="text-right">Net Salary</TableHead>
-                     <TableHead className="text-right">Status</TableHead>
-                   </TableRow>
-                 </TableHeader>
-                 <TableBody>
-                   {(payrollTransactions?.filter((tx: any) => tx.employeeId === selectedEmployeeProfile?.id) || []).length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center text-slate-400 py-4">No payroll history.</TableCell></TableRow>
-                   ) : (
-                      (payrollTransactions?.filter((tx: any) => tx.employeeId === selectedEmployeeProfile?.id) || []).map((tx: any) => (
-                        <TableRow key={tx.id}>
-                          <TableCell className="font-bold">{tx.period}</TableCell>
-                          <TableCell>{tx.totalHours}h</TableCell>
-                          <TableCell>₱{tx.historical_rate}/hr</TableCell>
-                          <TableCell className="text-right font-black">₱{tx.netSalary.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">
-                             <Badge variant={tx.is_paid ? "default" : "secondary"} className={tx.is_paid ? "bg-green-500" : ""}>
-                               {tx.is_paid ? "PAID" : "PENDING"}
-                             </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                   )}
-                 </TableBody>
-               </Table>
-             </div>
-          </div>
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setSelectedEmployeeProfile(null)}>Close</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Hidden PDF Printable Payslips */}
-      <div className="hidden print:block space-y-8">
-         {(payrollTransactions?.filter((tx: any) => selectedPayrolls.has(tx.id)) || []).map((tx: any) => (
-            <div key={tx.id} className="border-2 border-slate-900 p-8 rounded-xl relative break-inside-avoid">
-               {tx.is_paid && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none z-0">
-                     <span className="text-[150px] font-black text-green-600 rotate-[-15deg] tracking-widest border-8 border-green-600 p-4 rounded-3xl">PAID</span>
-                  </div>
-               )}
-               <div className="flex justify-between items-start border-b-2 border-slate-200 pb-6 mb-6 relative z-10">
-                  <div>
-                    <h2 className="text-3xl font-black tracking-tight uppercase">CONEX MEDIA</h2>
-                    <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Official Payslip</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-lg">Period: {tx.period}</p>
-                    <p className="text-sm text-slate-500">Generated: {tx.generatedAt?.toDate ? format(tx.generatedAt.toDate(), 'PPP') : 'Now'}</p>
-                  </div>
-               </div>
-               
-               <div className="grid grid-cols-2 gap-8 mb-8 relative z-10">
-                  <div>
-                     <p className="text-xs font-bold text-slate-400 uppercase">Employee Details</p>
-                     <p className="font-bold text-xl">{tx.employeeName}</p>
-                     <p className="font-mono text-sm text-slate-600">ID: {tx.systemId}</p>
-                     <p className="text-sm text-slate-600">Role: {tx.role?.replace('_', ' ')}</p>
-                  </div>
-                  <div className="text-right">
-                     <p className="text-xs font-bold text-slate-400 uppercase">Status</p>
-                     <p className={cn("font-black text-2xl uppercase tracking-widest", tx.is_paid ? "text-green-600" : "text-slate-900")}>
-                        {tx.is_paid ? "PAID IN FULL" : "PENDING DISBURSEMENT"}
-                     </p>
-                  </div>
-               </div>
-
-               <div className="border rounded-lg overflow-hidden relative z-10">
-                  <table className="w-full text-left">
-                     <thead className="bg-slate-100">
-                        <tr>
-                           <th className="p-3 font-bold text-sm uppercase">Description</th>
-                           <th className="p-3 font-bold text-sm uppercase text-center">Hours/Days</th>
-                           <th className="p-3 font-bold text-sm uppercase text-right">Rate</th>
-                           <th className="p-3 font-bold text-sm uppercase text-right">Amount</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y">
-                        <tr>
-                           <td className="p-3">Base Compensation ({tx.period})</td>
-                           <td className="p-3 text-center">{tx.totalHours}h ({tx.daysActive}d)</td>
-                           <td className="p-3 text-right">₱{tx.historical_rate}/hr</td>
-                           <td className="p-3 text-right font-bold">₱{tx.netSalary.toLocaleString()}</td>
-                        </tr>
-                     </tbody>
-                     <tfoot className="bg-slate-900 text-white">
-                        <tr>
-                           <td colSpan={3} className="p-4 text-right font-bold uppercase tracking-widest">Net Total</td>
-                           <td className="p-4 text-right font-black text-xl">₱{tx.netSalary.toLocaleString()}</td>
-                        </tr>
-                     </tfoot>
-                  </table>
-               </div>
-            </div>
-         ))}
-      </div>
     </div>
   );
 }
