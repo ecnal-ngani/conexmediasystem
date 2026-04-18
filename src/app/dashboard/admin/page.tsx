@@ -789,9 +789,9 @@ export default function AdminPage() {
               <TableHeader className="bg-slate-50">
                 <TableRow>
                   <TableHead className="w-12"><Checkbox onCheckedChange={(c) => {
-                     if (c) setSelectedPayrolls(new Set(payrollTransactions?.map((tx: any) => tx.id)));
+                     if (c) setSelectedPayrolls(new Set(payrollTransactions?.map((tx: any) => tx.id) || []));
                      else setSelectedPayrolls(new Set());
-                  }} checked={payrollTransactions?.length > 0 && selectedPayrolls.size === payrollTransactions.length} /></TableHead>
+                  }} checked={!!payrollTransactions && payrollTransactions.length > 0 && selectedPayrolls.size === payrollTransactions.length} /></TableHead>
                   <TableHead className="font-bold text-slate-500">Period</TableHead>
                   <TableHead className="font-bold text-slate-500">Personnel</TableHead>
                   <TableHead className="font-bold text-slate-500 text-center">Historical Rate</TableHead>
