@@ -117,6 +117,8 @@ export function QuickActions() {
   const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [isProjectOpen, setIsProjectOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState<any>(null);
+  const [isNotifDetailOpen, setIsNotifDetailOpen] = useState(false);
   const [lastReadTime, setLastReadTime] = useState<number>(0);
   
   const firestore = useFirestore();
@@ -406,8 +408,12 @@ export function QuickActions() {
                     return (
                       <div
                         key={i}
+                        onClick={() => {
+                          setSelectedNotif(n);
+                          setIsNotifDetailOpen(true);
+                        }}
                         className={cn(
-                          "p-4 rounded-2xl border transition-all",
+                          "p-4 rounded-2xl border transition-all cursor-pointer hover:bg-white/50",
                           style.bg, style.border,
                           isUnread ? "shadow-sm" : "opacity-70"
                         )}
@@ -777,6 +783,79 @@ export function QuickActions() {
              }} 
              onCancel={() => setIsMapPickerOpen(false)} 
            />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isNotifDetailOpen} onOpenChange={setIsNotifDetailOpen}>
+        <DialogContent className="max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+          {selectedNotif && (
+            <div className="p-8 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shadow-lg", getNotifStyle(selectedNotif.type).iconBg)}>
+                  <selectedNotif.icon className={cn("w-7 h-7", getNotifStyle(selectedNotif.type).iconColor)} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">{selectedNotif.title || selectedNotif.brand}</h3>
+                  <Badge className={cn("mt-1 text-[10px] font-black uppercase px-2", getNotifStyle(selectedNotif.type).bg, getNotifStyle(selectedNotif.type).iconColor)} variant="outline">
+                    {selectedNotif.type} MISSION
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 py-6 border-y border-slate-50">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Priority</p>
+                  <p className={cn("text-xs font-bold", selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH' ? 'text-red-600' : 'text-slate-700')}>
+                    {selectedNotif.priority || 'NORMAL'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Timeline</p>
+                  <p className="text-xs font-bold text-slate-700">{selectedNotif.dueDate || selectedNotif.date || 'TBA'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Assigned By</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 capitalize">
+                      {selectedNotif.assignedByName?.charAt(0) || 'A'}
+                    </div>
+                    <p className="text-xs font-bold text-slate-900">{selectedNotif.assignedByName || 'Administrator'}</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</p>
+                  <p className="text-xs font-bold text-slate-700 capitalize">{selectedNotif.status || 'Pending'}</p>
+                </div>
+              </div>
+
+              {selectedNotif.notes && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Operational Intelligence</p>
+                  <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl italic border border-slate-100">
+                    "{selectedNotif.notes}"
+                  </p>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-3 pt-2">
+                <Button 
+                  onClick={() => {
+                    setIsNotifDetailOpen(false);
+                    setIsNotifOpen(false);
+                    if (selectedNotif.type === 'SCHEDULE') router.push('/dashboard/calendar');
+                    if (selectedNotif.type === 'TASK') router.push('/dashboard/calendar');
+                    if (selectedNotif.type === 'PROJECT') router.push('/dashboard/production');
+                  }}
+                  className="h-12 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800"
+                >
+                  Go to Command Center
+                </Button>
+                <Button variant="outline" onClick={() => setIsNotifDetailOpen(false)} className="h-12 rounded-xl border-slate-200 font-bold text-slate-500">
+                  Dismiss Briefing
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

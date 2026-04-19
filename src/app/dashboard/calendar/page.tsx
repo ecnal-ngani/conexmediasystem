@@ -195,6 +195,8 @@ export default function CalendarPage() {
       date: eventDate,
       location: eventLocation,
       notes: eventNotes,
+      assignedById: user.id,
+      assignedByName: user.name,
       createdAt: serverTimestamp()
     };
 

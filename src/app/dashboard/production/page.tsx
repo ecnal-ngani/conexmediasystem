@@ -230,6 +230,8 @@ export default function ProductionPage() {
       priority,
       artist,
       artistId,
+      assignedById: user.id,
+      assignedByName: user.name,
       type,
       platform,
       dueDate,
