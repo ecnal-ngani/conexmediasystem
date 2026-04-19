@@ -543,8 +543,7 @@ export default function ProductionPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Status</Label>
-
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Status</Label>
                             <Select value={status} onValueChange={setStatus}>
                               <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
                               <SelectContent>
@@ -553,11 +552,12 @@ export default function ProductionPage() {
                                 <SelectItem value="For QA">For QA</SelectItem>
                                 <SelectItem value="Approved">Approved</SelectItem>
                                 <SelectItem value="Client Revision">Client Revision</SelectItem>
+                                <SelectItem value="Done">Done</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <Label>Priority</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority</Label>
                             <Select value={priority} onValueChange={setPriority}>
                               <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
                               <SelectContent>
@@ -566,6 +566,18 @@ export default function ProductionPage() {
                               </SelectContent>
                             </Select>
                           </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                            <LinkIcon className="w-3 h-3 text-primary" />
+                            Canva / Design Link
+                          </Label>
+                          <Input 
+                            placeholder="https://www.canva.com/design/..." 
+                            value={canvasLink} 
+                            onChange={(e) => setCanvasLink(e.target.value)} 
+                            className="h-12 rounded-xl" 
+                          />
                         </div>
                       </div>
                       <div className="flex gap-3 pt-4">

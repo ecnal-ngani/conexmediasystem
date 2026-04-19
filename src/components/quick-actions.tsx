@@ -466,9 +466,23 @@ export function QuickActions() {
                   </div>
                   <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-900 flex items-center gap-2 tracking-widest"><Calendar className="w-3 h-3 text-primary" />Due Date</Label><Input type="date" value={projectDueDate} onChange={(e) => setProjectDueDate(e.target.value)} className="h-12 rounded-xl" /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Status</Label><Select value={projectStatus} onValueChange={setProjectStatus}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="In Production">In Production</SelectItem><SelectItem value="For QA">For QA</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Client Revision">Client Revision</SelectItem><SelectItem value="Done">Done</SelectItem></SelectContent></Select></div>
-                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority</Label><Select value={projectPriority} onValueChange={setProjectPriority}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="REGULAR">REGULAR</SelectItem><SelectItem value="RUSH">RUSH</SelectItem></SelectContent></Select></div>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Status</Label><Select value={projectStatus} onValueChange={setProjectStatus}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="In Production">In Production</SelectItem><SelectItem value="For QA">For QA</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Client Revision">Client Revision</SelectItem><SelectItem value="Done">Done</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority</Label><Select value={projectPriority} onValueChange={setProjectPriority}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="REGULAR">REGULAR</SelectItem><SelectItem value="RUSH">RUSH</SelectItem></SelectContent></Select></div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <LinkIcon className="w-3 h-3 text-primary" />
+                      Canva / Design Link
+                    </Label>
+                    <Input 
+                      placeholder="https://www.canva.com/design/..." 
+                      value={canvasLink} 
+                      onChange={(e) => setCanvasLink(e.target.value)} 
+                      className="h-12 rounded-xl" 
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
