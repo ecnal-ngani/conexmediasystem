@@ -353,6 +353,7 @@ export default function ProductionPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
               <SelectItem value="In Production">In Production</SelectItem>
               <SelectItem value="For QA">For QA</SelectItem>
               <SelectItem value="Approved">Approved</SelectItem>
@@ -541,6 +542,7 @@ export default function ProductionPage() {
                             <Select value={status} onValueChange={setStatus}>
                               <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="Pending">Pending</SelectItem>
                                 <SelectItem value="In Production">In Production</SelectItem>
                                 <SelectItem value="For QA">For QA</SelectItem>
                                 <SelectItem value="Approved">Approved</SelectItem>
@@ -622,6 +624,7 @@ export default function ProductionPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="Pending">PENDING</SelectItem>
                           <SelectItem value="In Production">IN PRODUCTION</SelectItem>
                           <SelectItem value="For QA">FOR QA</SelectItem>
                           <SelectItem value="Approved">APPROVED</SelectItem>

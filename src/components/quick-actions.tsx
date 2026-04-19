@@ -182,7 +182,7 @@ export function QuickActions() {
   const [fileCode, setFileCode] = useState('');
   const [projectBrandId, setProjectBrandId] = useState('');
   const [contentIdea, setContentIdea] = useState('');
-  const [projectStatus, setProjectStatus] = useState('In Production');
+  const [projectStatus, setProjectStatus] = useState('Pending');
   const [projectPriority, setProjectPriority] = useState('REGULAR');
   const [artist, setArtist] = useState('');
   const [artistId, setArtistId] = useState('');
@@ -571,6 +571,7 @@ export function QuickActions() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                    <SelectItem value="Pending" className="font-medium">Pending</SelectItem>
                     <SelectItem value="In Production" className="font-medium">In Production</SelectItem>
                     <SelectItem value="On Deck" className="font-medium">On Deck</SelectItem>
                   </SelectContent>
