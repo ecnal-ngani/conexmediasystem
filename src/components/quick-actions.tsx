@@ -564,7 +564,7 @@ export function QuickActions() {
       </Dialog>
 
       <Dialog open={isNotifDetailOpen} onOpenChange={setIsNotifDetailOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl bg-white">
           {selectedNotif && (
             <div className="p-6 sm:p-8 space-y-6 text-left">
               {(() => {
@@ -576,7 +576,7 @@ export function QuickActions() {
                       <Icon className={cn("w-7 h-7", style.iconColor)} />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight truncate leading-tight">
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">
                         {selectedNotif.title || selectedNotif.brand}
                       </h3>
                       <Badge className={cn("mt-1.5 text-[10px] font-black uppercase px-2 tracking-wider", style.bg, style.iconColor)} variant="outline">
@@ -587,7 +587,7 @@ export function QuickActions() {
                 );
               })()}
 
-              <div className="grid grid-cols-2 gap-x-8 gap-y-6 py-6 border-y border-slate-50">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-6 py-6 border-y border-slate-50">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Priority</p>
                   <p className={cn("text-xs font-bold", (selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH') ? 'text-red-600' : 'text-slate-900')}>
@@ -629,18 +629,16 @@ export function QuickActions() {
                     href={selectedNotif.canvasLink} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl group hover:bg-blue-50 transition-all duration-300"
+                    className="flex items-start gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl group hover:bg-blue-50 transition-all duration-300"
                   >
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-blue-50 group-hover:scale-105 transition-transform">
-                      <LinkIcon className="w-6 h-6 text-blue-600" />
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-blue-50">
+                      <LinkIcon className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-black text-blue-900 mb-0.5">Open Canva Project</p>
-                      <p className="text-[11px] text-blue-500 font-medium truncate opacity-70 break-all">{selectedNotif.canvasLink}</p>
+                      <p className="text-[13px] font-black text-blue-900 mb-0.5">Open Canva Project</p>
+                      <p className="text-[11px] text-blue-500 font-medium break-all leading-normal opacity-80">{selectedNotif.canvasLink}</p>
                     </div>
-                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                      <ExternalLink className="w-4 h-4" />
-                    </div>
+                    <ExternalLink className="w-4 h-4 text-blue-400 shrink-0 mt-1" />
                   </a>
                 </div>
               )}
