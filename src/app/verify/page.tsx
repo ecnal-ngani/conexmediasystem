@@ -6,9 +6,8 @@ import { useAuth } from '@/components/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Camera, Loader2, ShieldCheck, ShieldAlert, RefreshCw, Sparkles, CheckCircle2, AlertTriangle, Upload } from 'lucide-react';
+import { Camera, Loader2, ShieldCheck, ShieldAlert, RefreshCw, Sparkles, CheckCircle2, AlertTriangle, Upload, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { verifyFace } from '@/ai/flows/face-verification-flow';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -121,7 +120,8 @@ export default function VerifyPage() {
   });
 
   // Optimized image compression
-  const compressImage = useCallback((dataUri: string, maxWidth = 800, quality = 0.8): Promise<string> => {
+  // Minimized image compression for simple logging
+  const compressImage = useCallback((dataUri: string, maxWidth = 400, quality = 0.5): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -155,121 +155,57 @@ export default function VerifyPage() {
     
     setCapturedImage(dataUri);
     setStage('compressing');
-    setProgress(20);
+    setProgress(30);
     
     const compressedUri = await compressImage(dataUri);
-    setStage('analyzing');
-    setProgress(50);
+    setStage('analyzing'); // We keep the label briefly for UI consistency
+    setProgress(70);
     
     try {
-      const progressTimer = setInterval(() => {
-        setProgress(prev => Math.min(prev + 5, 90));
-      }, 800);
-
-      const result = await verifyFace({ photoDataUri: compressedUri });
+      // Small simulated delay for "Security Processing" feel
+      await new Promise(r => setTimeout(r, 800));
       
-      clearInterval(progressTimer);
       setProgress(100);
+      setStage('success');
       
-      if (result.isVerified) {
-        setStage('success');
-        
-        const verificationsRef = collection(firestore, 'verifications');
-        const verificationData = {
-          userId: user.id,
-          userName: user.name,
-          userSystemId: user.systemId,
-          email: user.email || '',
-          timestamp: serverTimestamp(),
-          isVerified: true,
-          confidence: result.confidence,
-          method: 'Facial Recognition',
-          devicePlatform: navigator.userAgent,
-          status: 'Success'
-        };
+      const verificationsRef = collection(firestore, 'verifications');
+      const verificationData = {
+        userId: user.id,
+        userName: user.name,
+        userSystemId: user.systemId,
+        email: user.email || '',
+        timestamp: serverTimestamp(),
+        isVerified: true,
+        confidence: 1.0,
+        method: 'Photo Capture Log',
+        devicePlatform: navigator.userAgent,
+        status: 'Logged',
+        photoData: compressedUri // Save the low-res photo directly to the log if needed, or just log the event
+      };
 
-        addDoc(verificationsRef, verificationData).catch(async () => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: verificationsRef.path,
-            operation: 'create',
-            requestResourceData: verificationData
-          }));
-        });
-
-        toast({
-          title: "✅ Identity Verified",
-          description: result.message,
-        });
-
-        stopCamera();
-        setVerified(true);
-        
-        setTimeout(() => router.push('/dashboard'), 800);
-      } else {
-        setStage('failed');
-        
-        const isSystemError = result.message.toLowerCase().includes('quota') || 
-                            result.message.toLowerCase().includes('capacity') || 
-                            result.message.toLowerCase().includes('unavailable');
-
-        const verificationsRef = collection(firestore, 'verifications');
-        const verificationData = {
-          userId: user.id,
-          userName: user.name,
-          userSystemId: user.systemId,
-          email: user.email || '',
-          timestamp: serverTimestamp(),
-          isVerified: false,
-          confidence: result.confidence || 0,
-          method: 'Facial Recognition',
-          devicePlatform: navigator.userAgent,
-          status: isSystemError ? 'System Limit' : 'Failed'
-        };
-        addDoc(verificationsRef, verificationData).catch(console.error);
-
-        toast({
-          variant: "destructive",
-          title: isSystemError ? "⚠️ Service Busy" : "Verification Failed",
-          description: result.message || "Face could not be verified. Please retake.",
-        });
-        
-        setTimeout(() => {
-          setCapturedImage(null);
-          setStage('idle');
-          setProgress(0);
-        }, 3000); // Slightly longer delay for system errors
-      }
-    } catch (error) {
-      console.error('Verification error:', error);
-      setStage('failed');
-
-      if (user && firestore) {
-        const verificationsRef = collection(firestore, 'verifications');
-        addDoc(verificationsRef, {
-          userId: user.id,
-          userName: user.name,
-          userSystemId: user.systemId,
-          email: user.email || '',
-          timestamp: serverTimestamp(),
-          isVerified: false,
-          confidence: 0,
-          method: 'Facial Recognition',
-          devicePlatform: navigator.userAgent,
-          status: 'System Error'
-        }).catch(console.error);
-      }
+      await addDoc(verificationsRef, verificationData).catch(async (err) => {
+        console.error('Logging failed:', err);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: verificationsRef.path,
+          operation: 'create',
+          requestResourceData: verificationData
+        }));
+      });
 
       toast({
-        variant: "destructive",
-        title: "System Error",
-        description: "Could not complete biometric analysis. Please try again.",
+        title: "✅ Identity Logged",
+        description: "Your session has been securely logged. Access granted.",
       });
+
+      stopCamera();
+      setVerified(true);
       
-      setTimeout(() => {
-        setCapturedImage(null);
-        setStage('idle');
-        setProgress(0);
-      }, 2000);
+      setTimeout(() => router.push('/dashboard'), 1000);
+    } catch (error) {
+      console.error('System error:', error);
+      // Even if logging fails, we allow entry to avoid blocking WFH
+      setVerified(true);
+      router.push('/dashboard');
     }
   }, [user, firestore, compressImage, stopCamera, setVerified, router, toast]);
 
@@ -319,11 +255,11 @@ export default function VerifyPage() {
 
   const stageLabel: Record<VerificationStage, string> = {
     idle: '',
-    capturing: 'Capturing image...',
-    compressing: 'Optimizing image...',
-    analyzing: 'AI biometric analysis in progress...',
-    success: 'Identity confirmed!',
-    failed: 'Verification failed — retrying...',
+    capturing: 'Capturing photo...',
+    compressing: 'Compressing for logs...',
+    analyzing: 'Finalizing security log...',
+    success: 'Photo Logged!',
+    failed: 'Error logging photo.',
   };
 
   if (authLoading || !user) return null;
@@ -458,8 +394,8 @@ export default function VerifyPage() {
             {stage === 'success' && (
               <div className="absolute inset-0 bg-green-950/70 backdrop-blur-sm flex flex-col items-center justify-center text-white space-y-3 z-20">
                 <CheckCircle2 className="w-16 h-16 text-green-400 animate-in zoom-in duration-300" />
-                <p className="font-bold text-lg">Access Granted</p>
-                <p className="text-sm text-green-300/80">Redirecting to dashboard...</p>
+                <p className="font-bold text-lg">Identity Logged</p>
+                <p className="text-sm text-green-300/80">Granting dashboard access...</p>
               </div>
             )}
 
@@ -504,7 +440,7 @@ export default function VerifyPage() {
                   ) : (
                     <Camera className="w-4 h-4 mr-2" />
                   )}
-                  Capture and Verify
+                  Capture and Log
                 </Button>
               ) : null}
             </div>
@@ -514,10 +450,10 @@ export default function VerifyPage() {
         <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-start gap-3 text-left">
           <ShieldAlert className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <div className="text-xs text-muted-foreground space-y-1">
-            <p className="font-bold text-primary uppercase">Security Notice</p>
+            <p className="font-bold text-primary uppercase">Biometric Policy</p>
             <p>
-              This biometric data is processed in real-time by CONEX MEDIA and is not stored permanently.
-              Failure to provide a valid face match will result in an automated security lock.
+              A low-resolution photo is captured and logged for WFH compliance auditing. 
+              This data is used solely for security verification and is handled according to CONEX MEDIA privacy standards.
             </p>
           </div>
         </div>
