@@ -564,54 +564,101 @@ export function QuickActions() {
       </Dialog>
 
       <Dialog open={isNotifDetailOpen} onOpenChange={setIsNotifDetailOpen}>
-        <DialogContent className="max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
           {selectedNotif && (
-            <div className="p-8 space-y-6 text-left">
+            <div className="p-6 sm:p-8 space-y-6 text-left">
               {(() => {
                 const Icon = getNotifIcon(selectedNotif.type);
                 const style = getNotifStyle(selectedNotif.type, selectedNotif.status);
                 return (
                   <div className="flex items-center gap-4">
-                    <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shadow-lg", style.iconBg)}><Icon className={cn("w-7 h-7", style.iconColor)} /></div>
-                    <div>
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight">{selectedNotif.title || selectedNotif.brand}</h3>
-                      <Badge className={cn("mt-1 text-[10px] font-black uppercase px-2", style.bg, style.iconColor)} variant="outline">{selectedNotif.type} MISSION</Badge>
+                    <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shadow-lg shrink-0", style.iconBg)}>
+                      <Icon className={cn("w-7 h-7", style.iconColor)} />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight truncate leading-tight">
+                        {selectedNotif.title || selectedNotif.brand}
+                      </h3>
+                      <Badge className={cn("mt-1.5 text-[10px] font-black uppercase px-2 tracking-wider", style.bg, style.iconColor)} variant="outline">
+                        {selectedNotif.type} MISSION
+                      </Badge>
                     </div>
                   </div>
                 );
               })()}
-              <div className="grid grid-cols-2 gap-6 py-6 border-y border-slate-50">
-                <div className="space-y-1"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Priority</p><p className={cn("text-xs font-bold", selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH' ? 'text-red-600' : 'text-slate-700')}>{selectedNotif.priority || 'NORMAL'}</p></div>
-                <div className="space-y-1"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Timeline</p><p className="text-xs font-bold text-slate-700">{selectedNotif.dueDate || selectedNotif.date || 'TBA'}</p></div>
-                <div className="space-y-1"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Assigned By</p><div className="flex items-center gap-2 mt-1"><div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 capitalize">{selectedNotif.assignedByName?.charAt(0) || 'A'}</div><p className="text-xs font-bold text-slate-900">{selectedNotif.assignedByName || 'Administrator'}</p></div></div>
-                <div className="space-y-1"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</p><p className="text-xs font-bold text-slate-700 capitalize">{selectedNotif.status || 'Pending'}</p></div>
+
+              <div className="grid grid-cols-2 gap-x-8 gap-y-6 py-6 border-y border-slate-50">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Priority</p>
+                  <p className={cn("text-xs font-bold", (selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH') ? 'text-red-600' : 'text-slate-900')}>
+                    {selectedNotif.priority || 'NORMAL'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Timeline</p>
+                  <p className="text-xs font-bold text-slate-900">{selectedNotif.dueDate || selectedNotif.date || 'TBA'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Assigned By</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 capitalize shrink-0 border border-slate-200">
+                      {selectedNotif.assignedByName?.charAt(0) || 'A'}
+                    </div>
+                    <p className="text-xs font-bold text-slate-900 truncate">{selectedNotif.assignedByName || 'Administrator'}</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</p>
+                  <p className="text-xs font-bold text-slate-900 capitalize">{selectedNotif.status || 'Pending'}</p>
+                </div>
               </div>
+
               {selectedNotif.notes && (
-                <div className="space-y-2"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Intelligence</p><p className="text-sm text-slate-600 italic bg-slate-50 p-4 rounded-2xl border border-slate-100">"{selectedNotif.notes}"</p></div>
-              )}
-              {selectedNotif.canvasLink && (
                 <div className="space-y-2">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Intelligence</p>
+                  <p className="text-sm text-slate-600 italic bg-slate-50/50 p-4 rounded-2xl border border-slate-100 leading-relaxed font-medium">
+                    "{selectedNotif.notes}"
+                  </p>
+                </div>
+              )}
+
+              {selectedNotif.canvasLink && (
+                <div className="space-y-3">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Design Assets</p>
                   <a 
                     href={selectedNotif.canvasLink} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl group hover:bg-blue-100 transition-colors"
+                    className="flex items-center gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl group hover:bg-blue-50 transition-all duration-300"
                   >
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                      <LinkIcon className="w-5 h-5 text-blue-600" />
+                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-blue-50 group-hover:scale-105 transition-transform">
+                      <LinkIcon className="w-6 h-6 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-black text-blue-900">Open Canva Project</p>
-                      <p className="text-[11px] text-blue-600/70 truncate">{selectedNotif.canvasLink}</p>
+                      <p className="text-[14px] font-black text-blue-900 mb-0.5">Open Canva Project</p>
+                      <p className="text-[11px] text-blue-500 font-medium truncate opacity-70 break-all">{selectedNotif.canvasLink}</p>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-blue-400 group-hover:text-blue-600" />
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <ExternalLink className="w-4 h-4" />
+                    </div>
                   </a>
                 </div>
               )}
+
               <div className="flex flex-col gap-3 pt-2">
-                <Button onClick={() => { setIsNotifDetailOpen(false); setIsNotifOpen(false); router.push(selectedNotif.type === 'SCHEDULE' ? '/dashboard/calendar' : selectedNotif.type === 'PROJECT' ? '/dashboard/production' : '/dashboard/calendar'); }} className="h-12 rounded-xl bg-slate-900 text-white font-bold">Go to Command Center</Button>
-                <Button variant="outline" onClick={() => setIsNotifDetailOpen(false)} className="h-12 rounded-xl border-slate-200 font-bold text-slate-500">Dismiss</Button>
+                <Button 
+                  onClick={() => { setIsNotifDetailOpen(false); setIsNotifOpen(false); router.push(selectedNotif.type === 'SCHEDULE' ? '/dashboard/calendar' : selectedNotif.type === 'PROJECT' ? '/dashboard/production' : '/dashboard/calendar'); }} 
+                  className="h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black shadow-xl shadow-slate-200 transition-all active:scale-95"
+                >
+                  Go to Command Center
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setIsNotifDetailOpen(false)} 
+                  className="h-12 rounded-xl font-black text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                >
+                  Dismiss Briefing
+                </Button>
               </div>
             </div>
           )}
