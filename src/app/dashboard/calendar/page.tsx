@@ -61,6 +61,7 @@ export default function CalendarPage() {
   const { user } = useAuth();
   const [viewDate, setViewDate] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const firestore = useFirestore();
@@ -279,17 +280,40 @@ export default function CalendarPage() {
       const isToday = isTodayFn(new Date(viewDate.getFullYear(), viewDate.getMonth(), i));
 
       days.push(
-        <div key={i} className={cn("aspect-square p-2 bg-white border rounded-lg flex flex-col group relative overflow-hidden", isToday ? "border-primary border-2 shadow-sm" : "border-slate-100")}>
-          <span className={cn("text-[10px] font-bold mb-1", isToday ? "text-primary" : "text-slate-400")}>{i}</span>
-          <div className="w-full space-y-1 flex-1 overflow-y-auto custom-scrollbar">
+        <div 
+          key={i} 
+          onClick={() => setSelectedDate(dateStr)}
+          className={cn(
+            "aspect-square p-1.5 md:p-2 bg-white border rounded-lg flex flex-col group relative transition-all cursor-pointer", 
+            isToday ? "border-primary border-2 shadow-sm" : "border-slate-100 hover:border-primary/30",
+            selectedDate === dateStr ? "bg-primary/5 ring-1 ring-primary/20" : ""
+          )}
+        >
+          <span className={cn("text-[9px] md:text-[10px] font-bold mb-1", isToday ? "text-primary" : "text-slate-400")}>{i}</span>
+          
+          {/* Desktop: Full Labels */}
+          <div className="hidden md:flex flex-col gap-1 w-full flex-1 overflow-y-auto custom-scrollbar">
             {dayScheds.map((s, idx) => (
-              <button key={`s-${idx}`} onClick={() => setSelectedEvent({...s, source: 'schedule'})} className={cn("w-full text-left truncate text-[10px] font-bold py-0.5 px-1.5 rounded text-white", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')}>{s.title}</button>
+              <button key={`s-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...s, source: 'schedule'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')}>{s.title}</button>
             ))}
             {dayProjs.map((p, idx) => (
-              <button key={`p-${idx}`} onClick={() => setSelectedEvent({...p, source: 'production'})} className="w-full text-left truncate text-[10px] font-bold py-0.5 px-1.5 rounded bg-blue-600 text-white">PROD: {p.brand}</button>
+              <button key={`p-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...p, source: 'production'}); }} className="w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded bg-blue-600 text-white">PROD: {p.brand}</button>
             ))}
             {dayTasks.map((t, idx) => (
-              <button key={`t-${idx}`} onClick={() => setSelectedEvent({...t, source: 'task'})} className={cn("w-full text-left truncate text-[10px] font-bold py-0.5 px-1.5 rounded text-white", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))}>TASK: {t.title}</button>
+              <button key={`t-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...t, source: 'task'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))}>TASK: {t.title}</button>
+            ))}
+          </div>
+
+          {/* Mobile: Status Dots */}
+          <div className="flex md:hidden flex-wrap gap-0.5 mt-auto">
+            {dayScheds.map((s, idx) => (
+              <div key={`sd-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')} />
+            ))}
+            {dayProjs.map((_, idx) => (
+              <div key={`pd-${idx}`} className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+            ))}
+            {dayTasks.map((t, idx) => (
+              <div key={`td-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))} />
             ))}
           </div>
         </div>
@@ -490,11 +514,53 @@ export default function CalendarPage() {
                 <Button variant="ghost" size="icon" onClick={nextMonth}><ChevronRight className="w-4 h-4" /></Button>
               </div>
             </CardHeader>
-            <CardContent className="bg-white border-x border-b rounded-b-xl p-6 shadow-sm">
-              <div className="grid grid-cols-7 gap-4 text-center mb-6">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <span key={d} className="text-[10px] font-black uppercase tracking-widest text-slate-400">{d}</span>)}
+            <CardContent className="bg-white border-x border-b rounded-b-xl p-3 md:p-6 shadow-sm">
+              <div className="grid grid-cols-7 gap-1 md:gap-4 text-center mb-4 md:mb-6">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => <span key={idx} className="text-[10px] font-black uppercase tracking-widest text-slate-400">{d}</span>)}
               </div>
-              <div className="grid grid-cols-7 gap-4">{renderCalendarDays()}</div>
+              <div className="grid grid-cols-7 gap-1 md:gap-4">{renderCalendarDays()}</div>
+              
+              {/* Mobile Agenda View (Visible when a day is tapped) */}
+              {selectedDate && (
+                <div className="mt-8 md:hidden animate-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-900">Agenda: {selectedDate}</h3>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedDate(null)} className="h-6 text-[9px] font-bold">Clear Selection</Button>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      ...(schedules?.filter(s => s.date === selectedDate).map(s => ({...s, source: 'schedule'})) || []),
+                      ...(projects?.filter(p => p.dueDate === selectedDate).map(p => ({...p, source: 'production'})) || []),
+                      ...(tasks?.filter(t => t.dueDate === selectedDate).map(t => ({...t, source: 'task'})) || [])
+                    ].length === 0 ? (
+                      <p className="text-[11px] text-slate-400 text-center py-4 italic">No missions found for this date.</p>
+                    ) : [
+                      ...(schedules?.filter(s => s.date === selectedDate).map(s => ({...s, source: 'schedule'})) || []),
+                      ...(projects?.filter(p => p.dueDate === selectedDate).map(p => ({...p, source: 'production'})) || []),
+                      ...(tasks?.filter(t => t.dueDate === selectedDate).map(t => ({...t, source: 'task'})) || [])
+                    ].map((evt, idx) => (
+                      <div 
+                        key={idx} 
+                        onClick={() => setSelectedEvent(evt)}
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 active:scale-[0.98] transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            evt.source === 'schedule' ? (evt.priority === 'URGENT' ? 'bg-red-600' : 'bg-primary') :
+                            evt.source === 'production' ? 'bg-blue-600' : 'bg-slate-700'
+                          )} />
+                          <div className="flex flex-col">
+                            <span className="text-[13px] font-bold text-slate-900 truncate max-w-[180px]">{evt.title || evt.brand}</span>
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">{evt.source}</span>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

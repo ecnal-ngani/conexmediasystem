@@ -176,6 +176,7 @@ export function QuickActions() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDueDate, setTaskDueDate] = useState('');
   const [assignedToId, setAssignedToId] = useState('');
+  const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
 
   // States for Project
   const [fileCode, setFileCode] = useState('');
@@ -302,7 +303,7 @@ export function QuickActions() {
     const assignee = staffList?.find(s => s.id === assignedToId);
     if (!assignee) return;
     const ref = collection(firestore, 'tasks');
-    const data = { title: taskTitle, dueDate: taskDueDate, status: 'pending', assignedToId, assignedToName: assignee.name, assignedById: user.id, assignedByName: user.name, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+    const data = { title: taskTitle, dueDate: taskDueDate, status: 'pending', priority: taskPriority, assignedToId, assignedToName: assignee.name, assignedById: user.id, assignedByName: user.name, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
     addDoc(ref, data).catch(e => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data } satisfies SecurityRuleContext));
     });
@@ -774,7 +775,23 @@ export function QuickActions() {
       <Dialog open={isTaskOpen} onOpenChange={setIsTaskOpen}>
         <DialogContent className="max-md rounded-3xl p-8"><DialogHeader><DialogTitle>Assign Task</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <Input placeholder="Task Title" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} className="h-12" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase text-slate-500">Due Date</Label>
+                <Input type="date" value={taskDueDate} onChange={e => setTaskDueDate(e.target.value)} className="h-12" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase text-slate-500">Priority</Label>
+                <Select value={taskPriority} onValueChange={(v: any) => setTaskPriority(v)}>
+                  <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="URGENT">URGENT</SelectItem>
+                    <SelectItem value="HIGH">HIGH</SelectItem>
+                    <SelectItem value="NORMAL">NORMAL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <Select value={assignedToId} onValueChange={setAssignedToId}><SelectTrigger className="h-12"><SelectValue placeholder="Assignee" /></SelectTrigger><SelectContent>{staffList?.map((s: any) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}</SelectContent></Select>
             <Button onClick={handleCreateTask} className="w-full h-12 bg-primary text-white font-bold">Assign Mission</Button>
           </div>
