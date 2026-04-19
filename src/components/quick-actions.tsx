@@ -792,7 +792,7 @@ export function QuickActions() {
             <div className="p-8 space-y-6">
               <div className="flex items-center gap-4">
                 <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shadow-lg", getNotifStyle(selectedNotif.type).iconBg)}>
-                  <selectedNotif.icon className={cn("w-7 h-7", getNotifStyle(selectedNotif.type).iconColor)} />
+                  {(() => { const Icon = selectedNotif.icon; return <Icon className={cn("w-7 h-7", getNotifStyle(selectedNotif.type).iconColor)} />; })()}
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">{selectedNotif.title || selectedNotif.brand}</h3>
