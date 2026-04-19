@@ -271,7 +271,7 @@ export function QuickActions() {
   };
 
   const getNotifStyle = (type: string, status?: string) => {
-    if (status === 'Done' || status === 'completed' || status === 'Approved') {
+    if (status === 'completed' || status === 'Approved') {
       return { bg: 'bg-green-50', border: 'border-green-100', iconBg: 'bg-green-100', iconColor: 'text-green-600', dot: 'bg-green-500' };
     }
     if (type === 'SCHEDULE') return { bg: 'bg-red-50', border: 'border-red-100', iconBg: 'bg-red-100', iconColor: 'text-primary', dot: 'bg-primary' };
@@ -469,7 +469,7 @@ export function QuickActions() {
                 </div>
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Status</Label><Select value={projectStatus} onValueChange={setProjectStatus}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="In Production">In Production</SelectItem><SelectItem value="For QA">For QA</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Client Revision">Client Revision</SelectItem><SelectItem value="Done">Done</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Status</Label><Select value={projectStatus} onValueChange={setProjectStatus}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="In Production">In Production</SelectItem><SelectItem value="For QA">For QA</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Client Revision">Client Revision</SelectItem></SelectContent></Select></div>
                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority</Label><Select value={projectPriority} onValueChange={setProjectPriority}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="REGULAR">REGULAR</SelectItem><SelectItem value="RUSH">RUSH</SelectItem></SelectContent></Select></div>
                   </div>
                   <div className="space-y-2">

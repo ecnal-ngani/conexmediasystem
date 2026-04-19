@@ -298,8 +298,8 @@ export default function CalendarPage() {
             {dayScheds.map((s, idx) => (
               <button key={`s-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...s, source: 'schedule'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')}>{s.title}</button>
             ))}
-            {dayProjs.sort((a,b) => (a.status === 'Done' ? 1 : 0) - (b.status === 'Done' ? 1 : 0)).map((p, idx) => (
-              <button key={`p-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...p, source: 'production'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", p.status === 'Done' ? 'bg-green-600' : 'bg-blue-600')}>PROD: {p.brand}</button>
+            {dayProjs.sort((a,b) => (a.status === 'Approved' ? 1 : 0) - (b.status === 'Approved' ? 1 : 0)).map((p, idx) => (
+              <button key={`p-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...p, source: 'production'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", p.status === 'Approved' ? 'bg-green-600' : 'bg-blue-600')}>PROD: {p.brand}</button>
             ))}
             {dayTasks.sort((a,b) => (a.status === 'completed' ? 1 : 0) - (b.status === 'completed' ? 1 : 0)).map((t, idx) => (
               <button key={`t-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...t, source: 'task'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))}>TASK: {t.title}</button>
@@ -311,8 +311,8 @@ export default function CalendarPage() {
             {dayScheds.map((s, idx) => (
               <div key={`sd-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')} />
             ))}
-            {dayProjs.sort((a,b) => (a.status === 'Done' ? 1 : 0) - (b.status === 'Done' ? 1 : 0)).map((p, idx) => (
-              <div key={`pd-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", p.status === 'Done' ? 'bg-green-600' : 'bg-blue-600')} />
+            {dayProjs.sort((a,b) => (a.status === 'Approved' ? 1 : 0) - (b.status === 'Approved' ? 1 : 0)).map((p, idx) => (
+              <div key={`pd-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", p.status === 'Approved' ? 'bg-green-600' : 'bg-blue-600')} />
             ))}
             {dayTasks.sort((a,b) => (a.status === 'completed' ? 1 : 0) - (b.status === 'completed' ? 1 : 0)).map((t, idx) => (
               <div key={`td-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))} />
