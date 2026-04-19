@@ -817,7 +817,8 @@ export default function AdminPage() {
                     <SelectTrigger className="w-full sm:w-40"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">All Outcomes</SelectItem>
-                      <SelectItem value="Success">Success</SelectItem>
+                      <SelectItem value="Logged">Logged (WFH)</SelectItem>
+                      <SelectItem value="Success">Success (AI)</SelectItem>
                       <SelectItem value="Failed">Failed</SelectItem>
                       <SelectItem value="System Error">System Error</SelectItem>
                     </SelectContent>
@@ -862,26 +863,26 @@ export default function AdminPage() {
                       <TableCell className="text-center">
                          <Badge className={cn(
                            "text-[10px] font-black uppercase shadow-none",
-                           (log.status || 'Success') === 'Success' ? "bg-green-100 text-green-700 border-green-200" :
+                           (log.status || 'Success') === 'Success' || (log.status === 'Logged') ? "bg-green-100 text-green-700 border-green-200" :
                            (log.status || 'Success') === 'Failed' ? "bg-red-100 text-red-700 border-red-200" :
                            "bg-orange-100 text-orange-700 border-orange-200"
                          )} variant="outline">
-                           {log.status || 'Success'}
+                           {log.status === 'Logged' ? 'WFH LOGGED' : (log.status || 'Success')}
                          </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <button 
-                          onClick={() => log.photoUrl && setSelectedLogPhoto(log.photoUrl)}
+                          onClick={() => (log.photoData || log.photoUrl) && setSelectedLogPhoto(log.photoData || log.photoUrl)}
                           className="group relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 hover:border-primary transition-colors inline-block"
                         >
-                          {log.photoUrl ? (
-                            <img src={log.photoUrl} alt="Visual ID" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                          {(log.photoData || log.photoUrl) ? (
+                            <img src={log.photoData || log.photoUrl} alt="Visual ID" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-slate-50">
                               <ShieldCheck className="w-4 h-4 text-slate-300" />
                             </div>
                           )}
-                          {log.photoUrl && (
+                          {(log.photoData || log.photoUrl) && (
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                               <Eye className="w-4 h-4 text-white" />
                             </div>
