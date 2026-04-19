@@ -54,14 +54,24 @@ export async function verifyFace(input: FaceVerificationInput): Promise<FaceVeri
       return result;
     } catch (err: any) {
       lastError = err;
-      console.warn(`[FaceVerification] Attempt ${attempt}/${MAX_RETRIES} failed:`, err?.message);
+      const errorMessage = err?.message || 'Unknown Error';
+      console.warn(`[FaceVerification] Attempt ${attempt}/${MAX_RETRIES} failed:`, errorMessage);
+
+      // Specific handling for Quota Exceeded (429)
+      if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('limit')) {
+        return {
+          isVerified: false,
+          confidence: 0,
+          message: "The AI verification service is currently at capacity or reached its quota. Please try again in a few minutes or contact support.",
+        };
+      }
 
       // Don't retry on non-transient errors
-      if (err?.message?.includes('INVALID_ARGUMENT') || err?.message?.includes('schema')) {
+      if (errorMessage.includes('INVALID_ARGUMENT') || errorMessage.includes('schema')) {
         break;
       }
 
-      // Delay before retry
+      // Delay before retry for other errors
       if (attempt < MAX_RETRIES) {
         const delay = 1000 * attempt;
         await new Promise(r => setTimeout(r, delay));
@@ -73,7 +83,7 @@ export async function verifyFace(input: FaceVerificationInput): Promise<FaceVeri
   return {
     isVerified: false,
     confidence: 0,
-    message: `Verification service is temporarily unavailable: ${lastError?.message || 'Unknown Error'}`,
+    message: `Verification service is temporarily unavailable. Please try again later.`,
   };
 }
 

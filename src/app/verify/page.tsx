@@ -208,6 +208,10 @@ export default function VerifyPage() {
       } else {
         setStage('failed');
         
+        const isSystemError = result.message.toLowerCase().includes('quota') || 
+                            result.message.toLowerCase().includes('capacity') || 
+                            result.message.toLowerCase().includes('unavailable');
+
         const verificationsRef = collection(firestore, 'verifications');
         const verificationData = {
           userId: user.id,
@@ -219,13 +223,13 @@ export default function VerifyPage() {
           confidence: result.confidence || 0,
           method: 'Facial Recognition',
           devicePlatform: navigator.userAgent,
-          status: 'Failed'
+          status: isSystemError ? 'System Limit' : 'Failed'
         };
         addDoc(verificationsRef, verificationData).catch(console.error);
 
         toast({
           variant: "destructive",
-          title: "Verification Failed",
+          title: isSystemError ? "⚠️ Service Busy" : "Verification Failed",
           description: result.message || "Face could not be verified. Please retake.",
         });
         
@@ -233,7 +237,7 @@ export default function VerifyPage() {
           setCapturedImage(null);
           setStage('idle');
           setProgress(0);
-        }, 2000);
+        }, 3000); // Slightly longer delay for system errors
       }
     } catch (error) {
       console.error('Verification error:', error);
