@@ -91,6 +91,7 @@ export default function ProductionPage() {
   const [status, setStatus] = useState('In Production');
   const [priority, setPriority] = useState('REGULAR');
   const [artist, setArtist] = useState('');
+  const [artistId, setArtistId] = useState('');
   const [type, setType] = useState('Video');
   const [platform, setPlatform] = useState('Instagram');
   const [dueDate, setDueDate] = useState('');
@@ -103,7 +104,10 @@ export default function ProductionPage() {
   // MEMOIZED QUERIES for performance stability
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    const isManagement = user.role === 'ADMIN' || user.role === 'BRAND_MANAGER';
     return query(collection(firestore, 'projects'), orderBy('createdAt', 'desc'));
+    // Note: We filter in-memory for filteredProjects to support complex searching,
+    // but we could also add a where clause here if the dataset gets very large.
   }, [firestore, user]);
   const { data: projects, isLoading: loading } = useCollection<any>(projectsQuery);
 
@@ -151,6 +155,11 @@ export default function ProductionPage() {
   const filteredProjects = useMemo(() => {
     if (!projects) return [];
     return projects.filter((project: any) => {
+      const isManagement = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
+      const isAssigned = project.artistId === user?.id || project.artist === user?.name;
+      
+      if (!isManagement && !isAssigned) return false;
+
       const matchesSearch = 
         (project.fileCode?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (project.brand?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -220,6 +229,7 @@ export default function ProductionPage() {
       status,
       priority,
       artist,
+      artistId,
       type,
       platform,
       dueDate,
@@ -501,13 +511,17 @@ export default function ProductionPage() {
                               <User className="w-3 h-3 text-primary" />
                               Artist
                             </Label>
-                            <Select value={artist} onValueChange={setArtist}>
+                            <Select value={artistId} onValueChange={(val) => {
+                              setArtistId(val);
+                              const s = staffList?.find(u => u.id === val);
+                              if (s) setArtist(s.name);
+                            }}>
                               <SelectTrigger className="h-12 rounded-xl border-slate-200">
                                 <SelectValue placeholder="Select employee" />
                               </SelectTrigger>
                               <SelectContent>
                                 {staffList?.map((s: any) => (
-                                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>

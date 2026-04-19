@@ -184,6 +184,7 @@ export function QuickActions() {
   const [projectStatus, setProjectStatus] = useState('In Production');
   const [projectPriority, setProjectPriority] = useState('REGULAR');
   const [artist, setArtist] = useState('');
+  const [artistId, setArtistId] = useState('');
   const [projectType, setProjectType] = useState('Video');
   const [platform, setPlatform] = useState('Instagram');
   const [projectDueDate, setProjectDueDate] = useState('');
@@ -263,7 +264,7 @@ export function QuickActions() {
     const brandObj = brands?.find((b: any) => b.id === projectBrandId);
     if (!brandObj) return;
     const ref = collection(firestore, 'projects');
-    const data = { fileCode, brand: brandObj.name, brandId: projectBrandId, contentIdea, status: projectStatus, priority: projectPriority, artist, type: projectType, platform, dueDate: projectDueDate, bm, canvasLink, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+    const data = { fileCode, brand: brandObj.name, brandId: projectBrandId, contentIdea, status: projectStatus, priority: projectPriority, artist, artistId, type: projectType, platform, dueDate: projectDueDate, bm, canvasLink, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
     addDoc(ref, data).catch(e => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data } satisfies SecurityRuleContext));
     });
@@ -518,16 +519,20 @@ export function QuickActions() {
                   </div>
                   ARTIST
                 </Label>
-                <Select value={artist} onValueChange={setArtist}>
-                  <SelectTrigger className="h-[50px] rounded-xl border-slate-200 text-[15px] font-medium text-slate-900 px-4 shadow-none focus:ring-0">
-                    <SelectValue placeholder="Select employee" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                    {staffList?.map((s: any) => (
-                      <SelectItem key={s.id} value={s.name} className="font-medium">{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Select value={artistId} onValueChange={(val) => {
+                    setArtistId(val);
+                    const s = staffList?.find(u => u.id === val);
+                    if (s) setArtist(s.name);
+                  }}>
+                    <SelectTrigger className="h-[50px] rounded-xl border-slate-200 text-[15px] font-medium text-slate-900 px-4 shadow-none focus:ring-0">
+                      <SelectValue placeholder="Select employee" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                      {staffList?.map((s: any) => (
+                        <SelectItem key={s.id} value={s.id} className="font-medium">{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
               </div>
 
               <div className="space-y-2">
