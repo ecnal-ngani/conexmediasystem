@@ -64,6 +64,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/components/auth-context';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
+import { Badge } from '@/components/ui/badge';
 
 const QUICK_ACTIONS = [
   {
@@ -116,6 +117,7 @@ export function QuickActions() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [isProjectOpen, setIsProjectOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<any>(null);
   const [isNotifDetailOpen, setIsNotifDetailOpen] = useState(false);
@@ -217,7 +219,7 @@ export function QuickActions() {
     return () => clearTimeout(delayDebounceFn);
   }, [eventLocation, isScheduleOpen]);
 
-  // Dynamic File Code Logic (useEffect memoization)
+  // Dynamic File Code Logic
   useEffect(() => {
     if (projectBrandId && brands && recentProjects) {
       const brand = brands.find((b: any) => b.id === projectBrandId);
@@ -243,40 +245,51 @@ export function QuickActions() {
     }
   }, [projectBrandId, brands, recentProjects]);
 
-  const filteredActions = useMemo(() => {
-    return QUICK_ACTIONS.filter(action => {
-      if (action.adminOnly && user?.role !== 'ADMIN') return false;
-      if (user?.role === 'INTERN' && (action.action === 'project' || action.action === 'schedule' || action.action === 'task')) return false;
-      return true;
-    });
-  }, [user]);
-
   const notifications = useMemo(() => {
     const items: any[] = [];
     if (!user || !isMounted) return items;
     
     // 1. Schedules (Global Events)
-    recentSchedules?.forEach(s => items.push({ ...s, icon: Calendar, type: 'SCHEDULE', rawTime: s.createdAt?.seconds || 0 }));
+    recentSchedules?.forEach(s => items.push({ ...s, type: 'SCHEDULE', rawTime: s.createdAt?.seconds || 0 }));
     
     // 2. Tasks (Personal Directives)
-    recentTasks?.filter(t => t.assignedToId === user.id || t.assignedById === user.id).forEach(t => items.push({ ...t, icon: ListTodo, type: 'TASK', rawTime: (t.updatedAt || t.createdAt)?.seconds || 0 }));
+    recentTasks?.filter(t => t.assignedToId === user.id || t.assignedById === user.id).forEach(t => items.push({ ...t, type: 'TASK', rawTime: (t.updatedAt || t.createdAt)?.seconds || 0 }));
     
     // 3. Projects (Assigned Production Items)
     const isAdmin = user.role === 'ADMIN' || user.role === 'BRAND_MANAGER';
-    recentProjects?.filter(p => isAdmin || p.artistId === user.id).forEach(p => items.push({ ...p, icon: Layers, type: 'PROJECT', rawTime: p.createdAt?.seconds || 0 }));
+    recentProjects?.filter(p => isAdmin || p.artistId === user.id).forEach(p => items.push({ ...p, type: 'PROJECT', rawTime: p.createdAt?.seconds || 0 }));
 
     return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 20);
   }, [recentSchedules, recentTasks, recentProjects, user, isMounted]);
 
+  const getNotifIcon = (type: string) => {
+    if (type === 'SCHEDULE') return Calendar;
+    if (type === 'TASK') return ListTodo;
+    if (type === 'PROJECT') return Layers;
+    return Bell;
+  };
+
+  const getNotifStyle = (type: string) => {
+    if (type === 'SCHEDULE') return { bg: 'bg-red-50', border: 'border-red-100', iconBg: 'bg-red-100', iconColor: 'text-primary', dot: 'bg-primary' };
+    if (type === 'TASK') return { bg: 'bg-green-50', border: 'border-green-100', iconBg: 'bg-green-100', iconColor: 'text-green-600', dot: 'bg-green-500' };
+    if (type === 'PROJECT') return { bg: 'bg-blue-50', border: 'border-blue-100', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', dot: 'bg-blue-500' };
+    return { bg: 'bg-slate-50', border: 'border-slate-100', iconBg: 'bg-slate-100', iconColor: 'text-slate-500', dot: 'bg-slate-400' };
+  };
+
   const handleCreateProject = () => {
-    if (!firestore || !fileCode || !projectBrandId || !artist || !projectDueDate) {
+    if (!firestore || !fileCode || !projectBrandId || !artist || !projectDueDate || !user) {
       toast({ variant: "destructive", title: "Missing Information", description: "Brand, Artist, and Due Date are required." });
       return;
     }
     const brandObj = brands?.find((b: any) => b.id === projectBrandId);
     if (!brandObj) return;
     const ref = collection(firestore, 'projects');
-    const data = { fileCode, brand: brandObj.name, brandId: projectBrandId, contentIdea, status: projectStatus, priority: projectPriority, artist, artistId, type: projectType, platform, dueDate: projectDueDate, bm, canvasLink, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+    const data = { 
+      fileCode, brand: brandObj.name, brandId: projectBrandId, contentIdea, status: projectStatus, priority: projectPriority, 
+      artist, artistId, type: projectType, platform, dueDate: projectDueDate, bm, canvasLink, 
+      assignedById: user.id, assignedByName: user.name,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp() 
+    };
     addDoc(ref, data).catch(e => {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'create', requestResourceData: data } satisfies SecurityRuleContext));
     });
@@ -297,8 +310,8 @@ export function QuickActions() {
       date: eventDate, 
       location: eventLocation, 
       notes: eventNotes,
-      createdBy: user.id,
-      createdByName: user.name,
+      assignedById: user.id,
+      assignedByName: user.name,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp() 
     };
@@ -332,17 +345,16 @@ export function QuickActions() {
     localStorage.setItem('conex_last_notif_read', String(now));
   };
 
-  const getNotifStyle = (type: string) => {
-    if (type === 'SCHEDULE') return { bg: 'bg-red-50', border: 'border-red-100', iconBg: 'bg-red-100', iconColor: 'text-primary', dot: 'bg-primary' };
-    if (type === 'TASK') return { bg: 'bg-green-50', border: 'border-green-100', iconBg: 'bg-green-100', iconColor: 'text-green-600', dot: 'bg-green-500' };
-    if (type === 'PROJECT') return { bg: 'bg-blue-50', border: 'border-blue-100', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', dot: 'bg-blue-500' };
-    return { bg: 'bg-slate-50', border: 'border-slate-100', iconBg: 'bg-slate-100', iconColor: 'text-slate-500', dot: 'bg-slate-400' };
-  };
+  const filteredActions = QUICK_ACTIONS.filter(action => {
+    if (action.adminOnly && user?.role !== 'ADMIN') return false;
+    if (user?.role === 'INTERN' && (action.action === 'project' || action.action === 'schedule' || action.action === 'task')) return false;
+    return true;
+  });
 
   return (
     <>
       <div className="fixed bottom-24 lg:bottom-6 right-6 flex flex-col gap-3 z-30 pointer-events-none">
-        <Sheet>
+        <Sheet open={isNotifOpen} onOpenChange={setIsNotifOpen}>
           <SheetTrigger asChild>
             <button className="pointer-events-auto w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-red-200 hover:scale-105 active:scale-95 transition-transform relative">
               <Bell className="w-5 h-5" />
@@ -354,8 +366,7 @@ export function QuickActions() {
             </button>
           </SheetTrigger>
           <SheetContent className="w-full sm:max-w-[420px] p-0 flex flex-col rounded-l-3xl overflow-hidden shadow-2xl border-0">
-            {/* Header */}
-            <SheetHeader className="px-6 pt-6 pb-4 border-b bg-white shrink-0">
+            <SheetHeader className="px-6 pt-6 pb-4 border-b bg-white shrink-0 text-left">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -364,73 +375,45 @@ export function QuickActions() {
                   <div>
                     <SheetTitle className="text-[15px] font-black text-slate-900 leading-none">Activity Feed</SheetTitle>
                     <SheetDescription className="text-[11px] text-slate-400 font-medium mt-0.5">
-                      {notifications.length} update{notifications.length !== 1 ? 's' : ''}
+                      {notifications.length} updates
                       {unreadCount > 0 && <span className="text-primary font-black"> · {unreadCount} new</span>}
                     </SheetDescription>
                   </div>
                 </div>
                 {unreadCount > 0 && (
-                  <button
-                    onClick={markAllRead}
-                    className="flex items-center gap-1.5 text-[11px] font-black text-primary hover:text-primary/80 bg-primary/5 hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors"
-                  >
+                  <button onClick={markAllRead} className="flex items-center gap-1.5 text-[11px] font-black text-primary hover:text-primary/80 bg-primary/5 hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors">
                     <CheckCheck className="w-3 h-3" />
                     Mark read
                   </button>
                 )}
               </div>
             </SheetHeader>
-
-            {/* Body */}
             <ScrollArea className="flex-1 min-h-0">
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-                    <Bell className="w-7 h-7 text-slate-300" />
-                  </div>
+                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4"><Bell className="w-7 h-7 text-slate-300" /></div>
                   <p className="text-sm font-black text-slate-900">All caught up!</p>
-                  <p className="text-xs text-slate-400 font-medium mt-1">No recent activity to show.</p>
+                  <p className="text-xs text-slate-400 font-medium mt-1">No recent activity.</p>
                 </div>
               ) : (
-                <div className="p-4 space-y-2">
+                <div className="p-4 space-y-2 text-left">
                   {notifications.map((n, i) => {
                     const style = getNotifStyle(n.type);
+                    const Icon = getNotifIcon(n.type);
                     const isUnread = n.rawTime > lastReadTime;
-                    const timeLabel = n.rawTime
-                      ? formatDistanceToNow(new Date(n.rawTime * 1000), { addSuffix: true })
-                      : '';
-                    const label = n.type === 'SCHEDULE'
-                      ? (n.brandName || n.brand || 'Shoot')
-                      : n.type === 'PROJECT' ? (n.brand || n.fileCode) : n.title;
-                    const sublabel = n.type === 'SCHEDULE'
-                      ? `${n.type} · ${n.date || ''}${n.location ? ' @ ' + n.location : ''}`
-                      : n.type === 'PROJECT' ? `New Project · Due ${n.dueDate}` : `Task · ${n.assignedToName ? 'for ' + n.assignedToName : ''}`;
+                    const label = n.type === 'SCHEDULE' ? (n.brandName || n.brand || 'Shoot') : n.type === 'PROJECT' ? (n.brand || n.fileCode) : n.title;
+                    const sublabel = n.type === 'SCHEDULE' ? `${n.type} · ${n.date || ''}` : n.type === 'PROJECT' ? `New Project · Due ${n.dueDate}` : `Task · ${n.assignedToName || ''}`;
                     return (
-                      <div
-                        key={i}
-                        onClick={() => {
-                          setSelectedNotif(n);
-                          setIsNotifDetailOpen(true);
-                        }}
-                        className={cn(
-                          "p-4 rounded-2xl border transition-all cursor-pointer hover:bg-white/50",
-                          style.bg, style.border,
-                          isUnread ? "shadow-sm" : "opacity-70"
-                        )}
-                      >
+                      <div key={i} onClick={() => { setSelectedNotif(n); setIsNotifDetailOpen(true); }} className={cn("p-4 rounded-2xl border transition-all cursor-pointer hover:bg-white/50", style.bg, style.border, isUnread ? "shadow-sm" : "opacity-70")}>
                         <div className="flex gap-3 items-start">
-                          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5", style.iconBg)}>
-                            <n.icon className={cn("w-4 h-4", style.iconColor)} />
-                          </div>
+                          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5", style.iconBg)}><Icon className={cn("w-4 h-4", style.iconColor)} /></div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="text-[13px] font-black text-slate-900 truncate">{label || n.brand || n.title || 'Update'}</p>
+                              <p className="text-[13px] font-black text-slate-900 truncate">{label}</p>
                               {isUnread && <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", style.dot)} />}
                             </div>
                             <p className="text-[11px] text-slate-500 font-medium mt-0.5 truncate">{sublabel}</p>
-                            {timeLabel && (
-                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mt-1">{timeLabel}</p>
-                            )}
+                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{n.rawTime ? formatDistanceToNow(new Date(n.rawTime * 1000), { addSuffix: true }) : ''}</p>
                           </div>
                         </div>
                       </div>
@@ -448,7 +431,7 @@ export function QuickActions() {
               {filteredActions.map((action, i) => (
                 <button key={i} onClick={() => { setIsActionsOpen(false); if(action.action === 'project') setIsProjectOpen(true); else if(action.action === 'schedule') setIsScheduleOpen(true); else if(action.action === 'task') setIsTaskOpen(true); else if(action.href) router.push(action.href); }} className="p-4 bg-white border rounded-xl hover:border-primary">
                   <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center mb-3", action.bg)}><action.icon className={cn("w-4 h-4", action.color)} /></div>
-                  <h4 className="text-sm font-bold">{action.title}</h4>
+                  <h4 className="text-sm font-bold text-left">{action.title}</h4>
                 </button>
               ))}
             </div>
@@ -461,106 +444,28 @@ export function QuickActions() {
           <ScrollArea className="max-h-[90vh]">
             <div className="p-6 md:p-8 space-y-6">
               <DialogHeader className="flex flex-row items-start gap-4 space-y-0 text-left">
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
-                  <Plus className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle>
-                  <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the hub.</DialogDescription>
-                </div>
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100"><Plus className="w-6 h-6 text-white" /></div>
+                <div><DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle><DialogDescription className="text-slate-400 font-medium">Configure a new production item for the hub.</DialogDescription></div>
               </DialogHeader>
-
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                      <Briefcase className="w-3 h-3 text-primary" />
-                      Brand Selection
-                    </Label>
-                    <Select value={projectBrandId} onValueChange={setProjectBrandId}>
-                      <SelectTrigger className="h-12 border-slate-200 rounded-xl">
-                        <SelectValue placeholder="Select Brand" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {brands?.map((b: any) => (
-                          <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-900 flex items-center gap-2 tracking-widest"><Briefcase className="w-3 h-3 text-primary" />Brand Selection</Label>
+                    <Select value={projectBrandId} onValueChange={setProjectBrandId}><SelectTrigger className="h-12 border-slate-200 rounded-xl"><SelectValue placeholder="Select Brand" /></SelectTrigger><SelectContent>{brands?.map((b: any) => (<SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>))}</SelectContent></Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                      <FileText className="w-3 h-3 text-primary" />
-                      File Code
-                    </Label>
-                    <Input 
-                      placeholder="Generated automatically..." 
-                      value={fileCode}
-                      readOnly
-                      className="h-12 border-slate-200 rounded-xl bg-slate-50 font-mono text-xs" 
-                    />
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-900 flex items-center gap-2 tracking-widest"><FileText className="w-3 h-3 text-primary" />File Code</Label>
+                    <Input readOnly value={fileCode} className="h-12 border-slate-200 rounded-xl bg-slate-50 font-mono text-xs" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                    <Lightbulb className="w-3 h-3 text-primary" />
-                    Content Idea
-                  </Label>
-                  <Input placeholder="Product showcase reel" value={contentIdea} onChange={(e) => setContentIdea(e.target.value)} className="h-12 rounded-xl" />
+                <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-900 flex items-center gap-2 tracking-widest"><Lightbulb className="w-3 h-3 text-primary" />Content Idea</Label><Input placeholder="Product showcase reel" value={contentIdea} onChange={(e) => setContentIdea(e.target.value)} className="h-12 rounded-xl" /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-900 flex items-center gap-2 tracking-widest"><User className="w-3 h-3 text-primary" />Artist</Label>
+                    <Select value={artistId} onValueChange={(val) => { setArtistId(val); const s = staffList?.find(u => u.id === val); if (s) setArtist(s.name); }}><SelectTrigger className="h-12 rounded-xl border-slate-200"><SelectValue placeholder="Select employee" /></SelectTrigger><SelectContent>{staffList?.map((s: any) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}</SelectContent></Select>
+                  </div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase text-slate-900 flex items-center gap-2 tracking-widest"><Calendar className="w-3 h-3 text-primary" />Due Date</Label><Input type="date" value={projectDueDate} onChange={(e) => setProjectDueDate(e.target.value)} className="h-12 rounded-xl" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                      <User className="w-3 h-3 text-primary" />
-                      Artist
-                    </Label>
-                    <Select value={artistId} onValueChange={(val) => {
-                      setArtistId(val);
-                      const s = staffList?.find(u => u.id === val);
-                      if (s) setArtist(s.name);
-                    }}>
-                      <SelectTrigger className="h-12 rounded-xl border-slate-200">
-                        <SelectValue placeholder="Select employee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {staffList?.map((s: any) => (
-                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                      <Calendar className="w-3 h-3 text-primary" />
-                      Due Date
-                    </Label>
-                    <Input type="date" value={projectDueDate} onChange={(e) => setProjectDueDate(e.target.value)} className="h-12 rounded-xl" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">Status</Label>
-                    <Select value={projectStatus} onValueChange={setProjectStatus}>
-                      <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="In Production">In Production</SelectItem>
-                        <SelectItem value="For QA">For QA</SelectItem>
-                        <SelectItem value="Approved">Approved</SelectItem>
-                        <SelectItem value="Client Revision">Client Revision</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">Priority</Label>
-                    <Select value={projectPriority} onValueChange={setProjectPriority}>
-                      <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="REGULAR">REGULAR</SelectItem>
-                        <SelectItem value="RUSH">RUSH</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Status</Label><Select value={projectStatus} onValueChange={setProjectStatus}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="In Production">In Production</SelectItem><SelectItem value="For QA">For QA</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Client Revision">Client Revision</SelectItem></SelectContent></Select></div>
+                  <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority</Label><Select value={projectPriority} onValueChange={setProjectPriority}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="REGULAR">REGULAR</SelectItem><SelectItem value="RUSH">RUSH</SelectItem></SelectContent></Select></div>
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
@@ -574,285 +479,101 @@ export function QuickActions() {
 
       <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
         <DialogContent className="max-w-[500px] rounded-[16px] p-8 gap-6 border-none shadow-2xl">
-          <button onClick={() => setIsScheduleOpen(false)} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground outline-none">
-             <X className="h-4 w-4" />
-             <span className="sr-only">Close</span>
-          </button>
+          <button onClick={() => setIsScheduleOpen(false)} className="absolute right-4 top-4 opacity-70 hover:opacity-100 outline-none"><X className="h-4 w-4" /></button>
           <DialogHeader className="flex flex-row items-center gap-4 space-y-0 text-left">
-            <div className="w-[50px] h-[50px] rounded-full bg-[#E31D3B] flex items-center justify-center shrink-0 shadow-sm shadow-[#E31D3B]/40">
-              <Calendar className="w-6 h-6 text-white" />
-            </div>
+            <div className="w-[50px] h-[50px] rounded-full bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-red-200"><Calendar className="w-6 h-6 text-white" /></div>
             <div className="flex flex-col gap-1">
-              <DialogTitle className="text-[#0B1527] text-[22px] font-bold leading-none tracking-tight">New Event Schedule</DialogTitle>
-              <DialogDescription className="text-slate-500 font-medium text-[15px]">
-                Synchronize a new event with the master calendar.
-              </DialogDescription>
+              <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">New Event Schedule</DialogTitle>
+              <DialogDescription className="text-slate-400 font-medium">Synchronize with master calendar.</DialogDescription>
             </div>
           </DialogHeader>
-
-          <div className="space-y-6 mt-2">
+          <div className="space-y-6 mt-2 text-left">
             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
-                  EVENT TYPE
-                </Label>
-                <div className="relative">
-                  <Select value={eventType} onValueChange={(v: any) => { setEventType(v); if (v !== 'Custom') setCustomEventType(''); }}>
-                    <SelectTrigger className="h-[50px] bg-white border-2 border-[#E31D3B] rounded-xl text-[15px] font-medium text-slate-900 px-4 focus:ring-0 focus:ring-offset-0 focus:border-[#E31D3B]">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                      <SelectItem value="Shoot" className="font-medium">Shoot</SelectItem>
-                      <SelectItem value="Meeting" className="font-medium">Meeting</SelectItem>
-                      <SelectItem value="Deadline" className="font-medium">Deadline</SelectItem>
-                      <SelectItem value="Custom" className="font-medium text-[#E31D3B]">✏ Custom...</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {eventType === 'Custom' && (
-                    <Input
-                      autoFocus
-                      placeholder="e.g. Product Launch, BTS..."
-                      value={customEventType}
-                      onChange={e => setCustomEventType(e.target.value)}
-                      className="mt-2 h-[44px] rounded-xl border-[#E31D3B] border-2 text-[14px] text-slate-900 font-medium px-4 focus-visible:ring-0 shadow-none placeholder:font-normal"
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
-                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
-                   <Zap className="w-3.5 h-3.5" />
-                  </div>
-                  PRIORITY
-                </Label>
-                <Select value={schedulePriority} onValueChange={(v: any) => setSchedulePriority(v)}>
-                  <SelectTrigger className="h-[50px] bg-white border border-slate-200 rounded-xl text-[15px] font-bold text-slate-900 px-4 shadow-none focus:ring-0">
-                    <SelectValue placeholder="Priority" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                    <SelectItem value="NORMAL" className="font-bold cursor-pointer">NORMAL</SelectItem>
-                    <SelectItem value="HIGH" className="font-bold cursor-pointer">HIGH</SelectItem>
-                    <SelectItem value="URGENT" className="font-bold text-red-600 cursor-pointer">URGENT</SelectItem>
-                  </SelectContent>
+              <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">EVENT TYPE</Label>
+                <Select value={eventType} onValueChange={(v: any) => { setEventType(v); if (v !== 'Custom') setCustomEventType(''); }}>
+                  <SelectTrigger className="h-12 border-slate-200 rounded-xl"><SelectValue placeholder="Select type" /></SelectTrigger>
+                  <SelectContent><SelectItem value="Shoot">Shoot</SelectItem><SelectItem value="Meeting">Meeting</SelectItem><SelectItem value="Deadline">Deadline</SelectItem><SelectItem value="Custom" className="text-primary font-bold">✏ Custom...</SelectItem></SelectContent>
                 </Select>
+                {eventType === 'Custom' && <Input autoFocus placeholder="e.g. BTS..." value={customEventType} onChange={e => setCustomEventType(e.target.value)} className="mt-2 h-10 rounded-xl border-primary border-2 font-medium px-4" />}
+              </div>
+              <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2"><Zap className="w-3.5 h-3.5 text-primary" />PRIORITY</Label>
+                <Select value={schedulePriority} onValueChange={(v: any) => setSchedulePriority(v)}><SelectTrigger className="h-12 border-slate-200 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NORMAL">NORMAL</SelectItem><SelectItem value="HIGH">HIGH</SelectItem><SelectItem value="URGENT" className="text-red-600 font-bold">URGENT</SelectItem></SelectContent></Select>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
-                <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
-                  <Building2 className="w-3.5 h-3.5" />
-                </div>
-                AUTHORIZED BRAND
-              </Label>
-              <div className="relative">
-                 <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
-                   <SelectTrigger className="h-[50px] bg-white border border-slate-200 rounded-xl text-[15px] font-medium text-slate-900 px-4 shadow-none focus:ring-0">
-                     <SelectValue placeholder="Select authorized client" />
-                   </SelectTrigger>
-                   <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                     {brands?.map((b: any) => (<SelectItem key={b.id} value={b.id} className="font-medium">{b.name}</SelectItem>))}
-                   </SelectContent>
-                 </Select>
-              </div>
+            <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2"><Building2 className="w-3.5 h-3.5 text-primary" />BRAND</Label>
+              <Select value={selectedBrandId} onValueChange={setSelectedBrandId}><SelectTrigger className="h-12 border-slate-200 rounded-xl"><SelectValue placeholder="Select Brand" /></SelectTrigger><SelectContent>{brands?.map((b: any) => (<SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>))}</SelectContent></Select>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">EVENT DATE</Label>
-                <Input 
-                  type="date"
-                  value={eventDate} 
-                  onChange={e => setEventDate(e.target.value)} 
-                  className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-900 font-medium px-4 focus-visible:ring-primary/20 shadow-none" 
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">LOCATION</Label>
-                <div className="flex gap-2 relative z-50">
-                  <div className="relative flex-1 z-50">
-                    <Input 
-                    placeholder="Studio A / Site" 
-                    value={eventLocation} 
-                    onChange={e => {
-                      setEventLocation(e.target.value);
-                      if (e.target.value.length === 0) setLocationSuggestions([]);
-                    }} 
-                    className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal" 
-                  />
-                  {isSearchingLocation && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-                    </div>
-                  )}
-                  {locationSuggestions.length > 0 && eventLocation.length > 2 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50">
-                      {locationSuggestions.map((suggestion: any, idx: number) => (
-                        <div 
-                          key={idx} 
-                          className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b last:border-0 truncate"
-                          onClick={() => {
-                            setEventLocation(suggestion.display_name);
-                            setLocationSuggestions([]);
-                          }}
-                        >
-                          <div className="font-bold flex items-center gap-2">
-                            <MapPin className="w-3.5 h-3.5 text-[#E31D3B] shrink-0" />
-                            <span className="truncate">{suggestion.display_name.split(',')[0]}</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 truncate ml-[22px]">
-                            {suggestion.display_name}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  </div>
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="h-[50px] w-[50px] p-0 flex items-center justify-center shrink-0 rounded-xl border-slate-200 hover:bg-slate-50" 
-                    onClick={() => setIsMapPickerOpen(true)}
-                    title="Open Interactive Map"
-                  >
-                     <MapPin className="w-5 h-5 text-[#E31D3B]" />
-                  </Button>
+              <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">DATE</Label><Input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} className="h-12 border-slate-200 rounded-xl" /></div>
+              <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">LOCATION</Label>
+                <div className="flex gap-2 relative">
+                  <Input placeholder="Studio A" value={eventLocation} onChange={e => setEventLocation(e.target.value)} className="h-12 border-slate-200 rounded-xl flex-1" />
+                  <Button variant="outline" className="h-12 w-12 p-0 rounded-xl" onClick={() => setIsMapPickerOpen(true)}><MapPin className="w-5 h-5 text-primary" /></Button>
                 </div>
               </div>
             </div>
-
-            <div className="space-y-2">
-               <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">OPERATIONAL NOTES</Label>
-               <Input 
-                  placeholder="Special instructions or gear required..." 
-                  value={eventNotes} 
-                  onChange={e => setEventNotes(e.target.value)} 
-                  className="h-[52px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal" 
-               />
-            </div>
-
+            <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">OPERATIONAL NOTES</Label><Input placeholder="Special gear required..." value={eventNotes} onChange={e => setEventNotes(e.target.value)} className="h-12 border-slate-200 rounded-xl" /></div>
             <div className="grid grid-cols-2 gap-4 pt-4">
-               <DialogClose asChild>
-                 <Button variant="outline" className="w-full h-[54px] rounded-xl text-[15px] font-bold border-slate-200 text-slate-900 hover:bg-slate-50 hover:text-slate-900 shadow-none">
-                   Cancel
-                 </Button>
-               </DialogClose>
-               <Button onClick={handleCreateSchedule} className="w-full h-[54px] rounded-xl bg-[#E31D3B] hover:bg-[#C91A34] text-white text-[15px] font-bold shadow-sm transition-colors">
-                 Deploy to Calendar
-               </Button>
+              <DialogClose asChild><Button variant="outline" className="h-12 rounded-xl font-bold">Cancel</Button></DialogClose>
+              <Button onClick={handleCreateSchedule} className="h-12 rounded-xl bg-primary text-white font-bold">Deploy</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isTaskOpen} onOpenChange={setIsTaskOpen}>
-        <DialogContent className="max-md rounded-3xl p-8"><DialogHeader><DialogTitle>Assign Task</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+        <DialogContent className="max-w-md rounded-3xl p-8"><DialogHeader><DialogTitle className="text-xl font-black">Assign Mission</DialogTitle></DialogHeader>
+          <div className="space-y-4 text-left">
+            <Input placeholder="Mission Title" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} className="h-12 rounded-xl" />
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-500">Due Date</Label>
-                <Input type="date" value={taskDueDate} onChange={e => setTaskDueDate(e.target.value)} className="h-12" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase text-slate-500">Priority</Label>
-                <Select value={taskPriority} onValueChange={(v: any) => setTaskPriority(v)}>
-                  <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="URGENT">URGENT</SelectItem>
-                    <SelectItem value="HIGH">HIGH</SelectItem>
-                    <SelectItem value="NORMAL">NORMAL</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-500">Timeline</Label><Input type="date" value={taskDueDate} onChange={e => setTaskDueDate(e.target.value)} className="h-12 rounded-xl" /></div>
+              <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-500">Priority</Label>
+                <Select value={taskPriority} onValueChange={(v: any) => setTaskPriority(v)}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="URGENT">URGENT</SelectItem><SelectItem value="HIGH">HIGH</SelectItem><SelectItem value="NORMAL">NORMAL</SelectItem></SelectContent></Select>
               </div>
             </div>
-            <Select value={assignedToId} onValueChange={setAssignedToId}><SelectTrigger className="h-12"><SelectValue placeholder="Assignee" /></SelectTrigger><SelectContent>{staffList?.map((s: any) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}</SelectContent></Select>
-            <Button onClick={handleCreateTask} className="w-full h-12 bg-primary text-white font-bold">Assign Mission</Button>
+            <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-500">Assignee</Label>
+              <Select value={assignedToId} onValueChange={setAssignedToId}><SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Select operative" /></SelectTrigger><SelectContent>{staffList?.map((s: any) => (<SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>))}</SelectContent></Select>
+            </div>
+            <Button onClick={handleCreateTask} className="w-full h-12 bg-primary text-white font-bold rounded-xl shadow-lg shadow-red-100 mt-2">Deploy Directive</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isMapPickerOpen} onOpenChange={setIsMapPickerOpen}>
         <DialogContent className="max-w-[800px] w-[90vw] p-0 border-none bg-transparent shadow-none [&>button]:hidden sm:rounded-xl">
-           <MapPicker 
-             onLocationSelect={(addr) => {
-               setEventLocation(addr);
-               setIsMapPickerOpen(false);
-             }} 
-             onCancel={() => setIsMapPickerOpen(false)} 
-           />
+           <MapPicker onLocationSelect={(addr) => { setEventLocation(addr); setIsMapPickerOpen(false); }} onCancel={() => setIsMapPickerOpen(false)} />
         </DialogContent>
       </Dialog>
 
       <Dialog open={isNotifDetailOpen} onOpenChange={setIsNotifDetailOpen}>
         <DialogContent className="max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
           {selectedNotif && (
-            <div className="p-8 space-y-6">
-              <div className="flex items-center gap-4">
-                <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shadow-lg", getNotifStyle(selectedNotif.type).iconBg)}>
-                  {(() => { const Icon = selectedNotif.icon; return <Icon className={cn("w-7 h-7", getNotifStyle(selectedNotif.type).iconColor)} />; })()}
-                </div>
-                <div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight">{selectedNotif.title || selectedNotif.brand}</h3>
-                  <Badge className={cn("mt-1 text-[10px] font-black uppercase px-2", getNotifStyle(selectedNotif.type).bg, getNotifStyle(selectedNotif.type).iconColor)} variant="outline">
-                    {selectedNotif.type} MISSION
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6 py-6 border-y border-slate-50">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Priority</p>
-                  <p className={cn("text-xs font-bold", selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH' ? 'text-red-600' : 'text-slate-700')}>
-                    {selectedNotif.priority || 'NORMAL'}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Timeline</p>
-                  <p className="text-xs font-bold text-slate-700">{selectedNotif.dueDate || selectedNotif.date || 'TBA'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Assigned By</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 capitalize">
-                      {selectedNotif.assignedByName?.charAt(0) || 'A'}
+            <div className="p-8 space-y-6 text-left">
+              {(() => {
+                const Icon = getNotifIcon(selectedNotif.type);
+                const style = getNotifStyle(selectedNotif.type);
+                return (
+                  <div className="flex items-center gap-4">
+                    <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shadow-lg", style.iconBg)}><Icon className={cn("w-7 h-7", style.iconColor)} /></div>
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight">{selectedNotif.title || selectedNotif.brand}</h3>
+                      <Badge className={cn("mt-1 text-[10px] font-black uppercase px-2", style.bg, style.iconColor)} variant="outline">{selectedNotif.type} MISSION</Badge>
                     </div>
-                    <p className="text-xs font-bold text-slate-900">{selectedNotif.assignedByName || 'Administrator'}</p>
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</p>
-                  <p className="text-xs font-bold text-slate-700 capitalize">{selectedNotif.status || 'Pending'}</p>
-                </div>
+                );
+              })()}
+              <div className="grid grid-cols-2 gap-6 py-6 border-y border-slate-50">
+                <div className="space-y-1"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Priority</p><p className={cn("text-xs font-bold", selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH' ? 'text-red-600' : 'text-slate-700')}>{selectedNotif.priority || 'NORMAL'}</p></div>
+                <div className="space-y-1"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Timeline</p><p className="text-xs font-bold text-slate-700">{selectedNotif.dueDate || selectedNotif.date || 'TBA'}</p></div>
+                <div className="space-y-1"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Assigned By</p><div className="flex items-center gap-2 mt-1"><div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 capitalize">{selectedNotif.assignedByName?.charAt(0) || 'A'}</div><p className="text-xs font-bold text-slate-900">{selectedNotif.assignedByName || 'Administrator'}</p></div></div>
+                <div className="space-y-1"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</p><p className="text-xs font-bold text-slate-700 capitalize">{selectedNotif.status || 'Pending'}</p></div>
               </div>
-
               {selectedNotif.notes && (
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Operational Intelligence</p>
-                  <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl italic border border-slate-100">
-                    "{selectedNotif.notes}"
-                  </p>
-                </div>
+                <div className="space-y-2"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Intelligence</p><p className="text-sm text-slate-600 italic bg-slate-50 p-4 rounded-2xl border border-slate-100">"{selectedNotif.notes}"</p></div>
               )}
-
               <div className="flex flex-col gap-3 pt-2">
-                <Button 
-                  onClick={() => {
-                    setIsNotifDetailOpen(false);
-                    setIsNotifOpen(false);
-                    if (selectedNotif.type === 'SCHEDULE') router.push('/dashboard/calendar');
-                    if (selectedNotif.type === 'TASK') router.push('/dashboard/calendar');
-                    if (selectedNotif.type === 'PROJECT') router.push('/dashboard/production');
-                  }}
-                  className="h-12 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800"
-                >
-                  Go to Command Center
-                </Button>
-                <Button variant="outline" onClick={() => setIsNotifDetailOpen(false)} className="h-12 rounded-xl border-slate-200 font-bold text-slate-500">
-                  Dismiss Briefing
-                </Button>
+                <Button onClick={() => { setIsNotifDetailOpen(false); setIsNotifOpen(false); router.push(selectedNotif.type === 'SCHEDULE' ? '/dashboard/calendar' : selectedNotif.type === 'PROJECT' ? '/dashboard/production' : '/dashboard/calendar'); }} className="h-12 rounded-xl bg-slate-900 text-white font-bold">Go to Command Center</Button>
+                <Button variant="outline" onClick={() => setIsNotifDetailOpen(false)} className="h-12 rounded-xl border-slate-200 font-bold text-slate-500">Dismiss</Button>
               </div>
             </div>
           )}
