@@ -177,7 +177,8 @@ export default function ProductionPage() {
     const projectRef = doc(firestore, 'projects', projectId);
     const updateData = { 
       status: newStatus, 
-      updatedAt: serverTimestamp() 
+      updatedAt: serverTimestamp(),
+      lastUpdatedBy: user?.name || 'Unknown'
     };
 
     updateDoc(projectRef, updateData)
@@ -317,7 +318,10 @@ export default function ProductionPage() {
     });
   };
 
-  const canEditStatus = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
+  const canEditStatus = (project: any) => {
+    if (user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER') return true;
+    return project.artistId === user?.id;
+  };
   const canTerminate = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
 
   return (
@@ -620,7 +624,7 @@ export default function ProductionPage() {
                   <TableCell className="font-mono text-[10px] font-bold text-slate-500">{item.fileCode}</TableCell>
                   <TableCell className="py-4 font-bold text-slate-800">{item.brand}</TableCell>
                   <TableCell className="text-center">
-                    {canEditStatus ? (
+                    {canEditStatus(item) ? (
                       <Select value={item.status} onValueChange={(val) => handleUpdateStatus(item.id, val)}>
                         <SelectTrigger className="h-7 text-[8px] font-black uppercase min-w-[110px]">
                           <SelectValue />
@@ -631,12 +635,13 @@ export default function ProductionPage() {
                           <SelectItem value="For QA">FOR QA</SelectItem>
                           <SelectItem value="Approved">APPROVED</SelectItem>
                           <SelectItem value="Client Revision">CLIENT REVISION</SelectItem>
+                          <SelectItem value="Done">DONE</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : <Badge variant="outline" className="text-[8px] font-bold uppercase">{item.status}</Badge>}
                   </TableCell>
                   <TableCell className="text-center">
-                    {canEditStatus ? (
+                    {canEditStatus(item) ? (
                       <Select value={item.priority} onValueChange={(val) => handleUpdatePriority(item.id, val)}>
                         <SelectTrigger className="h-7 text-[8px] font-black uppercase min-w-[90px]">
                           <SelectValue />
