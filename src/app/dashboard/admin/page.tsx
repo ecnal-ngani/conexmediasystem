@@ -458,7 +458,7 @@ export default function AdminPage() {
             philHealthDeduction: emp.philHealthDeduction,
             pagIbigDeduction: emp.pagIbigDeduction,
             withholdingTax: emp.withholdingTax,
-            taxRateApplied: taxConfig.withholdingTaxRate,
+            taxRateApplied: 'TRAIN Law',
             manualAdjustments: emp.periodAdjustments,
             netSalary: emp.netSalary,
             is_paid: false,
