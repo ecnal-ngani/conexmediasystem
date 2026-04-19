@@ -451,159 +451,118 @@ export function QuickActions() {
       </div>
 
       <Dialog open={isProjectOpen} onOpenChange={setIsProjectOpen}>
-        <DialogContent className="max-w-[500px] rounded-[16px] p-8 gap-6 border-none shadow-2xl">
-          <button onClick={() => setIsProjectOpen(false)} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground outline-none">
-             <X className="h-4 w-4" />
-             <span className="sr-only">Close</span>
-          </button>
-          <DialogHeader className="flex flex-row items-center gap-4 space-y-0 text-left">
-            <div className="w-[50px] h-[50px] rounded-full bg-[#E31D3B] flex items-center justify-center shrink-0 shadow-sm shadow-[#E31D3B]/40">
-              <Plus className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <DialogTitle className="text-[#0B1527] text-[22px] font-bold leading-none tracking-tight">Add New Project</DialogTitle>
-              <DialogDescription className="text-slate-500 font-medium text-[15px]">
-                Configure a new production item for the hub.
-              </DialogDescription>
-            </div>
-          </DialogHeader>
+        <DialogContent className="max-w-[540px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+          <ScrollArea className="max-h-[90vh]">
+            <div className="p-6 md:p-8 space-y-6">
+              <DialogHeader className="flex flex-row items-start gap-4 space-y-0 text-left">
+                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-red-100">
+                  <Plus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Add New Project</DialogTitle>
+                  <DialogDescription className="text-slate-400 font-medium">Configure a new production item for the hub.</DialogDescription>
+                </div>
+              </DialogHeader>
 
-          <div className="space-y-6 mt-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
-                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
-                    <Building2 className="w-3.5 h-3.5" />
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Briefcase className="w-3 h-3 text-primary" />
+                      Brand Selection
+                    </Label>
+                    <Select value={projectBrandId} onValueChange={setProjectBrandId}>
+                      <SelectTrigger className="h-12 border-slate-200 rounded-xl">
+                        <SelectValue placeholder="Select Brand" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brands?.map((b: any) => (
+                          <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  BRAND SELECTION
-                </Label>
-                <div className="relative">
-                  <Select value={projectBrandId} onValueChange={setProjectBrandId}>
-                    <SelectTrigger className="h-[50px] bg-white border-2 border-[#E31D3B] rounded-xl text-[15px] font-medium text-slate-900 px-4 focus:ring-0 focus:ring-offset-0 focus:border-[#E31D3B]">
-                      <SelectValue placeholder="Select Brand" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                      {brands?.map((b: any) => (<SelectItem key={b.id} value={b.id} className="font-medium">{b.name}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <FileText className="w-3 h-3 text-primary" />
+                      File Code
+                    </Label>
+                    <Input 
+                      placeholder="Generated automatically..." 
+                      value={fileCode}
+                      readOnly
+                      className="h-12 border-slate-200 rounded-xl bg-slate-50 font-mono text-xs" 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                    <Lightbulb className="w-3 h-3 text-primary" />
+                    Content Idea
+                  </Label>
+                  <Input placeholder="Product showcase reel" value={contentIdea} onChange={(e) => setContentIdea(e.target.value)} className="h-12 rounded-xl" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <User className="w-3 h-3 text-primary" />
+                      Artist
+                    </Label>
+                    <Select value={artistId} onValueChange={(val) => {
+                      setArtistId(val);
+                      const s = staffList?.find(u => u.id === val);
+                      if (s) setArtist(s.name);
+                    }}>
+                      <SelectTrigger className="h-12 rounded-xl border-slate-200">
+                        <SelectValue placeholder="Select employee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {staffList?.map((s: any) => (
+                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                      <Calendar className="w-3 h-3 text-primary" />
+                      Due Date
+                    </Label>
+                    <Input type="date" value={projectDueDate} onChange={(e) => setProjectDueDate(e.target.value)} className="h-12 rounded-xl" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">Status</Label>
+                    <Select value={projectStatus} onValueChange={setProjectStatus}>
+                      <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="In Production">In Production</SelectItem>
+                        <SelectItem value="For QA">For QA</SelectItem>
+                        <SelectItem value="Approved">Approved</SelectItem>
+                        <SelectItem value="Client Revision">Client Revision</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">Priority</Label>
+                    <Select value={projectPriority} onValueChange={setProjectPriority}>
+                      <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="REGULAR">REGULAR</SelectItem>
+                        <SelectItem value="RUSH">RUSH</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
-                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
-                   <FileText className="w-3.5 h-3.5" />
-                  </div>
-                  FILE CODE
-                </Label>
-                <Input 
-                  readOnly 
-                  value={fileCode || 'Generated automatically...'} 
-                  className={cn(
-                    "h-[50px] rounded-xl font-mono text-[13px] border-slate-200 bg-slate-50 shadow-none focus-visible:ring-0",
-                    !fileCode && "text-slate-400 italic"
-                  )} 
-                />
+              <div className="flex gap-3 pt-4">
+                <DialogClose asChild><Button variant="outline" className="flex-1 h-12 rounded-xl">Cancel</Button></DialogClose>
+                <Button onClick={handleCreateProject} className="flex-1 h-12 rounded-xl bg-primary text-white font-bold">Add to Hub</Button>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
-                <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
-                  <Lightbulb className="w-3.5 h-3.5" />
-                </div>
-                CONTENT IDEA
-              </Label>
-              <Input 
-                placeholder="Product showcase reel" 
-                value={contentIdea} 
-                onChange={e => setContentIdea(e.target.value)} 
-                className="h-[52px] rounded-xl border-slate-200 text-[15px] text-slate-600 font-medium px-4 focus-visible:ring-primary/20 shadow-none placeholder:text-slate-400 placeholder:font-normal" 
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
-                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
-                    <User className="w-3.5 h-3.5" />
-                  </div>
-                  ARTIST
-                </Label>
-                  <Select value={artistId} onValueChange={(val) => {
-                    setArtistId(val);
-                    const s = staffList?.find(u => u.id === val);
-                    if (s) setArtist(s.name);
-                  }}>
-                    <SelectTrigger className="h-[50px] rounded-xl border-slate-200 text-[15px] font-medium text-slate-900 px-4 shadow-none focus:ring-0">
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                      {staffList?.map((s: any) => (
-                        <SelectItem key={s.id} value={s.id} className="font-medium">{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-900 tracking-widest px-1">
-                  <div className="w-4 h-4 flex items-center justify-center text-[#E31D3B]">
-                    <Calendar className="w-3.5 h-3.5" />
-                  </div>
-                  DUE DATE
-                </Label>
-                <Input
-                  type="date"
-                  value={projectDueDate}
-                  onChange={e => setProjectDueDate(e.target.value)}
-                  className="h-[50px] rounded-xl border-slate-200 text-[15px] text-slate-900 font-medium px-4 focus-visible:ring-primary/20 shadow-none"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-bold text-slate-900 px-1">Status</Label>
-
-                <Select value={projectStatus} onValueChange={setProjectStatus}>
-                  <SelectTrigger className="h-[50px] bg-white border border-slate-200 rounded-xl text-[15px] font-medium text-slate-900 px-4 shadow-none focus:ring-0">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                    <SelectItem value="Pending" className="font-medium">Pending</SelectItem>
-                    <SelectItem value="In Production" className="font-medium">In Production</SelectItem>
-                    <SelectItem value="On Deck" className="font-medium">On Deck</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-bold text-slate-900 px-1">Priority</Label>
-                <Select value={projectPriority} onValueChange={setProjectPriority}>
-                  <SelectTrigger className="h-[50px] bg-white border border-slate-200 rounded-xl text-[15px] font-semibold text-slate-900 px-4 shadow-none focus:ring-0">
-                    <SelectValue placeholder="Priority" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-slate-200 shadow-xl">
-                    <SelectItem value="REGULAR" className="font-semibold">REGULAR</SelectItem>
-                    <SelectItem value="HIGH" className="font-semibold">HIGH</SelectItem>
-                    <SelectItem value="URGENT" className="font-semibold text-red-600">URGENT</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-4">
-               <DialogClose asChild>
-                 <Button variant="outline" className="w-full h-[54px] rounded-xl text-[15px] font-bold border-slate-200 text-slate-900 hover:bg-slate-50 hover:text-slate-900 shadow-none">
-                   Cancel
-                 </Button>
-               </DialogClose>
-               <Button onClick={handleCreateProject} className="w-full h-[54px] rounded-xl bg-[#E31D3B] hover:bg-[#C91A34] text-white text-[15px] font-bold shadow-sm transition-colors">
-                 Add to Hub
-               </Button>
-            </div>
-          </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
