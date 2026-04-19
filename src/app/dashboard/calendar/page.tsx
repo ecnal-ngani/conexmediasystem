@@ -248,22 +248,33 @@ export default function CalendarPage() {
       status: 'completed',
       updatedAt: serverTimestamp()
     };
+    updateDoc(taskRef, updateData).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: taskRef.path,
+        operation: 'update',
+        requestResourceData: updateData
+      }));
+    });
+    toast({ title: "Task Synchronized", description: `${title} marked as completed.` });
+    setSelectedEvent(null);
+  };
 
-    updateDoc(taskRef, updateData)
-      .then(() => {
-        toast({
-          title: "Directive Completed",
-          description: `"${title}" has been successfully synchronized as completed.`,
-        });
-        setSelectedEvent(null);
-      })
-      .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: taskRef.path,
-          operation: 'update',
-          requestResourceData: updateData
-        }));
-      });
+  const handleCompleteProject = (projectId: string, brand: string) => {
+    if (!firestore) return;
+    const projectRef = doc(firestore, 'projects', projectId);
+    const updateData = { 
+      status: 'Done',
+      updatedAt: serverTimestamp()
+    };
+    updateDoc(projectRef, updateData).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: projectRef.path,
+        operation: 'update',
+        requestResourceData: updateData
+      }));
+    });
+    toast({ title: "Mission Accomplished", description: `${brand} project marked as Done.` });
+    setSelectedEvent(null);
   };
 
   const renderCalendarDays = () => {
@@ -622,6 +633,7 @@ export default function CalendarPage() {
               </div>
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
                 {selectedEvent.source === 'task' && selectedEvent.status !== 'completed' && (<Button onClick={() => handleCompleteTask(selectedEvent.id, selectedEvent.title)} className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 text-white shadow-lg shadow-green-100"><Check className="w-4 h-4" />MARK AS DONE</Button>)}
+                {selectedEvent.source === 'production' && selectedEvent.status !== 'Done' && selectedEvent.status !== 'Approved' && (<Button onClick={() => handleCompleteProject(selectedEvent.id, selectedEvent.brand)} className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 text-white shadow-lg shadow-green-100"><Check className="w-4 h-4" />MARK AS DONE</Button>)}
                 <Button onClick={() => setSelectedEvent(null)} variant="outline" className="w-full h-12 font-bold rounded-xl">Close Briefing</Button>
                 {user?.role === 'ADMIN' && (<Button onClick={handleDeleteEvent} variant="destructive" className="w-full h-12 font-bold rounded-xl gap-2 shadow-lg shadow-red-100"><Trash2 className="w-4 h-4" />Terminate Event</Button>)}
               </div>
