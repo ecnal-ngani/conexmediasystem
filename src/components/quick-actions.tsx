@@ -252,10 +252,19 @@ export function QuickActions() {
   const notifications = useMemo(() => {
     const items: any[] = [];
     if (!user || !isMounted) return items;
+    
+    // 1. Schedules (Global Events)
     recentSchedules?.forEach(s => items.push({ ...s, icon: Calendar, type: 'SCHEDULE', rawTime: s.createdAt?.seconds || 0 }));
+    
+    // 2. Tasks (Personal Directives)
     recentTasks?.filter(t => t.assignedToId === user.id || t.assignedById === user.id).forEach(t => items.push({ ...t, icon: ListTodo, type: 'TASK', rawTime: (t.updatedAt || t.createdAt)?.seconds || 0 }));
-    return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 15);
-  }, [recentSchedules, recentTasks, user, isMounted]);
+    
+    // 3. Projects (Assigned Production Items)
+    const isAdmin = user.role === 'ADMIN' || user.role === 'BRAND_MANAGER';
+    recentProjects?.filter(p => isAdmin || p.artistId === user.id).forEach(p => items.push({ ...p, icon: Layers, type: 'PROJECT', rawTime: p.createdAt?.seconds || 0 }));
+
+    return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 20);
+  }, [recentSchedules, recentTasks, recentProjects, user, isMounted]);
 
   const handleCreateProject = () => {
     if (!firestore || !fileCode || !projectBrandId || !artist || !projectDueDate) {
@@ -324,6 +333,7 @@ export function QuickActions() {
   const getNotifStyle = (type: string) => {
     if (type === 'SCHEDULE') return { bg: 'bg-red-50', border: 'border-red-100', iconBg: 'bg-red-100', iconColor: 'text-primary', dot: 'bg-primary' };
     if (type === 'TASK') return { bg: 'bg-green-50', border: 'border-green-100', iconBg: 'bg-green-100', iconColor: 'text-green-600', dot: 'bg-green-500' };
+    if (type === 'PROJECT') return { bg: 'bg-blue-50', border: 'border-blue-100', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', dot: 'bg-blue-500' };
     return { bg: 'bg-slate-50', border: 'border-slate-100', iconBg: 'bg-slate-100', iconColor: 'text-slate-500', dot: 'bg-slate-400' };
   };
 
@@ -388,11 +398,11 @@ export function QuickActions() {
                       ? formatDistanceToNow(new Date(n.rawTime * 1000), { addSuffix: true })
                       : '';
                     const label = n.type === 'SCHEDULE'
-                      ? (n.type === 'SCHEDULE' ? n.brandName || n.brand || 'Shoot' : n.title)
-                      : n.title;
+                      ? (n.brandName || n.brand || 'Shoot')
+                      : n.type === 'PROJECT' ? (n.brand || n.fileCode) : n.title;
                     const sublabel = n.type === 'SCHEDULE'
                       ? `${n.type} · ${n.date || ''}${n.location ? ' @ ' + n.location : ''}`
-                      : `Task · ${n.assignedToName ? 'for ' + n.assignedToName : ''}`;
+                      : n.type === 'PROJECT' ? `New Project · Due ${n.dueDate}` : `Task · ${n.assignedToName ? 'for ' + n.assignedToName : ''}`;
                     return (
                       <div
                         key={i}
