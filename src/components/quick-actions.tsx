@@ -22,6 +22,7 @@ import {
   User,
   Share2,
   Link as LinkIcon,
+  ExternalLink,
   Loader2,
   Save,
   X,
