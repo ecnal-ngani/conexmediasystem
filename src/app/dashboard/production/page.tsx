@@ -678,64 +678,84 @@ export default function ProductionPage() {
         </div>
       </div>
       <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-        <DialogContent className="max-w-md rounded-3xl p-8">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-black flex items-center gap-2">
-              <LinkIcon className="w-5 h-5 text-primary" />
-              Project Assets
-            </DialogTitle>
-            <DialogDescription className="font-medium text-slate-500">
-              Direct access to Canva or production design links for {selectedProject?.fileCode}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6 mt-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Destination</Label>
+        <DialogContent className="w-[95vw] sm:max-w-md rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
+          <div className="p-6 sm:p-8 space-y-6">
+            <DialogHeader className="text-left">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <LinkIcon className="w-5 h-5 text-primary" />
+                </div>
+                <DialogTitle className="text-xl font-black tracking-tight text-slate-900">Project Assets</DialogTitle>
+              </div>
+              <DialogDescription className="font-medium text-slate-500 text-sm leading-relaxed">
+                Strategic access to design assets for mission <span className="text-slate-900 font-bold">{selectedProject?.fileCode}</span>.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Current Destination</Label>
               {selectedProject?.canvasLink ? (
                 <a 
                   href={selectedProject.canvasLink} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl group hover:bg-blue-100 transition-colors"
+                  className="flex items-center gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl group hover:bg-blue-50 transition-all duration-300"
                 >
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                    <Share2 className="w-5 h-5 text-blue-600" />
+                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-blue-50 group-hover:scale-105 transition-transform">
+                    <Share2 className="w-6 h-6 text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-black text-blue-900 truncate">Open Design Assets</p>
-                    <p className="text-[11px] text-blue-600/70 truncate">{selectedProject.canvasLink}</p>
+                    <p className="text-[14px] font-black text-blue-900 mb-0.5">Open Design Assets</p>
+                    <p className="text-[11px] text-blue-500 font-medium truncate break-all opacity-70">{selectedProject.canvasLink}</p>
                   </div>
-                  <ExternalLink className="w-4 h-4 text-blue-400 group-hover:text-blue-600" />
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <ExternalLink className="w-4 h-4" />
+                  </div>
                 </a>
               ) : (
-                <div className="p-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
-                  <p className="text-xs font-medium text-slate-400">No link associated with this project yet.</p>
+                <div className="p-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
+                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <LinkIcon className="w-4 h-4 text-slate-300" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-400">No tactical link assigned.</p>
                 </div>
               )}
             </div>
 
-            <div className="space-y-3 pt-4 border-t border-slate-100">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Update Link (Admins Only)</Label>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Paste new Canva link here..." 
-                  value={editingLink} 
-                  onChange={(e) => setEditingLink(e.target.value)}
-                  className="h-11 rounded-xl bg-white border-slate-200"
-                />
+            <div className="pt-6 border-t border-slate-100 space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Update Intelligence</Label>
+                {user?.role !== 'ADMIN' && user?.role !== 'BRAND_MANAGER' && (
+                  <Badge variant="outline" className="text-[8px] font-black uppercase bg-slate-50 border-slate-200 text-slate-400">Read-Only</Badge>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input 
+                    placeholder="New Canva link..." 
+                    value={editingLink} 
+                    onChange={(e) => setEditingLink(e.target.value)}
+                    disabled={user?.role !== 'ADMIN' && user?.role !== 'BRAND_MANAGER'}
+                    className="h-12 pl-10 rounded-xl bg-white border-slate-200 focus:ring-primary focus:border-primary text-sm font-medium"
+                  />
+                </div>
                 <Button 
                   onClick={handleUpdateLink}
                   disabled={user?.role !== 'ADMIN' && user?.role !== 'BRAND_MANAGER'}
-                  className="h-11 w-11 p-0 rounded-xl bg-slate-900 text-white shrink-0 shadow-lg shadow-slate-200"
+                  className="h-12 sm:w-12 w-full p-0 rounded-xl bg-slate-900 hover:bg-slate-800 text-white shrink-0 shadow-xl shadow-slate-200/50 transition-all active:scale-95"
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="w-5 h-5 sm:block hidden" />
+                  <span className="sm:hidden font-bold">Update Link</span>
                 </Button>
               </div>
             </div>
 
-            <Button variant="outline" onClick={() => setSelectedProject(null)} className="w-full h-12 rounded-xl font-bold text-slate-500 border-slate-200 mt-2">
-              Dismiss
-            </Button>
+            <DialogClose asChild>
+              <Button variant="ghost" className="w-full h-12 rounded-xl font-black text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors">
+                Close Briefing
+              </Button>
+            </DialogClose>
           </div>
         </DialogContent>
       </Dialog>
