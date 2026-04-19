@@ -179,7 +179,7 @@ export default function VerifyPage() {
         confidence: 1.0,
         method: 'Photo Capture Log',
         devicePlatform: navigator.userAgent,
-        status: 'Logged',
+        status: 'Logged (WFH)',
         photoData: compressedUri // Save the low-res photo directly to the log if needed, or just log the event
       };
 

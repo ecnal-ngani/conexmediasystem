@@ -817,10 +817,8 @@ export default function AdminPage() {
                     <SelectTrigger className="w-full sm:w-40"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">All Outcomes</SelectItem>
-                      <SelectItem value="Logged">Logged (WFH)</SelectItem>
-                      <SelectItem value="Success">Success (AI)</SelectItem>
-                      <SelectItem value="Failed">Failed</SelectItem>
-                      <SelectItem value="System Error">System Error</SelectItem>
+                      <SelectItem value="Logged (WFH)">Logged (WFH)</SelectItem>
+                      <SelectItem value="Logged (Office)">Logged (Office)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -863,11 +861,11 @@ export default function AdminPage() {
                       <TableCell className="text-center">
                          <Badge className={cn(
                            "text-[10px] font-black uppercase shadow-none",
-                           (log.status || 'Success') === 'Success' || (log.status === 'Logged') ? "bg-green-100 text-green-700 border-green-200" :
-                           (log.status || 'Success') === 'Failed' ? "bg-red-100 text-red-700 border-red-200" :
-                           "bg-orange-100 text-orange-700 border-orange-200"
+                           log.status === 'Logged (WFH)' ? "bg-green-100 text-green-700 border-green-200" :
+                           log.status === 'Logged (Office)' ? "bg-blue-100 text-blue-700 border-blue-200" :
+                           "bg-slate-100 text-slate-700 border-slate-200"
                          )} variant="outline">
-                           {log.status === 'Logged' ? 'WFH LOGGED' : (log.status || 'Success')}
+                           {log.status || 'UNKNWN'}
                          </Badge>
                       </TableCell>
                       <TableCell className="text-right">

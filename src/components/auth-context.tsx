@@ -164,6 +164,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (wfhStatus) {
         router.push('/verify');
       } else {
+        // Log Office check-in for biometric records
+        const verificationsRef = collection(firestore, 'verifications');
+        const checkInData = {
+          userId: userId,
+          userName: userData.name,
+          userSystemId: userData.systemId,
+          email: userData.email || '',
+          timestamp: serverTimestamp(),
+          isVerified: true,
+          method: 'Office Terminal',
+          status: 'Logged (Office)',
+          devicePlatform: navigator.userAgent
+        };
+        addDoc(verificationsRef, checkInData).catch(console.error);
+
         router.push('/dashboard');
       }
     } catch (err: any) {
