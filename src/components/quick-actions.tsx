@@ -269,7 +269,10 @@ export function QuickActions() {
     return Bell;
   };
 
-  const getNotifStyle = (type: string) => {
+  const getNotifStyle = (type: string, status?: string) => {
+    if (status === 'Done' || status === 'completed' || status === 'Approved') {
+      return { bg: 'bg-green-50', border: 'border-green-100', iconBg: 'bg-green-100', iconColor: 'text-green-600', dot: 'bg-green-500' };
+    }
     if (type === 'SCHEDULE') return { bg: 'bg-red-50', border: 'border-red-100', iconBg: 'bg-red-100', iconColor: 'text-primary', dot: 'bg-primary' };
     if (type === 'TASK') return { bg: 'bg-green-50', border: 'border-green-100', iconBg: 'bg-green-100', iconColor: 'text-green-600', dot: 'bg-green-500' };
     if (type === 'PROJECT') return { bg: 'bg-blue-50', border: 'border-blue-100', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', dot: 'bg-blue-500' };
@@ -398,7 +401,7 @@ export function QuickActions() {
               ) : (
                 <div className="p-4 space-y-2 text-left">
                   {notifications.map((n, i) => {
-                    const style = getNotifStyle(n.type);
+                    const style = getNotifStyle(n.type, n.status);
                     const Icon = getNotifIcon(n.type);
                     const isUnread = n.rawTime > lastReadTime;
                     const label = n.type === 'SCHEDULE' ? (n.brandName || n.brand || 'Shoot') : n.type === 'PROJECT' ? (n.brand || n.fileCode) : n.title;
@@ -551,7 +554,7 @@ export function QuickActions() {
             <div className="p-8 space-y-6 text-left">
               {(() => {
                 const Icon = getNotifIcon(selectedNotif.type);
-                const style = getNotifStyle(selectedNotif.type);
+                const style = getNotifStyle(selectedNotif.type, selectedNotif.status);
                 return (
                   <div className="flex items-center gap-4">
                     <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shadow-lg", style.iconBg)}><Icon className={cn("w-7 h-7", style.iconColor)} /></div>
