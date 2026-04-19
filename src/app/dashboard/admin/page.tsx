@@ -149,7 +149,7 @@ export default function AdminPage() {
   // Tax Configuration State
   const [isTaxConfigModalOpen, setIsTaxConfigModalOpen] = useState(false);
   const [editingTaxConfig, setEditingTaxConfig] = useState<any>({
-    sssRate: '5', sssCeiling: '35000', philHealthRate: '5', philHealthCap: '100000', pagIbigShare: '200', withholdingTaxRate: '15'
+    sssRate: '5', sssCeiling: '35000', philHealthRate: '5', philHealthCap: '100000', pagIbigShare: '200'
   });
 
   // Manual Adjustments State
@@ -225,8 +225,7 @@ export default function AdminPage() {
     const defaultTaxConfig = {
       sssRate: 5, sssCeiling: 35000,
       philHealthRate: 5, philHealthCap: 100000,
-      pagIbigShare: 200,
-      withholdingTaxRate: 15
+      pagIbigShare: 200
     };
     if (!globalSettings) return defaultTaxConfig;
     const dbConfig = globalSettings.find((doc: any) => doc.id === 'payroll_tax_config');
@@ -265,16 +264,41 @@ export default function AdminPage() {
       
       const grossSalary = totalHours * rate;
       
-      // Statutory Deductions
-      const sssDeduction = Math.min(grossSalary, taxConfig.sssCeiling) * (taxConfig.sssRate / 100);
-      const philHealthDeduction = Math.min(grossSalary, taxConfig.philHealthCap) * (taxConfig.philHealthRate / 100) / 2; // Employee share is half
-      const pagIbigDeduction = grossSalary > 0 ? taxConfig.pagIbigShare : 0;
+      // Statutory Deductions (Interns are exempt)
+      const isIntern = emp.role === 'INTERN';
+      const sssDeduction = isIntern ? 0 : Math.min(grossSalary, taxConfig.sssCeiling) * (taxConfig.sssRate / 100);
+      const philHealthDeduction = isIntern ? 0 : Math.min(grossSalary, taxConfig.philHealthCap) * (taxConfig.philHealthRate / 100) / 2; // Employee share is half
+      const pagIbigDeduction = (grossSalary > 0 && !isIntern) ? taxConfig.pagIbigShare : 0;
       
       const totalStatutory = grossSalary > 0 ? (sssDeduction + philHealthDeduction + pagIbigDeduction) : 0;
       
-      // Taxable Income & Withholding Tax
+      // Taxable Income
       const taxableIncome = Math.max(0, grossSalary - totalStatutory);
-      const withholdingTax = taxableIncome * (taxConfig.withholdingTaxRate / 100);
+      
+      // Philippine TRAIN Law Withholding Tax Calculation
+      let withholdingTax = 0;
+      if (!isIntern && taxableIncome > 0) {
+        // Annualize the monthly taxable income
+        const annualTaxableIncome = taxableIncome * 12;
+        let annualTax = 0;
+        
+        if (annualTaxableIncome <= 250000) {
+          annualTax = 0;
+        } else if (annualTaxableIncome <= 400000) {
+          annualTax = (annualTaxableIncome - 250000) * 0.15;
+        } else if (annualTaxableIncome <= 800000) {
+          annualTax = 22500 + (annualTaxableIncome - 400000) * 0.20;
+        } else if (annualTaxableIncome <= 2000000) {
+          annualTax = 102500 + (annualTaxableIncome - 800000) * 0.25;
+        } else if (annualTaxableIncome <= 8000000) {
+          annualTax = 402500 + (annualTaxableIncome - 2000000) * 0.30;
+        } else {
+          annualTax = 2202500 + (annualTaxableIncome - 8000000) * 0.35;
+        }
+        
+        // De-annualize back to monthly withholding tax
+        withholdingTax = annualTax / 12;
+      }
 
       // Manual Adjustments filtering (specific to the selected period)
       const periodAdjustments = emp.manualAdjustments?.[selectedPayrollPeriod] || [];
@@ -1208,9 +1232,10 @@ export default function AdminPage() {
               <Label>Pag-IBIG Share (PHP)</Label>
               <Input type="number" value={editingTaxConfig.pagIbigShare} onChange={(e) => setEditingTaxConfig({ ...editingTaxConfig, pagIbigShare: e.target.value })} />
             </div>
-            <div className="space-y-2 col-span-1">
-              <Label>Withholding Tax (%)</Label>
-              <Input type="number" value={editingTaxConfig.withholdingTaxRate} onChange={(e) => setEditingTaxConfig({ ...editingTaxConfig, withholdingTaxRate: e.target.value })} />
+            <div className="space-y-2 col-span-2">
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-3 text-xs">
+                <strong>Note:</strong> Income Tax (Withholding Tax) is now automatically calculated using the updated Philippine TRAIN Law graduated tax brackets (based on annualized monthly income). Interns are automatically exempted.
+              </div>
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-4">
