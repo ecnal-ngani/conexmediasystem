@@ -677,6 +677,68 @@ export default function ProductionPage() {
           </Table>
         </div>
       </div>
+      <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
+        <DialogContent className="max-w-md rounded-3xl p-8">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black flex items-center gap-2">
+              <LinkIcon className="w-5 h-5 text-primary" />
+              Project Assets
+            </DialogTitle>
+            <DialogDescription className="font-medium text-slate-500">
+              Direct access to Canva or production design links for {selectedProject?.fileCode}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Destination</Label>
+              {selectedProject?.canvasLink ? (
+                <a 
+                  href={selectedProject.canvasLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl group hover:bg-blue-100 transition-colors"
+                >
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                    <Share2 className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-black text-blue-900 truncate">Open Design Assets</p>
+                    <p className="text-[11px] text-blue-600/70 truncate">{selectedProject.canvasLink}</p>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-blue-400 group-hover:text-blue-600" />
+                </a>
+              ) : (
+                <div className="p-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
+                  <p className="text-xs font-medium text-slate-400">No link associated with this project yet.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3 pt-4 border-t border-slate-100">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Update Link (Admins Only)</Label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Paste new Canva link here..." 
+                  value={editingLink} 
+                  onChange={(e) => setEditingLink(e.target.value)}
+                  className="h-11 rounded-xl bg-white border-slate-200"
+                />
+                <Button 
+                  onClick={handleUpdateLink}
+                  disabled={user?.role !== 'ADMIN' && user?.role !== 'BRAND_MANAGER'}
+                  className="h-11 w-11 p-0 rounded-xl bg-slate-900 text-white shrink-0 shadow-lg shadow-slate-200"
+                >
+                  <Save className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <Button variant="outline" onClick={() => setSelectedProject(null)} className="w-full h-12 rounded-xl font-bold text-slate-500 border-slate-200 mt-2">
+              Dismiss
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

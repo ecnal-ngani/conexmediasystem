@@ -588,6 +588,26 @@ export function QuickActions() {
               {selectedNotif.notes && (
                 <div className="space-y-2"><p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Intelligence</p><p className="text-sm text-slate-600 italic bg-slate-50 p-4 rounded-2xl border border-slate-100">"{selectedNotif.notes}"</p></div>
               )}
+              {selectedNotif.canvasLink && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Design Assets</p>
+                  <a 
+                    href={selectedNotif.canvasLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl group hover:bg-blue-100 transition-colors"
+                  >
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                      <LinkIcon className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-black text-blue-900">Open Canva Project</p>
+                      <p className="text-[11px] text-blue-600/70 truncate">{selectedNotif.canvasLink}</p>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-blue-400 group-hover:text-blue-600" />
+                  </a>
+                </div>
+              )}
               <div className="flex flex-col gap-3 pt-2">
                 <Button onClick={() => { setIsNotifDetailOpen(false); setIsNotifOpen(false); router.push(selectedNotif.type === 'SCHEDULE' ? '/dashboard/calendar' : selectedNotif.type === 'PROJECT' ? '/dashboard/production' : '/dashboard/calendar'); }} className="h-12 rounded-xl bg-slate-900 text-white font-bold">Go to Command Center</Button>
                 <Button variant="outline" onClick={() => setIsNotifDetailOpen(false)} className="h-12 rounded-xl border-slate-200 font-bold text-slate-500">Dismiss</Button>
