@@ -676,15 +676,16 @@ export default function AdminPage() {
                   <TableHead className="font-bold text-slate-500">Name</TableHead>
                   <TableHead className="font-bold text-slate-500">Security Token</TableHead>
                   <TableHead className="font-bold text-slate-500">Role / Rate</TableHead>
+                  <TableHead className="font-bold text-slate-500">Joined</TableHead>
                   <TableHead className="font-bold text-slate-500">Status</TableHead>
                   <TableHead className="text-right font-bold text-slate-500">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {staffLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
                 ) : filteredStaff.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400">No personnel found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-10 text-slate-400">No personnel found.</TableCell></TableRow>
                 ) : (
                   filteredStaff.map((emp) => (
                     <TableRow key={emp.id} className="hover:bg-slate-50">
@@ -738,6 +739,9 @@ export default function AdminPage() {
                             ₱{emp.hourlyRate || DEFAULT_RATES[emp.role]}/hr
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-500 font-medium whitespace-nowrap">
+                        {emp.createdAt?.toDate ? format(emp.createdAt.toDate(), 'MMM dd, yyyy') : 'Unknown'}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
