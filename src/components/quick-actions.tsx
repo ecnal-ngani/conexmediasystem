@@ -369,38 +369,40 @@ export function QuickActions() {
               )}
             </button>
           </SheetTrigger>
-          <SheetContent className="w-full sm:max-w-[420px] p-0 flex flex-col rounded-l-3xl overflow-hidden shadow-2xl border-0">
-            <SheetHeader className="px-6 pt-6 pb-4 border-b bg-white shrink-0 text-left">
+          <SheetContent className="w-full sm:max-w-[420px] p-0 flex flex-col rounded-l-[32px] overflow-hidden shadow-2xl border-0 bg-slate-50/50 backdrop-blur-xl">
+            <SheetHeader className="px-8 pt-8 pb-6 bg-white shrink-0 text-left border-b border-slate-100">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center">
-                    <Bell className="w-4 h-4 text-primary" />
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 bg-primary/10 rounded-2xl flex items-center justify-center shadow-inner">
+                    <Bell className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <SheetTitle className="text-[15px] font-black text-slate-900 leading-none">Activity Feed</SheetTitle>
-                    <SheetDescription className="text-[11px] text-slate-400 font-medium mt-0.5">
+                    <SheetTitle className="text-[17px] font-black text-slate-900 leading-none tracking-tight">Activity Feed</SheetTitle>
+                    <SheetDescription className="text-[12px] text-slate-400 font-bold mt-1.5 flex items-center gap-1.5 uppercase tracking-wider">
                       {notifications.length} updates
-                      {unreadCount > 0 && <span className="text-primary font-black"> · {unreadCount} new</span>}
+                      {unreadCount > 0 && <><span className="w-1 h-1 rounded-full bg-slate-300" /><span className="text-primary font-black">{unreadCount} NEW MISSIONs</span></>}
                     </SheetDescription>
                   </div>
                 </div>
                 {unreadCount > 0 && (
-                  <button onClick={markAllRead} className="flex items-center gap-1.5 text-[11px] font-black text-primary hover:text-primary/80 bg-primary/5 hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors">
-                    <CheckCheck className="w-3 h-3" />
-                    Mark read
+                  <button onClick={markAllRead} className="flex items-center gap-2 text-[11px] font-black text-primary hover:text-primary/80 bg-primary/5 hover:bg-primary/10 px-4 py-2 rounded-full transition-all active:scale-95 border border-primary/10">
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    Clear All
                   </button>
                 )}
               </div>
             </SheetHeader>
             <ScrollArea className="flex-1 min-h-0">
               {notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4"><Bell className="w-7 h-7 text-slate-300" /></div>
-                  <p className="text-sm font-black text-slate-900">All caught up!</p>
-                  <p className="text-xs text-slate-400 font-medium mt-1">No recent activity.</p>
+                <div className="flex flex-col items-center justify-center py-32 px-12 text-center">
+                  <div className="w-20 h-20 bg-white rounded-[24px] flex items-center justify-center mb-6 shadow-sm border border-slate-100">
+                    <Bell className="w-8 h-8 text-slate-200" />
+                  </div>
+                  <p className="text-base font-black text-slate-900">Mission Clear</p>
+                  <p className="text-xs text-slate-400 font-medium mt-2 leading-relaxed">Your tactical feed is currently quiet. All operatives are in position.</p>
                 </div>
               ) : (
-                <div className="p-4 space-y-2 text-left">
+                <div className="p-6 space-y-3 text-left">
                   {notifications.map((n, i) => {
                     const style = getNotifStyle(n.type, n.status);
                     const Icon = getNotifIcon(n.type);
@@ -408,16 +410,29 @@ export function QuickActions() {
                     const label = n.type === 'SCHEDULE' ? (n.brandName || n.brand || 'Shoot') : n.type === 'PROJECT' ? (n.brand || n.fileCode) : n.title;
                     const sublabel = n.type === 'SCHEDULE' ? `${n.type} · ${n.date || ''}` : n.type === 'PROJECT' ? `New Project · Due ${n.dueDate}` : `Task · ${n.assignedToName || ''}`;
                     return (
-                      <div key={i} onClick={() => { setSelectedNotif(n); setIsNotifDetailOpen(true); }} className={cn("p-4 rounded-2xl border transition-all cursor-pointer hover:bg-white/50", style.bg, style.border, isUnread ? "shadow-sm" : "opacity-70")}>
-                        <div className="flex gap-3 items-start">
-                          <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5", style.iconBg)}><Icon className={cn("w-4 h-4", style.iconColor)} /></div>
+                      <div 
+                        key={i} 
+                        onClick={() => { setSelectedNotif(n); setIsNotifDetailOpen(true); }} 
+                        className={cn(
+                          "group p-5 rounded-[24px] border transition-all duration-300 cursor-pointer relative overflow-hidden",
+                          isUnread ? "bg-white shadow-md border-slate-200 scale-[1.02]" : "bg-white/40 border-slate-100 opacity-80 hover:opacity-100 hover:bg-white"
+                        )}
+                      >
+                        {isUnread && <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", style.dot)} />}
+                        <div className="flex gap-4 items-start">
+                          <div className={cn("w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0 mt-0.5 shadow-sm transition-transform group-hover:scale-110", style.iconBg)}>
+                            <Icon className={cn("w-5 h-5", style.iconColor)} />
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-[13px] font-black text-slate-900 truncate">{label}</p>
-                              {isUnread && <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", style.dot)} />}
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-[14px] font-black text-slate-900 truncate tracking-tight">{label}</p>
+                              {isUnread && <Badge className={cn("text-[8px] font-black uppercase px-1.5 h-4", style.bg, style.iconColor)} variant="outline">New</Badge>}
                             </div>
-                            <p className="text-[11px] text-slate-500 font-medium mt-0.5 truncate">{sublabel}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{n.rawTime ? formatDistanceToNow(new Date(n.rawTime * 1000), { addSuffix: true }) : ''}</p>
+                            <p className="text-[11px] text-slate-500 font-bold mt-1 uppercase tracking-tight opacity-70">{sublabel}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{n.rawTime ? formatDistanceToNow(new Date(n.rawTime * 1000), { addSuffix: true }) : ''}</p>
+                              <div className="flex-1 h-[1px] bg-slate-100" />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -564,98 +579,108 @@ export function QuickActions() {
       </Dialog>
 
       <Dialog open={isNotifDetailOpen} onOpenChange={setIsNotifDetailOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-[480px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-[500px] p-0 rounded-[40px] overflow-hidden border-none shadow-2xl bg-white">
           {selectedNotif && (
-            <div className="p-6 sm:p-8 space-y-6 text-left">
+            <div className="p-8 sm:p-10 space-y-8 text-left">
               {(() => {
                 const Icon = getNotifIcon(selectedNotif.type);
                 const style = getNotifStyle(selectedNotif.type, selectedNotif.status);
                 return (
-                  <div className="flex items-center gap-4">
-                    <div className={cn("w-14 h-14 rounded-full flex items-center justify-center shadow-lg shrink-0", style.iconBg)}>
-                      <Icon className={cn("w-7 h-7", style.iconColor)} />
+                  <div className="flex items-center gap-6">
+                    <div className={cn("w-20 h-20 rounded-[30px] flex items-center justify-center shadow-2xl shrink-0 relative overflow-hidden group transition-transform hover:scale-105", style.iconBg)}>
+                      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Icon className={cn("w-10 h-10 relative z-10", style.iconColor)} />
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight truncate leading-tight">
-                        {selectedNotif.title || selectedNotif.brand}
-                      </h3>
-                      <Badge className={cn("mt-1.5 text-[10px] font-black uppercase px-2 tracking-wider", style.bg, style.iconColor)} variant="outline">
+                    <div className="min-w-0 space-y-1.5">
+                      <Badge className={cn("text-[10px] font-black uppercase px-3 h-6 tracking-widest rounded-full border-2", style.bg, style.iconColor)} variant="outline">
                         {selectedNotif.type} MISSION
                       </Badge>
+                      <h3 className="text-3xl font-black text-slate-900 tracking-tight truncate leading-tight">
+                        {selectedNotif.title || selectedNotif.brand}
+                      </h3>
                     </div>
                   </div>
                 );
               })()}
 
-              <div className="grid grid-cols-2 gap-x-8 gap-y-6 py-6 border-y border-slate-50">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Priority</p>
-                  <p className={cn("text-xs font-bold", (selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH') ? 'text-red-600' : 'text-slate-900')}>
-                    {selectedNotif.priority || 'NORMAL'}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Timeline</p>
-                  <p className="text-xs font-bold text-slate-900">{selectedNotif.dueDate || selectedNotif.date || 'TBA'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Assigned By</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 capitalize shrink-0 border border-slate-200">
-                      {selectedNotif.assignedByName?.charAt(0) || 'A'}
-                    </div>
-                    <p className="text-xs font-bold text-slate-900 truncate">{selectedNotif.assignedByName || 'Administrator'}</p>
+              <div className="grid grid-cols-2 gap-x-10 gap-y-8 py-8 border-y border-slate-100">
+                <div className="space-y-2">
+                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Priority</p>
+                  <div className="flex items-center gap-2">
+                    <div className={cn("w-2 h-2 rounded-full animate-pulse", (selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH') ? 'bg-red-600' : 'bg-slate-400')} />
+                    <p className={cn("text-[15px] font-black", (selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH') ? 'text-red-600' : 'text-slate-900')}>
+                      {selectedNotif.priority || 'NORMAL'}
+                    </p>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</p>
-                  <p className="text-xs font-bold text-slate-900 capitalize">{selectedNotif.status || 'Pending'}</p>
+                <div className="space-y-2">
+                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Timeline</p>
+                  <p className="text-[15px] font-black text-slate-900">{selectedNotif.dueDate || selectedNotif.date || 'TBA'}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Assigned By</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-[12px] font-black text-slate-600 capitalize shrink-0 border border-slate-200 shadow-sm">
+                      {selectedNotif.assignedByName?.charAt(0) || 'A'}
+                    </div>
+                    <p className="text-[14px] font-bold text-slate-800 truncate">{selectedNotif.assignedByName || 'Administrator'}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Status</p>
+                  <Badge variant="secondary" className="bg-slate-100 text-slate-900 font-black text-[11px] uppercase tracking-wider h-7 px-3 rounded-lg border-none shadow-sm">
+                    {selectedNotif.status || 'Pending'}
+                  </Badge>
                 </div>
               </div>
 
               {selectedNotif.notes && (
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Intelligence</p>
-                  <p className="text-sm text-slate-600 italic bg-slate-50/50 p-4 rounded-2xl border border-slate-100 leading-relaxed font-medium">
-                    "{selectedNotif.notes}"
-                  </p>
+                <div className="space-y-3">
+                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Intelligence</p>
+                  <div className="relative">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-200 rounded-full" />
+                    <p className="text-[14px] text-slate-600 italic pl-5 leading-relaxed font-medium">
+                      "{selectedNotif.notes}"
+                    </p>
+                  </div>
                 </div>
               )}
 
               {selectedNotif.canvasLink && (
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Design Assets</p>
+                <div className="space-y-4">
+                  <p className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Design Assets</p>
                   <a 
                     href={selectedNotif.canvasLink} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl group hover:bg-blue-50 transition-all duration-300"
+                    className="flex items-center gap-5 p-5 bg-blue-50/50 border-2 border-blue-100/50 rounded-[28px] group hover:bg-blue-50 hover:border-blue-200 transition-all duration-500 shadow-sm hover:shadow-md"
                   >
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-blue-50 group-hover:scale-105 transition-transform">
-                      <LinkIcon className="w-6 h-6 text-blue-600" />
+                    <div className="w-14 h-14 bg-white rounded-[20px] flex items-center justify-center shadow-lg shrink-0 border border-blue-50 group-hover:rotate-12 transition-transform duration-500">
+                      <LinkIcon className="w-7 h-7 text-blue-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-black text-blue-900 mb-0.5">Open Canva Project</p>
-                      <p className="text-[11px] text-blue-500 font-medium truncate opacity-70 break-all">{selectedNotif.canvasLink}</p>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <p className="text-[16px] font-black text-blue-900">Open Canva Project</p>
+                      <p className="text-[12px] text-blue-500 font-bold truncate opacity-60 break-all">{selectedNotif.canvasLink}</p>
                     </div>
-                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                      <ExternalLink className="w-4 h-4" />
+                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                      <ExternalLink className="w-5 h-5" />
                     </div>
                   </a>
                 </div>
               )}
 
-              <div className="flex flex-col gap-3 pt-2">
+              <div className="flex flex-col gap-4 pt-4">
                 <Button 
                   onClick={() => { setIsNotifDetailOpen(false); setIsNotifOpen(false); router.push(selectedNotif.type === 'SCHEDULE' ? '/dashboard/calendar' : selectedNotif.type === 'PROJECT' ? '/dashboard/production' : '/dashboard/calendar'); }} 
-                  className="h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black shadow-xl shadow-slate-200 transition-all active:scale-95"
+                  className="h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-[15px] shadow-2xl shadow-slate-200 transition-all active:scale-[0.98] group"
                 >
+                  <Zap className="w-5 h-5 mr-2 group-hover:animate-pulse text-yellow-400 fill-yellow-400" />
                   Go to Command Center
                 </Button>
                 <Button 
                   variant="ghost" 
                   onClick={() => setIsNotifDetailOpen(false)} 
-                  className="h-12 rounded-xl font-black text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                  className="h-12 rounded-2xl font-black text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all"
                 >
                   Dismiss Briefing
                 </Button>
