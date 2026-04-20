@@ -748,14 +748,14 @@ export default function ProductionPage() {
                   href={selectedProject.canvasLink} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl group hover:bg-blue-50 transition-all duration-300"
+                  className="flex items-center gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl group hover:bg-blue-50 transition-all duration-300 w-full overflow-hidden"
                 >
                   <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-blue-50 group-hover:scale-105 transition-transform">
                     <Share2 className="w-6 h-6 text-blue-600" />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <p className="text-[14px] font-black text-blue-900 mb-0.5">Open Design Assets</p>
-                    <p className="text-[11px] text-blue-500 font-medium truncate opacity-70">{selectedProject.canvasLink}</p>
+                    <p className="text-[11px] text-blue-500 font-medium truncate opacity-70 block w-full">{selectedProject.canvasLink}</p>
                   </div>
                   <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                     <ExternalLink className="w-4 h-4" />
@@ -775,14 +775,14 @@ export default function ProductionPage() {
                   href={selectedProject.submissionLink} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 bg-green-50/50 border border-green-100 rounded-2xl group hover:bg-green-50 transition-all duration-300"
+                  className="flex items-center gap-4 p-4 bg-green-50/50 border border-green-100 rounded-2xl group hover:bg-green-50 transition-all duration-300 w-full overflow-hidden"
                 >
                   <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-green-50 group-hover:scale-105 transition-transform">
                     <Send className="w-6 h-6 text-green-600" />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <p className="text-[14px] font-black text-green-900 mb-0.5">View Finished Work</p>
-                    <p className="text-[11px] text-green-500 font-medium truncate opacity-70">{selectedProject.submissionLink}</p>
+                    <p className="text-[11px] text-green-500 font-medium truncate opacity-70 block w-full">{selectedProject.submissionLink}</p>
                   </div>
                   <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0 group-hover:bg-green-600 group-hover:text-white transition-colors">
                     <ExternalLink className="w-4 h-4" />
