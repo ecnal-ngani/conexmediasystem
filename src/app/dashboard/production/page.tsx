@@ -103,7 +103,6 @@ export default function ProductionPage() {
   const [artistId, setArtistId] = useState('');
   const [type, setType] = useState('Video');
   const [platform, setPlatform] = useState('Instagram');
-  const [requestDate, setRequestDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
   const [bm, setBm] = useState('');
   const [canvasLink, setCanvasLink] = useState('');
@@ -225,8 +224,8 @@ export default function ProductionPage() {
   };
 
   const handleAddProject = () => {
-    if (!firestore || !fileCode || !selectedBrandId || !artist || !dueDate || !requestDate) {
-      toast({ variant: "destructive", title: "Missing Information", description: "Brand, Artist, Request Date, and Due Date are required." });
+    if (!firestore || !fileCode || !selectedBrandId || !artist || !dueDate) {
+      toast({ variant: "destructive", title: "Missing Information", description: "Brand, Artist, and Due Date are required." });
       return;
     }
     const brand = brands?.find(b => b.id === selectedBrandId);
@@ -245,7 +244,7 @@ export default function ProductionPage() {
       assignedByName: user.name,
       type,
       platform,
-      requestDate,
+      requestDate: new Date().toISOString().split('T')[0],
       dueDate,
       bm,
       canvasLink,
@@ -573,14 +572,7 @@ export default function ProductionPage() {
                             </Select>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                              <Calendar className="w-3 h-3 text-primary" />
-                              Request Date
-                            </Label>
-                            <Input type="date" value={requestDate} onChange={(e) => setRequestDate(e.target.value)} className="h-12 rounded-xl" />
-                          </div>
+                        <div className="grid grid-cols-1 gap-4">
                           <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                               <Calendar className="w-3 h-3 text-primary" />
