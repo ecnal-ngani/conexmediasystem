@@ -165,7 +165,7 @@ export default function ProductionPage() {
     if (!projects) return [];
     return projects.filter((project: any) => {
       const isManagement = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
-      const isAssigned = project.artistId === user?.id || project.artist === user?.name;
+      const isAssigned = project.artistId === user?.id || project.artist === user?.name || project.assignedById === user?.id;
       
       if (!isManagement && !isAssigned) return false;
 
@@ -742,7 +742,7 @@ export default function ProductionPage() {
             </DialogHeader>
 
             <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Current Destination</Label>
+              <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Tactical Destination (Canva)</Label>
               {selectedProject?.canvasLink ? (
                 <a 
                   href={selectedProject.canvasLink} 
@@ -762,14 +762,34 @@ export default function ProductionPage() {
                   </div>
                 </a>
               ) : (
-                <div className="p-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
-                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
-                    <LinkIcon className="w-4 h-4 text-slate-300" />
-                  </div>
+                <div className="p-6 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
                   <p className="text-xs font-bold text-slate-400">No tactical link assigned.</p>
                 </div>
               )}
             </div>
+
+            {selectedProject?.submissionLink && (
+              <div className="space-y-3 pt-2">
+                <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-green-600">Employee Submission</Label>
+                <a 
+                  href={selectedProject.submissionLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 p-4 bg-green-50/50 border border-green-100 rounded-2xl group hover:bg-green-50 transition-all duration-300"
+                >
+                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-green-50 group-hover:scale-105 transition-transform">
+                    <Send className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-black text-green-900 mb-0.5">View Finished Work</p>
+                    <p className="text-[11px] text-green-500 font-medium truncate break-all opacity-70">{selectedProject.submissionLink}</p>
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                    <ExternalLink className="w-4 h-4" />
+                  </div>
+                </a>
+              </div>
+            )}
 
             <div className="pt-6 border-t border-slate-100 space-y-4">
               <div className="flex items-center justify-between">
