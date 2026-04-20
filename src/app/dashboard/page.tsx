@@ -117,19 +117,11 @@ export default function DashboardPage() {
       labelA = "Company Overall";
       labelB = "Tactical Target";
     } else {
-      // Others see Personal vs Peer Group Average (Role-Specific)
+      // Others see Personal vs Company Average
       const userProjects = projects.filter(p => p.artist === user.name);
       const userTasks = tasks.filter(t => t.assignedToId === user.id);
       seriesA = calculateStats(userProjects, userTasks);
-      
-      // Filter squad to peers only
-      const peerNames = staff?.filter(s => s.role === user.role).map(s => s.name) || [];
-      const peerIds = staff?.filter(s => s.role === user.role).map(s => s.id) || [];
-      const squadProjects = projects.filter(p => peerNames.includes(p.artist));
-      const squadTasks = tasks.filter(t => peerIds.includes(t.assignedToId));
-      
-      seriesB = calculateStats(squadProjects, squadTasks); 
-      labelB = `${user.role.replace('_', ' ')} Group Average`;
+      seriesB = calculateStats(projects, tasks); // Squad average
     }
 
     return [
@@ -140,25 +132,15 @@ export default function DashboardPage() {
       { subject: 'Reliability', A: seriesA.reliability, B: seriesB.reliability, fullMark: 100 },
       { labelA, labelB } // Meta info for legend
     ];
-  }, [user, projects, tasks, staff]);
+  }, [user, projects, tasks]);
 
   const roleConfig = useMemo(() => {
     const role = user?.role || 'EDITOR';
     const activeProjectsCount = projects?.filter(p => p.status !== 'Approved').length || 0;
     const staffOnlineCount = staff?.filter(s => s.status !== 'Offline').length || 0;
     const totalStaff = staff?.length || 0;
-    
-    // Personal stats for dynamic metrics
-    const userProjects = projects?.filter(p => p.artist === user?.name) || [];
     const userTasks = tasks?.filter(t => t.assignedToId === user?.id) || [];
-    const completedTasksCount = userTasks.filter(t => t.status === 'completed').length;
-    const approvedProjectsCount = userProjects.filter(p => p.status === 'Approved').length;
-    const revisionsCount = userProjects.filter(p => p.status === 'Client Revision').length;
-    
-    // Calculated metrics
-    const revisionRate = userProjects.length > 0 ? Math.round((revisionsCount / userProjects.length) * 100) : 0;
-    const efficiency = Math.min(100, 80 + (approvedProjectsCount * 2) - (revisionsCount * 5));
-    const internHours = completedTasksCount * 2; // Assuming 2 hours per task for now
+    const completedTasks = userTasks.filter(t => t.status === 'completed').length;
 
     switch (role) {
       case 'ADMIN':
@@ -178,9 +160,9 @@ export default function DashboardPage() {
           subtitle: "Mission control and gamified performance tracking.",
           stats: [
             { label: 'Hours Required', value: '300', sub: 'Standard Program', icon: Clock, color: 'text-red-500', bg: 'bg-red-50', subColor: 'text-slate-400' },
-            { label: 'Hours Rendered', value: internHours, sub: `${Math.round((internHours / 300) * 100)}% of target`, icon: TrendingUp, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
-            { label: 'Tasks Completed', value: completedTasksCount, sub: 'Assigned mission objectives', icon: Award, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
-            { label: 'Current XP', value: (user as any)?.xp || (completedTasksCount * 50) + 100, sub: 'Rank: Specialist', icon: Rocket, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
+            { label: 'Hours Rendered', value: '140', sub: '47% of target', icon: TrendingUp, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
+            { label: 'Tasks Completed', value: completedTasks, sub: 'Assigned mission objectives', icon: Award, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
+            { label: 'Current XP', value: (user as any)?.xp || 120, sub: 'Rank: Specialist', icon: Rocket, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
           ]
         };
       default:
@@ -188,10 +170,10 @@ export default function DashboardPage() {
           title: 'Post-Production Suite',
           subtitle: "Mastering creative assets and render cycles.",
           stats: [
-            { label: 'My Active Edits', value: userProjects.filter(p => p.status !== 'Approved').length, sub: 'Assigned to you', icon: Scissors, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
-            { label: 'Render Efficiency', value: `${efficiency}%`, sub: 'Average speed', icon: Zap, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
-            { label: 'Approved Assets', value: approvedProjectsCount, sub: 'Your delivery count', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
-            { label: 'Revision Rate', value: `${revisionRate}%`, sub: 'Target: <15%', icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
+            { label: 'My Active Edits', value: projects?.filter(p => p.artist === user?.name && p.status !== 'Approved').length || 0, sub: 'Assigned to you', icon: Scissors, color: 'text-primary', bg: 'bg-red-50', subColor: 'text-primary' },
+            { label: 'Render Efficiency', value: '91%', sub: 'Average speed', icon: Zap, color: 'text-orange-500', bg: 'bg-orange-50', subColor: 'text-orange-600' },
+            { label: 'Approved Assets', value: projects?.filter(p => p.artist === user?.name && p.status === 'Approved').length || 0, sub: 'Your delivery count', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50', subColor: 'text-green-600' },
+            { label: 'Revision Rate', value: '8%', sub: 'Target: <15%', icon: Activity, color: 'text-blue-600', bg: 'bg-blue-50', subColor: 'text-blue-600' },
           ]
         };
     }
