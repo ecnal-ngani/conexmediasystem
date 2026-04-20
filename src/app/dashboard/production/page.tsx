@@ -755,7 +755,7 @@ export default function ProductionPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-black text-blue-900 mb-0.5">Open Design Assets</p>
-                    <p className="text-[11px] text-blue-500 font-medium truncate break-all opacity-70">{selectedProject.canvasLink}</p>
+                    <p className="text-[11px] text-blue-500 font-medium truncate opacity-70">{selectedProject.canvasLink}</p>
                   </div>
                   <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                     <ExternalLink className="w-4 h-4" />
@@ -782,7 +782,7 @@ export default function ProductionPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-black text-green-900 mb-0.5">View Finished Work</p>
-                    <p className="text-[11px] text-green-500 font-medium truncate break-all opacity-70">{selectedProject.submissionLink}</p>
+                    <p className="text-[11px] text-green-500 font-medium truncate opacity-70">{selectedProject.submissionLink}</p>
                   </div>
                   <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0 group-hover:bg-green-600 group-hover:text-white transition-colors">
                     <ExternalLink className="w-4 h-4" />
