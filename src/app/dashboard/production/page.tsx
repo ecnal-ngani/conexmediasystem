@@ -174,7 +174,7 @@ export default function ProductionPage() {
         (project.brand?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (project.artist?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (project.contentIdea?.toLowerCase() || '').includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+      const matchesStatus = statusFilter === 'all' ? project.status !== 'Approved' && project.status !== 'Done' : project.status === statusFilter;
       const matchesPriority = priorityFilter === 'all' || project.priority === priorityFilter;
       const matchesType = typeFilter === 'all' || project.type === typeFilter;
       return matchesSearch && matchesStatus && matchesPriority && matchesType;
@@ -651,7 +651,7 @@ export default function ProductionPage() {
               ) : filteredProjects.length === 0 ? (
                 <TableRow><TableCell colSpan={8} className="h-40 text-center text-slate-400">No production items found.</TableCell></TableRow>
               ) : filteredProjects.map((item: any) => (
-                <TableRow key={item.id} className="border-0 group">
+                <TableRow key={item.id} className={cn("border-0 group transition-colors", (item.status === 'Approved' || item.status === 'Done') && "bg-green-50/80 hover:bg-green-100/80")}>
                   <TableCell className="py-4 pl-6">
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" onClick={() => { setSelectedProject(item); setEditingLink(item.canvasLink || ''); }} className="text-primary h-7 text-[10px] font-bold">
