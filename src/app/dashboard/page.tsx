@@ -73,7 +73,7 @@ export default function DashboardPage() {
 
   // Global project metrics
   const deliveredProjectsCount = useMemo(() => {
-    return projects?.filter(p => p.status === 'Approved').length || 0;
+    return projects?.filter(p => p.status === 'Approved' || p.status === 'Done').length || 0;
   }, [projects]);
 
   // Gamified Performance Calculation Logic (Global for Admin, Personal for Others)
@@ -84,7 +84,7 @@ export default function DashboardPage() {
 
     const calculateStats = (targetProjects: any[], targetTasks: any[]) => {
       const allItems = [...targetProjects, ...targetTasks];
-      const completedItems = allItems.filter(i => i.status === 'Approved' || i.status === 'completed');
+      const completedItems = allItems.filter(i => i.status === 'Approved' || i.status === 'Done' || i.status === 'completed');
 
       // 1. SPEED (Volume relative to time)
       const speed = Math.min(100, (completedItems.length * 5) + 40);
@@ -136,7 +136,7 @@ export default function DashboardPage() {
 
   const roleConfig = useMemo(() => {
     const role = user?.role || 'EDITOR';
-    const activeProjectsCount = projects?.filter(p => p.status !== 'Approved').length || 0;
+    const activeProjectsCount = projects?.filter(p => p.status !== 'Approved' && p.status !== 'Done').length || 0;
     const staffOnlineCount = staff?.filter(s => s.status !== 'Offline').length || 0;
     const totalStaff = staff?.length || 0;
     const userTasks = tasks?.filter(t => t.assignedToId === user?.id) || [];
