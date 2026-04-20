@@ -93,14 +93,6 @@ const QUICK_ACTIONS = [
     action: 'schedule'
   },
   {
-    title: 'Assign Task',
-    description: 'Create internal directive',
-    icon: ListTodo,
-    color: 'text-green-600',
-    bg: 'bg-green-50',
-    action: 'task'
-  },
-  {
     title: 'Staff Management',
     description: 'Admin controls',
     icon: Users,
