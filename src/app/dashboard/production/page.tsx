@@ -704,7 +704,7 @@ export default function ProductionPage() {
                     ) : <Badge variant="outline" className="text-[8px] font-bold uppercase">{item.status}</Badge>}
                   </TableCell>
                   <TableCell className="text-center">
-                    {canEditStatus(item) ? (
+                    {canEditStatus(item) && user?.role !== 'INTERN' ? (
                       <Select value={item.priority} onValueChange={(val) => handleUpdatePriority(item.id, val)}>
                         <SelectTrigger className="h-7 text-[8px] font-black uppercase min-w-[90px]">
                           <SelectValue />
