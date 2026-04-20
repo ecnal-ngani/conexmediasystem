@@ -38,7 +38,8 @@ import {
   XCircle,
   Save,
   Tag,
-  Trash2
+  Trash2,
+  Send
 } from 'lucide-react';
 import {
   Dialog,
@@ -75,11 +76,7 @@ export default function ProductionPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (user && user.role === 'INTERN') {
-      router.push('/dashboard');
-    }
-  }, [user, router]);
+  // Intern access allowed for submission workflow
 
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isManageBrandsOpen, setIsManageBrandsOpen] = useState(false);
@@ -88,6 +85,10 @@ export default function ProductionPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [submittingProject, setSubmittingProject] = useState<any>(null);
+  const [submissionLink, setSubmissionLink] = useState('');
   
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -322,6 +323,34 @@ export default function ProductionPage() {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: projectRef.path,
         operation: 'delete'
+      } satisfies SecurityRuleContext));
+    });
+  };
+
+  const handleSubmission = () => {
+    if (!firestore || !submittingProject || !submissionLink) return;
+    
+    const projectRef = doc(firestore, 'projects', submittingProject.id);
+    const updates = { 
+      submissionLink: submissionLink,
+      status: 'For QA',
+      updatedAt: serverTimestamp(),
+      lastUpdatedBy: user?.name || 'Unknown'
+    };
+
+    updateDoc(projectRef, updates).then(() => {
+      toast({ 
+        title: "Work Submitted", 
+        description: `Submission link for ${submittingProject.fileCode} synchronized. Status set to For QA.` 
+      });
+      setIsSubmitDialogOpen(false);
+      setSubmissionLink('');
+      setSubmittingProject(null);
+    }).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: projectRef.path,
+        operation: 'update',
+        requestResourceData: updates
       } satisfies SecurityRuleContext));
     });
   };
@@ -605,7 +634,7 @@ export default function ProductionPage() {
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow className="border-0">
-                <TableHead className="text-[10px] font-black uppercase py-4 pl-6">Action</TableHead>
+                <TableHead className="text-[10px] font-black uppercase py-4 pl-6">IDEA</TableHead>
                 <TableHead className="text-[10px] font-black uppercase py-4">File Code</TableHead>
                 <TableHead className="text-[10px] font-black uppercase py-4">Brand</TableHead>
                 <TableHead className="text-[10px] font-black uppercase py-4 text-center">Status</TableHead>
@@ -626,6 +655,20 @@ export default function ProductionPage() {
                       <Button variant="ghost" size="sm" onClick={() => { setSelectedProject(item); setEditingLink(item.canvasLink || ''); }} className="text-primary h-7 text-[10px] font-bold">
                         <LinkIcon className="w-3 h-3 mr-1" /> Link
                       </Button>
+                      {user?.role !== 'ADMIN' && user?.role !== 'BRAND_MANAGER' && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => { 
+                            setSubmittingProject(item); 
+                            setSubmissionLink(item.submissionLink || '');
+                            setIsSubmitDialogOpen(true); 
+                          }} 
+                          className="text-green-600 h-7 text-[10px] font-bold hover:text-green-700 hover:bg-green-50"
+                        >
+                          <Send className="w-3 h-3 mr-1" /> Submit
+                        </Button>
+                      )}
                       {canTerminate && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-red-500"><Trash2 className="w-3.5 h-3.5" /></Button></AlertDialogTrigger>
@@ -762,6 +805,43 @@ export default function ProductionPage() {
                 Close Briefing
               </Button>
             </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+        <DialogContent className="max-w-[440px] p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+          <div className="p-8 space-y-6">
+            <DialogHeader className="space-y-2">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-2">
+                <Send className="w-6 h-6 text-green-600" />
+              </div>
+              <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Submit Finished Work</DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 font-medium">
+                Provide the final link for <span className="text-slate-900 font-bold">{submittingProject?.fileCode}</span>. This will set the status to <span className="text-green-600 font-bold">For QA</span>.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Submission Link (Drive/Canva/Review)</Label>
+                <Input 
+                  placeholder="https://..." 
+                  value={submissionLink} 
+                  onChange={(e) => setSubmissionLink(e.target.value)}
+                  className="h-12 rounded-xl border-slate-200 focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" onClick={() => setIsSubmitDialogOpen(false)} className="flex-1 h-12 rounded-xl font-bold">Cancel</Button>
+                <Button 
+                  onClick={handleSubmission} 
+                  disabled={!submissionLink}
+                  className="flex-1 h-12 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg shadow-green-100"
+                >
+                  Confirm Submission
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
