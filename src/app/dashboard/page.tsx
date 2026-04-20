@@ -71,6 +71,23 @@ export default function DashboardPage() {
   const { data: projects, isLoading: pLoading } = useCollection<any>(projectsQuery);
   const { data: tasks, isLoading: tLoading } = useCollection<any>(tasksQuery);
 
+  // Emergency Synchronization: Re-seed core squad if registry is empty
+  useEffect(() => {
+    if (isMounted && firestore && !sLoading && (!staff || staff.length === 0)) {
+      const usersRef = collection(firestore, 'users');
+      const coreSquad = [
+        { systemId: 'CX-AD-01', name: 'System Administrator', email: 'admin@conex.media', securityToken: 'CONEX-ADMIN-INIT', role: 'ADMIN', status: 'Office', avatarUrl: 'https://picsum.photos/seed/admin/200/200' },
+        { systemId: 'CX-ED-01', name: 'Lead Editor', email: 'editor@conex.media', securityToken: 'CONEX-EDITOR-TOKEN', role: 'EDITOR', status: 'WFH', avatarUrl: 'https://picsum.photos/seed/editor/200/200' },
+        { systemId: 'CX-IN-01', name: 'Junior Intern', email: 'intern@conex.media', securityToken: 'CONEX-INTERN-TOKEN', role: 'INTERN', status: 'Office', avatarUrl: 'https://picsum.photos/seed/intern/200/200' }
+      ];
+      
+      coreSquad.forEach(member => {
+        addDoc(usersRef, { ...member, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      });
+      toast({ title: "Command Registry Restored", description: "Core personnel have been synchronized." });
+    }
+  }, [isMounted, firestore, sLoading, staff, toast]);
+
   // Global project metrics
   const deliveredProjectsCount = useMemo(() => {
     return projects?.filter(p => p.status === 'Approved').length || 0;
