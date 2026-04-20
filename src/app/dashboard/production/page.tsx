@@ -571,8 +571,6 @@ export default function ProductionPage() {
                               </SelectContent>
                             </Select>
                           </div>
-                        </div>
-                        <div className="grid grid-cols-1 gap-4">
                           <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                               <Calendar className="w-3 h-3 text-primary" />
