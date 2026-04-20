@@ -560,7 +560,6 @@ export default function ProductionPage() {
                                 <SelectItem value="For QA">For QA</SelectItem>
                                 <SelectItem value="Approved">Approved</SelectItem>
                                 <SelectItem value="Client Revision">Client Revision</SelectItem>
-                                <SelectItem value="Done">Done</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -655,7 +654,6 @@ export default function ProductionPage() {
                           <SelectItem value="For QA">FOR QA</SelectItem>
                           <SelectItem value="Approved">APPROVED</SelectItem>
                           <SelectItem value="Client Revision">CLIENT REVISION</SelectItem>
-                          <SelectItem value="Done">DONE</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : <Badge variant="outline" className="text-[8px] font-bold uppercase">{item.status}</Badge>}
