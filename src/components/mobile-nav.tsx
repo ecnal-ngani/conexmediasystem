@@ -29,6 +29,7 @@ export function MobileNav() {
 
   const filteredItems = navItems.filter(item => {
     if (item.adminOnly && user.role !== 'ADMIN') return false;
+    if (item.url === '/dashboard/production' && user.role === 'INTERN') return false;
     return true;
   });
 

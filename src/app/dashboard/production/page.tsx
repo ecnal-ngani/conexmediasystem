@@ -69,10 +69,18 @@ import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { useAuth } from '@/components/auth-context';
-import { createSlug } from '@/lib/media-helpers';
+import { useRouter } from 'next/navigation';
 
 export default function ProductionPage() {
   const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user && user.role === 'INTERN') {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
   const [isManageBrandsOpen, setIsManageBrandsOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
