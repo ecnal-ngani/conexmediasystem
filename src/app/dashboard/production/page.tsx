@@ -101,6 +101,7 @@ export default function ProductionPage() {
   const [priority, setPriority] = useState('REGULAR');
   const [artist, setArtist] = useState('');
   const [artistId, setArtistId] = useState('');
+  const [selectedArtists, setSelectedArtists] = useState<{id: string, name: string}[]>([]);
   const [type, setType] = useState('Video');
   const [platform, setPlatform] = useState('Instagram');
   const [dueDate, setDueDate] = useState('');
@@ -165,7 +166,8 @@ export default function ProductionPage() {
     if (!projects) return [];
     return projects.filter((project: any) => {
       const isManagement = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
-      const isAssigned = project.artistId === user?.id || project.artist === user?.name || project.assignedById === user?.id;
+      const artistIds = project.artistIds || (project.artistId ? [project.artistId] : []);
+      const isAssigned = artistIds.includes(user?.id) || project.artist === user?.name || project.assignedById === user?.id;
       
       if (!isManagement && !isAssigned) return false;
 
@@ -224,7 +226,7 @@ export default function ProductionPage() {
   };
 
   const handleAddProject = () => {
-    if (!firestore || !fileCode || !selectedBrandId || !artist || !dueDate) {
+    if (!firestore || !fileCode || !selectedBrandId || selectedArtists.length === 0 || !dueDate) {
       toast({ variant: "destructive", title: "Missing Information", description: "Brand, Artist, and Due Date are required." });
       return;
     }
@@ -238,8 +240,10 @@ export default function ProductionPage() {
       contentIdea,
       status,
       priority,
-      artist,
-      artistId,
+      artist: selectedArtists.map(a => a.name).join(', '),
+      artistId: selectedArtists[0].id,
+      artistIds: selectedArtists.map(a => a.id),
+      artists: selectedArtists.map(a => a.name),
       assignedById: user.id,
       assignedByName: user.name,
       type,
@@ -551,18 +555,28 @@ export default function ProductionPage() {
                           <Input placeholder="Product showcase reel" value={contentIdea} onChange={(e) => setContentIdea(e.target.value)} className="h-12 rounded-xl" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
+                          <div className="space-y-2 col-span-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                               <User className="w-3 h-3 text-primary" />
-                              Artist
+                              Artists Assignment
                             </Label>
-                            <Select value={artistId} onValueChange={(val) => {
-                              setArtistId(val);
+                            <div className="flex flex-wrap gap-2 p-3 border border-slate-200 rounded-xl min-h-[48px] bg-white">
+                              {selectedArtists.map(a => (
+                                <Badge key={a.id} className="bg-red-50 text-red-600 border-red-100 flex items-center gap-1 py-1 px-2">
+                                  {a.name}
+                                  <Trash2 className="w-3 h-3 cursor-pointer hover:text-red-800" onClick={() => setSelectedArtists(prev => prev.filter(x => x.id !== a.id))} />
+                                </Badge>
+                              ))}
+                              {selectedArtists.length === 0 && <span className="text-[10px] text-slate-400 font-medium py-1">No artists selected...</span>}
+                            </div>
+                            <Select onValueChange={(val) => {
                               const s = staffList?.find(u => u.id === val);
-                              if (s) setArtist(s.name);
+                              if (s && !selectedArtists.find(x => x.id === s.id)) {
+                                setSelectedArtists(prev => [...prev, {id: s.id, name: s.name}]);
+                              }
                             }}>
-                              <SelectTrigger className="h-12 rounded-xl border-slate-200">
-                                <SelectValue placeholder="Select employee" />
+                              <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
+                                <SelectValue placeholder="Add artist..." />
                               </SelectTrigger>
                               <SelectContent>
                                 {staffList?.map((s: any) => (
