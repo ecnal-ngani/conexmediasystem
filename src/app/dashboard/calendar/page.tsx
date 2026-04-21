@@ -766,7 +766,7 @@ export default function CalendarPage() {
                 {selectedEvent.source === 'production' && !['Approved', 'Done'].includes(selectedEvent.status) && (<Button onClick={() => handleCompleteProject(selectedEvent.id, selectedEvent.brand)} className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 text-white shadow-lg shadow-green-100"><Check className="w-4 h-4" />MARK AS DONE</Button>)}
                 {selectedEvent.source === 'schedule' && selectedEvent.status !== 'Completed' && (<Button onClick={() => handleCompleteSchedule(selectedEvent.id, selectedEvent.title)} className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 text-white shadow-lg shadow-green-100"><Check className="w-4 h-4" />MARK AS DONE</Button>)}
                 <Button onClick={() => setSelectedEvent(null)} variant="outline" className="w-full h-12 font-bold rounded-xl">Close Briefing</Button>
-                {user?.role === 'ADMIN' && (<Button onClick={handleDeleteEvent} variant="destructive" className="w-full h-12 font-bold rounded-xl gap-2 shadow-lg shadow-red-100"><Trash2 className="w-4 h-4" />Terminate Event</Button>)}
+                {(user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER') && (<Button onClick={handleDeleteEvent} variant="destructive" className="w-full h-12 font-bold rounded-xl gap-2 shadow-lg shadow-red-100"><Trash2 className="w-4 h-4" />Terminate Event</Button>)}
               </div>
             </div>
           )}
