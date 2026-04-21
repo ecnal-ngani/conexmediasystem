@@ -423,8 +423,8 @@ export default function ProductionPage() {
             </SelectContent>
           </Select>
 
-          {(user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER') && (
-            <div className="flex gap-2 lg:col-span-2">
+          <div className="flex gap-2 lg:col-span-2">
+            {(user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER') && (
               <Dialog open={isManageBrandsOpen} onOpenChange={setIsManageBrandsOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="h-10 font-bold border-slate-200 text-xs text-slate-600 flex-1">
@@ -450,7 +450,7 @@ export default function ProductionPage() {
                           <Input placeholder="CJC" maxLength={3} value={newBrandPrefix} onChange={(e) => setNewBrandPrefix(e.target.value.toUpperCase())} />
                         </div>
                       </div>
-                      <Button onClick={handleAddBrand} className="w-full bg-slate-900 text-white font-bold h-11 rounded-xl">
+                      <Button onClick={handleAddBrand} className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg shadow-slate-100">
                         Register Brand
                       </Button>
                     </div>
@@ -495,7 +495,9 @@ export default function ProductionPage() {
                   </div>
                 </DialogContent>
               </Dialog>
+            )}
 
+            {user?.role !== 'INTERN' && (
               <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
                 <DialogTrigger asChild>
                   <Button className="h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs text-white flex-1">
