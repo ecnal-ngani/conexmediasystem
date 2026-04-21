@@ -242,15 +242,22 @@ export function QuickActions() {
     const items: any[] = [];
     if (!user || !isMounted) return items;
     
-    // 1. Schedules (Global Events)
-    recentSchedules?.forEach(s => items.push({ ...s, type: 'SCHEDULE', rawTime: s.createdAt?.seconds || 0 }));
+    const isGlobalAdmin = user.role === 'ADMIN';
+    
+    // 1. Schedules (Global Events - Filtered for BM privacy)
+    recentSchedules?.filter(s => isGlobalAdmin || s.assignedById === user.id)
+      .forEach(s => items.push({ ...s, type: 'SCHEDULE', rawTime: s.createdAt?.seconds || 0 }));
     
     // 2. Tasks (Personal Directives)
-    recentTasks?.filter(t => t.assignedToId === user.id || t.assignedById === user.id).forEach(t => items.push({ ...t, type: 'TASK', rawTime: (t.updatedAt || t.createdAt)?.seconds || 0 }));
+    recentTasks?.filter(t => isGlobalAdmin || t.assignedToId === user.id || t.assignedById === user.id)
+      .forEach(t => items.push({ ...t, type: 'TASK', rawTime: (t.updatedAt || t.createdAt)?.seconds || 0 }));
     
     // 3. Projects (Assigned Production Items)
-    const isAdmin = user.role === 'ADMIN' || user.role === 'BRAND_MANAGER';
-    recentProjects?.filter(p => isAdmin || p.artistId === user.id).forEach(p => items.push({ ...p, type: 'PROJECT', rawTime: p.createdAt?.seconds || 0 }));
+    recentProjects?.filter(p => {
+      if (isGlobalAdmin) return true;
+      const artistIds = p.artistIds || (p.artistId ? [p.artistId] : []);
+      return artistIds.includes(user.id) || p.assignedById === user.id;
+    }).forEach(p => items.push({ ...p, type: 'PROJECT', rawTime: p.createdAt?.seconds || 0 }));
 
     return items.sort((a, b) => b.rawTime - a.rawTime).slice(0, 20);
   }, [recentSchedules, recentTasks, recentProjects, user, isMounted]);
