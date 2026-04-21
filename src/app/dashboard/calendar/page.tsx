@@ -138,6 +138,32 @@ export default function CalendarPage() {
   }, [firestore, user]);
   const { data: brands } = useCollection<any>(brandsQuery);
 
+  const isAdmin = user?.role === 'ADMIN';
+
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+    if (isAdmin) return projects;
+    return projects.filter((p: any) => {
+      const artistIds = p.artistIds || (p.artistId ? [p.artistId] : []);
+      return artistIds.includes(user?.id) || p.artist === user?.name || p.assignedById === user?.id;
+    });
+  }, [projects, user, isAdmin]);
+
+  const filteredTasks = useMemo(() => {
+    if (!allTasks) return [];
+    if (isAdmin) return allTasks;
+    return allTasks.filter((t: any) => {
+      const artistIds = t.artistIds || (t.artistId ? [t.artistId] : []);
+      return artistIds.includes(user?.id) || t.assignedToId === user?.id || t.assignedById === user?.id;
+    });
+  }, [allTasks, user, isAdmin]);
+
+  const filteredSchedules = useMemo(() => {
+    if (!schedules) return [];
+    if (isAdmin) return schedules;
+    return schedules.filter((s: any) => s.assignedById === user?.id);
+  }, [schedules, user, isAdmin]);
+
   // Filter tasks for privacy
   const tasks = useMemo(() => {
     if (!allTasks || !user) return [];
@@ -155,9 +181,9 @@ export default function CalendarPage() {
   };
 
   const matrixData = useMemo(() => {
-    const activeProjects = projects?.filter(p => p.status !== 'Approved' && p.status !== 'Done') || [];
-    const activeTasks = tasks?.filter(t => t.status !== 'completed') || [];
-    const activeScheds = schedules || [];
+    const activeProjects = filteredProjects?.filter(p => p.status !== 'Approved' && p.status !== 'Done') || [];
+    const activeTasks = filteredTasks?.filter(t => t.status !== 'completed') || [];
+    const activeScheds = filteredSchedules || [];
 
     const urgent = (activeScheds.filter(s => s.priority === 'URGENT').length || 0) + 
                    (activeTasks.filter(t => t.priority === 'URGENT').length) + 
@@ -330,9 +356,9 @@ export default function CalendarPage() {
     
     for (let i = 1; i <= daysCount; i++) {
       const dateStr = `${viewDate.getFullYear()}-${(viewDate.getMonth() + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
-      const dayScheds = schedules?.filter(s => s.date === dateStr) || [];
-      const dayProjs = projects?.filter(p => p.dueDate === dateStr) || [];
-      const dayTasks = tasks?.filter(t => t.dueDate === dateStr) || [];
+      const dayScheds = filteredSchedules?.filter(s => s.date === dateStr) || [];
+      const dayProjs = filteredProjects?.filter(p => p.dueDate === dateStr) || [];
+      const dayTasks = filteredTasks?.filter(t => t.dueDate === dateStr) || [];
       const isToday = isTodayFn(new Date(viewDate.getFullYear(), viewDate.getMonth(), i));
 
       days.push(
@@ -612,9 +638,9 @@ export default function CalendarPage() {
                     ].length === 0 ? (
                       <p className="text-[11px] text-slate-400 text-center py-4 italic">No missions found for this date.</p>
                     ) : [
-                      ...(schedules?.filter(s => s.date === selectedDate).map(s => ({...s, source: 'schedule'})) || []),
-                      ...(projects?.filter(p => p.dueDate === selectedDate).map(p => ({...p, source: 'production'})) || []),
-                      ...(tasks?.filter(t => t.dueDate === selectedDate).map(t => ({...t, source: 'task'})) || [])
+                      ...(filteredSchedules?.filter(s => s.date === selectedDate).map(s => ({...s, source: 'schedule'})) || []),
+                      ...(filteredProjects?.filter(p => p.dueDate === selectedDate).map(p => ({...p, source: 'production'})) || []),
+                      ...(filteredTasks?.filter(t => t.dueDate === selectedDate).map(t => ({...t, source: 'task'})) || [])
                     ].map((evt, idx) => (
                       <div 
                         key={idx} 
@@ -652,7 +678,7 @@ export default function CalendarPage() {
             </div>
             <ScrollArea className="h-[450px] pr-2">
               <div className="space-y-3">
-                {tasks?.filter(t => t.status !== 'completed').map((task: any) => (
+                {filteredTasks?.filter(t => t.status !== 'completed').map((task: any) => (
                   <div key={task.id} onClick={() => setSelectedEvent({...task, source: 'task'})} className={cn("p-4 border rounded-xl shadow-sm transition-all cursor-pointer group", task.status === 'completed' ? "bg-green-50 border-green-200" : "bg-white border-slate-100 hover:border-primary/20")}>
                     <div className="flex justify-between mb-2">
                       <h4 className={cn("text-xs font-bold truncate max-w-[70%] transition-colors", task.status === 'completed' ? "text-green-800" : "text-slate-800 group-hover:text-primary")}>{task.title}</h4>
@@ -661,7 +687,7 @@ export default function CalendarPage() {
                     <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span className={task.status === 'completed' ? "text-green-600 font-bold" : ""}>{task.status === 'completed' ? '✓ SYNCHRONIZED' : 'TASK'}</span><span>{task.dueDate}</span></div>
                   </div>
                 ))}
-                {projects?.filter(p => p.status !== 'Approved' && p.status !== 'Done').map((p: any) => (
+                {filteredProjects?.filter(p => p.status !== 'Approved' && p.status !== 'Done').map((p: any) => (
                   <div 
                     key={p.id} 
                     onClick={() => setSelectedEvent({...p, source: 'production'})} 
