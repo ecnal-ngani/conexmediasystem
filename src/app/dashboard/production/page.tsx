@@ -585,38 +585,44 @@ export default function ProductionPage() {
                               </SelectContent>
                             </Select>
                           </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                               <Calendar className="w-3 h-3 text-primary" />
                               Due Date
                             </Label>
-                            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-12 rounded-xl" />
+                            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-12 rounded-xl border-slate-200" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                              <Zap className="w-3 h-3 text-primary" />
+                              Priority
+                            </Label>
+                            <Select value={priority} onValueChange={setPriority}>
+                              <SelectTrigger className="h-12 rounded-xl border-slate-200"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="URGENT">URGENT</SelectItem>
+                                <SelectItem value="RUSH">RUSH</SelectItem>
+                                <SelectItem value="HIGH">HIGH</SelectItem>
+                                <SelectItem value="REGULAR">REGULAR</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Status</Label>
-                            <Select value={status} onValueChange={setStatus}>
-                              <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Pending">Pending</SelectItem>
-                                <SelectItem value="In Production">In Production</SelectItem>
-                                <SelectItem value="For QA">For QA</SelectItem>
-                                <SelectItem value="Approved">Approved</SelectItem>
-                                <SelectItem value="Client Revision">Client Revision</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority</Label>
-                            <Select value={priority} onValueChange={setPriority}>
-                              <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="REGULAR">REGULAR</SelectItem>
-                                <SelectItem value="RUSH">RUSH</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Current Status</Label>
+                          <Select value={status} onValueChange={setStatus}>
+                            <SelectTrigger className="h-12 rounded-xl border-slate-200"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Pending">Pending</SelectItem>
+                              <SelectItem value="In Production">In Production</SelectItem>
+                              <SelectItem value="For QA">For QA</SelectItem>
+                              <SelectItem value="Approved">Approved</SelectItem>
+                              <SelectItem value="Client Revision">Client Revision</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
