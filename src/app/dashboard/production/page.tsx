@@ -165,11 +165,11 @@ export default function ProductionPage() {
   const filteredProjects = useMemo(() => {
     if (!projects) return [];
     return projects.filter((project: any) => {
-      const isManagement = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
+      const isAdmin = user?.role === 'ADMIN';
       const artistIds = project.artistIds || (project.artistId ? [project.artistId] : []);
-      const isAssigned = artistIds.includes(user?.id) || project.artist === user?.name || project.assignedById === user?.id;
+      const isInvolved = artistIds.includes(user?.id) || project.artist === user?.name || project.assignedById === user?.id;
       
-      if (!isManagement && !isAssigned) return false;
+      if (!isAdmin && !isInvolved) return false;
 
       const matchesSearch = 
         (project.fileCode?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
