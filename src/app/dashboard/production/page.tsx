@@ -423,7 +423,7 @@ export default function ProductionPage() {
             </SelectContent>
           </Select>
 
-          {user?.role !== 'INTERN' && (
+          {(user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER') && (
             <div className="flex gap-2 lg:col-span-2">
               <Dialog open={isManageBrandsOpen} onOpenChange={setIsManageBrandsOpen}>
                 <DialogTrigger asChild>
