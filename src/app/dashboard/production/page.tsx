@@ -647,8 +647,8 @@ export default function ProductionPage() {
                   </ScrollArea>
                 </DialogContent>
               </Dialog>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
