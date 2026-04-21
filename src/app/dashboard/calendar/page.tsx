@@ -588,7 +588,7 @@ export default function CalendarPage() {
             </div>
             <ScrollArea className="h-[450px] pr-2">
               <div className="space-y-3">
-                {tasks?.map((task: any) => (
+                {tasks?.filter(t => t.status !== 'completed').map((task: any) => (
                   <div key={task.id} onClick={() => setSelectedEvent({...task, source: 'task'})} className={cn("p-4 border rounded-xl shadow-sm transition-all cursor-pointer group", task.status === 'completed' ? "bg-green-50 border-green-200" : "bg-white border-slate-100 hover:border-primary/20")}>
                     <div className="flex justify-between mb-2">
                       <h4 className={cn("text-xs font-bold truncate max-w-[70%] transition-colors", task.status === 'completed' ? "text-green-800" : "text-slate-800 group-hover:text-primary")}>{task.title}</h4>
@@ -597,7 +597,7 @@ export default function CalendarPage() {
                     <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span className={task.status === 'completed' ? "text-green-600 font-bold" : ""}>{task.status === 'completed' ? '✓ SYNCHRONIZED' : 'TASK'}</span><span>{task.dueDate}</span></div>
                   </div>
                 ))}
-                {projects?.filter(p => p.status !== 'Approved').map((p: any) => (
+                {projects?.filter(p => p.status !== 'Approved' && p.status !== 'Done').map((p: any) => (
                   <div key={p.id} onClick={() => setSelectedEvent({...p, source: 'production'})} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-blue-200 cursor-pointer group">
                     <div className="flex justify-between mb-2">
                       <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 truncate max-w-[70%]">{p.brand}</h4>
