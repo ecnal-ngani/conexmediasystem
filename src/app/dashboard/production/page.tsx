@@ -651,7 +651,16 @@ export default function ProductionPage() {
               ) : filteredProjects.length === 0 ? (
                 <TableRow><TableCell colSpan={8} className="h-40 text-center text-slate-400">No production items found.</TableCell></TableRow>
               ) : filteredProjects.map((item: any) => (
-                <TableRow key={item.id} className={cn("border-0 group transition-colors", (item.status === 'Approved' || item.status === 'Done') && "bg-green-50/80 hover:bg-green-100/80")}>
+                <TableRow 
+                  key={item.id} 
+                  className={cn(
+                    "border-0 group transition-colors", 
+                    (item.status === 'Approved' || item.status === 'Done') ? "bg-green-50/80 hover:bg-green-100/80" :
+                    (item.priority === 'RUSH' || item.priority === 'URGENT') ? "bg-red-50/50 hover:bg-red-100/50" :
+                    item.priority === 'HIGH' ? "bg-orange-50/50 hover:bg-orange-100/50" :
+                    "bg-blue-50/30 hover:bg-blue-100/30"
+                  )}
+                >
                   <TableCell className="py-4 pl-6">
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" onClick={() => { setSelectedProject(item); setEditingLink(item.canvasLink || ''); }} className="text-primary h-7 text-[10px] font-bold">

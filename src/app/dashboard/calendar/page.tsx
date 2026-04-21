@@ -310,7 +310,19 @@ export default function CalendarPage() {
               <button key={`s-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...s, source: 'schedule'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')}>{s.title}</button>
             ))}
             {dayProjs.sort((a,b) => (a.status === 'Approved' || a.status === 'Done' ? 1 : 0) - (b.status === 'Approved' || b.status === 'Done' ? 1 : 0)).map((p, idx) => (
-              <button key={`p-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...p, source: 'production'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", (p.status === 'Approved' || p.status === 'Done') ? 'bg-green-600' : 'bg-blue-600')}>PROD: {p.brand}</button>
+              <button 
+                key={`p-${idx}`} 
+                onClick={(e) => { e.stopPropagation(); setSelectedEvent({...p, source: 'production'}); }} 
+                className={cn(
+                  "w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", 
+                  (p.status === 'Approved' || p.status === 'Done') ? 'bg-green-600' : 
+                  (p.priority === 'RUSH' || p.priority === 'URGENT') ? 'bg-red-600' :
+                  p.priority === 'HIGH' ? 'bg-orange-500' :
+                  'bg-blue-600'
+                )}
+              >
+                PROD: {p.brand}
+              </button>
             ))}
             {dayTasks.sort((a,b) => (a.status === 'completed' ? 1 : 0) - (b.status === 'completed' ? 1 : 0)).map((t, idx) => (
               <button key={`t-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...t, source: 'task'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))}>TASK: {t.title}</button>
@@ -323,7 +335,16 @@ export default function CalendarPage() {
               <div key={`sd-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')} />
             ))}
             {dayProjs.sort((a,b) => (a.status === 'Approved' || a.status === 'Done' ? 1 : 0) - (b.status === 'Approved' || b.status === 'Done' ? 1 : 0)).map((p, idx) => (
-              <div key={`pd-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", (p.status === 'Approved' || p.status === 'Done') ? 'bg-green-600' : 'bg-blue-600')} />
+              <div 
+                key={`pd-${idx}`} 
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full", 
+                  (p.status === 'Approved' || p.status === 'Done') ? 'bg-green-600' : 
+                  (p.priority === 'RUSH' || p.priority === 'URGENT') ? 'bg-red-600' :
+                  p.priority === 'HIGH' ? 'bg-orange-500' :
+                  'bg-blue-600'
+                )} 
+              />
             ))}
             {dayTasks.sort((a,b) => (a.status === 'completed' ? 1 : 0) - (b.status === 'completed' ? 1 : 0)).map((t, idx) => (
               <div key={`td-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))} />
@@ -598,12 +619,41 @@ export default function CalendarPage() {
                   </div>
                 ))}
                 {projects?.filter(p => p.status !== 'Approved' && p.status !== 'Done').map((p: any) => (
-                  <div key={p.id} onClick={() => setSelectedEvent({...p, source: 'production'})} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-blue-200 cursor-pointer group">
+                  <div 
+                    key={p.id} 
+                    onClick={() => setSelectedEvent({...p, source: 'production'})} 
+                    className={cn(
+                      "p-4 border rounded-xl shadow-sm transition-all cursor-pointer group", 
+                      (p.priority === 'RUSH' || p.priority === 'URGENT') ? "bg-red-50 border-red-100 hover:border-red-300" :
+                      p.priority === 'HIGH' ? "bg-orange-50 border-orange-100 hover:border-orange-300" :
+                      "bg-blue-50/30 border-blue-100 hover:border-blue-300"
+                    )}
+                  >
                     <div className="flex justify-between mb-2">
-                      <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 truncate max-w-[70%]">{p.brand}</h4>
-                      <Badge variant="outline" className="text-[8px] text-blue-600">{p.priority === 'RUSH' ? 'URGENT' : 'REGULAR'}</Badge>
+                      <h4 className={cn(
+                        "text-xs font-bold truncate max-w-[70%] transition-colors",
+                        (p.priority === 'RUSH' || p.priority === 'URGENT') ? "text-red-800" :
+                        p.priority === 'HIGH' ? "text-orange-800" :
+                        "text-blue-800 group-hover:text-primary"
+                      )}>{p.brand}</h4>
+                      <Badge variant="outline" className={cn(
+                        "text-[8px] border-none",
+                        (p.priority === 'RUSH' || p.priority === 'URGENT') ? "bg-red-600 text-white" :
+                        p.priority === 'HIGH' ? "bg-orange-500 text-white" :
+                        "bg-blue-600 text-white"
+                      )}>
+                        {p.priority === 'RUSH' || p.priority === 'URGENT' ? 'URGENT' : p.priority === 'HIGH' ? 'HIGH' : 'NORMAL'}
+                      </Badge>
                     </div>
-                    <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span>PRODUCTION</span><span>{p.dueDate}</span></div>
+                    <div className="flex justify-between mt-4 text-[10px] text-slate-400">
+                      <span className={cn(
+                        "font-bold",
+                        (p.priority === 'RUSH' || p.priority === 'URGENT') ? "text-red-400" :
+                        p.priority === 'HIGH' ? "text-orange-400" :
+                        "text-blue-400"
+                      )}>PRODUCTION</span>
+                      <span>{p.dueDate}</span>
+                    </div>
                   </div>
                 ))}
               </div>
