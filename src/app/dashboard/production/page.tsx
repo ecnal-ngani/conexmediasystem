@@ -174,9 +174,7 @@ export default function ProductionPage() {
         (project.brand?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (project.artist?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (project.contentIdea?.toLowerCase() || '').includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === 'all' 
-        ? !['approved', 'done'].includes(project.status?.toLowerCase()) 
-        : project.status === statusFilter;
+      const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
       const matchesPriority = priorityFilter === 'all' || project.priority === priorityFilter;
       const matchesType = typeFilter === 'all' || project.type === typeFilter;
       return matchesSearch && matchesStatus && matchesPriority && matchesType;
