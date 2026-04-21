@@ -263,7 +263,7 @@ export default function CalendarPage() {
     if (!firestore) return;
     const projectRef = doc(firestore, 'projects', projectId);
     const updateData = { 
-      status: 'Done',
+      status: 'Approved',
       updatedAt: serverTimestamp()
     };
     updateDoc(projectRef, updateData).catch(async (err) => {
@@ -273,8 +273,51 @@ export default function CalendarPage() {
         requestResourceData: updateData
       }));
     });
-    toast({ title: "Mission Accomplished", description: `${brand} project marked as Done.` });
+    toast({ title: "Mission Accomplished", description: `${brand} project marked as Approved.` });
     setSelectedEvent(null);
+  };
+
+  const handleCompleteSchedule = (scheduleId: string, title: string) => {
+    if (!firestore) return;
+    const scheduleRef = doc(firestore, 'schedules', scheduleId);
+    const updateData = { 
+      status: 'Completed',
+      updatedAt: serverTimestamp()
+    };
+    updateDoc(scheduleRef, updateData).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: scheduleRef.path,
+        operation: 'update',
+        requestResourceData: updateData
+      }));
+    });
+    toast({ title: "Schedule Synchronized", description: `${title} marked as completed.` });
+    setSelectedEvent(null);
+  };
+
+  const handleUpdateEventStatus = (id: string, source: string, newStatus: string) => {
+    if (!firestore) return;
+    let collectionName = '';
+    switch (source) {
+      case 'schedule': collectionName = 'schedules'; break;
+      case 'production': collectionName = 'projects'; break;
+      case 'task': collectionName = 'tasks'; break;
+      default: return;
+    }
+    const docRef = doc(firestore, collectionName, id);
+    const updateData = { 
+      status: newStatus,
+      updatedAt: serverTimestamp()
+    };
+    updateDoc(docRef, updateData).catch(async (err) => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'update',
+        requestResourceData: updateData
+      }));
+    });
+    toast({ title: "Status Updated", description: `Record updated to ${newStatus}.` });
+    setSelectedEvent(prev => prev ? { ...prev, status: newStatus } : null);
   };
 
   const renderCalendarDays = () => {
@@ -679,11 +722,49 @@ export default function CalendarPage() {
                 <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Priority</p><Badge className={cn("text-[10px] font-black px-2 py-1 rounded", selectedEvent.status === 'completed' ? "bg-green-50 text-green-600 border-green-100" : (selectedEvent.priority === 'URGENT' || selectedEvent.priority === 'RUSH' ? "bg-red-50 text-red-500 border-red-100" : "bg-blue-50 text-blue-500 border-blue-100"))} variant="outline">{selectedEvent.status === 'completed' ? 'DONE' : (selectedEvent.priority || 'NORMAL')}</Badge></div>
                 <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Date</p>{user?.role === 'ADMIN' ? (<Input type="date" value={editingDate} onChange={(e) => setEditingDate(e.target.value)} className="h-8 text-xs font-bold border-slate-200 mt-1" />) : (<p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p>)}</div>
                 {selectedEvent.location && (<div className="space-y-1 col-span-2"><p className="text-[10px] uppercase font-black text-slate-400">Location</p><p className="text-xs font-bold text-slate-700">{selectedEvent.location}</p></div>)}
-                <div className="space-y-1 col-span-2"><p className="text-[10px] uppercase font-black text-slate-400">Status</p><Badge variant="secondary" className={cn("uppercase font-black text-[10px]", selectedEvent.status === 'completed' ? "bg-green-600 text-white" : "bg-slate-100 text-slate-700")}>{selectedEvent.status || 'PENDING'}</Badge></div>
+                <div className="space-y-1 col-span-2">
+                  <p className="text-[10px] uppercase font-black text-slate-400">Status</p>
+                  {(user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER' || selectedEvent.assignedToId === user?.id || selectedEvent.artistId === user?.id) ? (
+                    <Select value={selectedEvent.status || (selectedEvent.source === 'task' ? 'pending' : 'Pending')} onValueChange={(val) => handleUpdateEventStatus(selectedEvent.id, selectedEvent.source, val)}>
+                      <SelectTrigger className="h-8 text-[10px] font-bold uppercase border-slate-200 mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedEvent.source === 'task' ? (
+                          <>
+                            <SelectItem value="pending">PENDING</SelectItem>
+                            <SelectItem value="in-progress">IN PROGRESS</SelectItem>
+                            <SelectItem value="completed">COMPLETED</SelectItem>
+                          </>
+                        ) : selectedEvent.source === 'production' ? (
+                          <>
+                            <SelectItem value="Pending">PENDING</SelectItem>
+                            <SelectItem value="In Production">IN PRODUCTION</SelectItem>
+                            <SelectItem value="For QA">FOR QA</SelectItem>
+                            <SelectItem value="Approved">APPROVED</SelectItem>
+                            <SelectItem value="Client Revision">CLIENT REVISION</SelectItem>
+                          </>
+                        ) : (
+                          <>
+                            <SelectItem value="Pending">PENDING</SelectItem>
+                            <SelectItem value="In Progress">IN PROGRESS</SelectItem>
+                            <SelectItem value="Completed">COMPLETED</SelectItem>
+                            <SelectItem value="Cancelled">CANCELLED</SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge variant="secondary" className={cn("uppercase font-black text-[10px] mt-1", (selectedEvent.status === 'completed' || selectedEvent.status === 'Completed' || selectedEvent.status === 'Approved' || selectedEvent.status === 'Done') ? "bg-green-600 text-white" : "bg-slate-100 text-slate-700")}>
+                      {selectedEvent.status || 'PENDING'}
+                    </Badge>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
                 {selectedEvent.source === 'task' && selectedEvent.status !== 'completed' && (<Button onClick={() => handleCompleteTask(selectedEvent.id, selectedEvent.title)} className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 text-white shadow-lg shadow-green-100"><Check className="w-4 h-4" />MARK AS DONE</Button>)}
-                {selectedEvent.source === 'production' && selectedEvent.status !== 'Done' && selectedEvent.status !== 'Approved' && (<Button onClick={() => handleCompleteProject(selectedEvent.id, selectedEvent.brand)} className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 text-white shadow-lg shadow-green-100"><Check className="w-4 h-4" />MARK AS DONE</Button>)}
+                {selectedEvent.source === 'production' && !['Approved', 'Done'].includes(selectedEvent.status) && (<Button onClick={() => handleCompleteProject(selectedEvent.id, selectedEvent.brand)} className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 text-white shadow-lg shadow-green-100"><Check className="w-4 h-4" />MARK AS DONE</Button>)}
+                {selectedEvent.source === 'schedule' && selectedEvent.status !== 'Completed' && (<Button onClick={() => handleCompleteSchedule(selectedEvent.id, selectedEvent.title)} className="w-full h-12 font-bold rounded-xl gap-2 bg-green-600 text-white shadow-lg shadow-green-100"><Check className="w-4 h-4" />MARK AS DONE</Button>)}
                 <Button onClick={() => setSelectedEvent(null)} variant="outline" className="w-full h-12 font-bold rounded-xl">Close Briefing</Button>
                 {user?.role === 'ADMIN' && (<Button onClick={handleDeleteEvent} variant="destructive" className="w-full h-12 font-bold rounded-xl gap-2 shadow-lg shadow-red-100"><Trash2 className="w-4 h-4" />Terminate Event</Button>)}
               </div>
