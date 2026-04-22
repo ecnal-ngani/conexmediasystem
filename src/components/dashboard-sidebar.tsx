@@ -28,6 +28,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 // Navigation items - Profile removed as it is now integrated into the header summary
 const navItems = [
