@@ -174,10 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('conex_wfh', wfhStatus.toString());
       localStorage.setItem('conex_verified', verifiedStatus.toString());
       
-      if (wfhStatus) {
-        router.push('/verify');
-      } else {
-        // Log Office check-in for biometric records
+        // Log check-in for attendance records
         const verificationsRef = collection(firestore, 'verifications');
         const checkInData = {
           userId: userId,
@@ -186,14 +183,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: userData.email || '',
           timestamp: serverTimestamp(),
           isVerified: true,
-          method: 'Office Terminal',
-          status: 'Logged (Office)',
+          method: wfhStatus ? 'WFH Verification' : 'Office Terminal',
+          status: 'Clocked In',
           devicePlatform: navigator.userAgent
         };
         addDoc(verificationsRef, checkInData).catch(console.error);
 
-        router.push('/dashboard');
-      }
+        if (wfhStatus) {
+          router.push('/verify');
+        } else {
+          router.push('/dashboard');
+        }
     } catch (err: any) {
       setIsLoading(false);
       throw err;
@@ -234,13 +234,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user && firestore) {
       const userRef = doc(firestore, 'users', user.id);
       try {
-        // Use setDoc with merge to ensure offline status sync even if doc was moved/deleted
+        // 1. Log Clock Out for attendance
+        const verificationsRef = collection(firestore, 'verifications');
+        await addDoc(verificationsRef, {
+          userId: user.id,
+          userName: user.name,
+          userSystemId: user.systemId,
+          email: user.email || '',
+          timestamp: serverTimestamp(),
+          isVerified: true,
+          method: 'System Logout',
+          status: 'Clocked Out',
+          devicePlatform: navigator.userAgent
+        });
+
+        // 2. Sync Offline status
         await setDoc(userRef, { 
           status: 'Offline',
           updatedAt: serverTimestamp() 
         }, { merge: true });
       } catch (e) {
-        console.warn("Could not sync offline status (document may have been removed)", e);
+        console.warn("Could not sync logout status", e);
       }
     }
 

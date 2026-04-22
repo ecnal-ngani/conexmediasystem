@@ -42,6 +42,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AttendanceHeader } from '@/components/attendance-header';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -68,9 +69,15 @@ export default function DashboardPage() {
     return query(collection(firestore, 'tasks'));
   }, [firestore, user]);
 
+  const verificationsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'verifications'), orderBy('timestamp', 'desc'));
+  }, [firestore, user]);
+
   const { data: staff, isLoading: sLoading } = useCollection<any>(usersQuery);
   const { data: projects, isLoading: pLoading } = useCollection<any>(projectsQuery);
   const { data: tasks, isLoading: tLoading } = useCollection<any>(tasksQuery);
+  const { data: verifications } = useCollection<any>(verificationsQuery);
 
   // Global project metrics
   const deliveredProjectsCount = useMemo(() => {
@@ -186,30 +193,11 @@ export default function DashboardPage() {
   if (!isMounted || !user) return null;
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in duration-700 pb-12">
-      {/* 1. COMMAND HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-black tracking-tighter uppercase text-slate-900">{roleConfig.title}</h1>
-            <div className="h-1 w-8 bg-primary rounded-full" />
-          </div>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{roleConfig.subtitle}</p>
-        </div>
-        <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border shadow-sm">
-          <div className="flex flex-col items-end px-2">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">Tactical Level</span>
-            <span className="text-lg font-black text-primary leading-none">LVL {user.level || 1}</span>
-          </div>
-          <div className="h-10 w-px bg-slate-100" />
-          <div className="flex flex-col items-end px-2">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">Active Credits</span>
-            <span className="text-lg font-black text-slate-900 leading-none">{user.points || 0}</span>
-          </div>
-        </div>
-      </div>
+    <div className="w-full space-y-10 animate-in fade-in duration-700 pb-12">
+      {/* 0. ATTENDANCE & STATUS HEADER */}
+      <AttendanceHeader user={user} verifications={verifications || []} />
 
-      {/* 2. TACTICAL METRICS */}
+      {/* 1. TACTICAL METRICS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {roleConfig.stats.map((stat, i) => (
           <Card key={i} className="border-2 shadow-none rounded-2xl bg-white group hover:border-primary transition-all duration-300">
