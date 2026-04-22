@@ -118,10 +118,27 @@ export function DashboardSidebar() {
           </div>
           {!isCollapsed && (
             <div className="overflow-hidden flex-1 text-left">
-              <p className="text-[13px] font-bold text-slate-900 truncate leading-tight group-hover:text-primary transition-colors">{user.name}</p>
-              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 font-mono">
+              <div className="flex items-center justify-between">
+                <p className="text-[13px] font-bold text-slate-900 truncate leading-tight group-hover:text-primary transition-colors">{user.name}</p>
+                <Badge className="h-4 px-1 text-[8px] font-black bg-primary/10 text-primary border-primary/20">LVL {user.level || 1}</Badge>
+              </div>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 font-mono">
                 {user.systemId}
               </p>
+              
+              {/* Mini XP Bar */}
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-tighter text-slate-400">
+                  <span>Progress</span>
+                  <span>{user.xp || 0} / 1000 XP</span>
+                </div>
+                <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-1000" 
+                    style={{ width: `${Math.min(100, ((user.xp || 0) % 1000) / 10)}%` }} 
+                  />
+                </div>
+              </div>
             </div>
           )}
         </Link>

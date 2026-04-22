@@ -34,6 +34,10 @@ interface AuthContextType {
   isVerified: boolean;
   setVerified: (status: boolean) => void;
   updateUser: (updates: Partial<User>) => void;
+  xp: number;
+  points: number;
+  level: number;
+  badges: string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -144,10 +148,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         await setDoc(userRef, { 
           status: newStatus,
-          updatedAt: serverTimestamp() 
+          updatedAt: serverTimestamp(),
+          // Auto-initialize gamification data if missing
+          xp: userData.xp ?? 0,
+          points: userData.points ?? 0,
+          level: userData.level ?? 1,
+          badges: userData.badges ?? []
         }, { merge: true });
         
         userData.status = newStatus;
+        userData.xp = userData.xp ?? 0;
+        userData.points = userData.points ?? 0;
+        userData.level = userData.level ?? 1;
+        userData.badges = userData.badges ?? [];
       }
       
       const updatedUser = { id: userId, ...userData } as User;
@@ -241,7 +254,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, isWfh, isVerified, setVerified, updateUser }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      isLoading, 
+      isWfh, 
+      isVerified, 
+      setVerified, 
+      updateUser,
+      xp: user?.xp ?? 0,
+      points: user?.points ?? 0,
+      level: user?.level ?? 1,
+      badges: user?.badges ?? []
+    }}>
       {children}
     </AuthContext.Provider>
   );

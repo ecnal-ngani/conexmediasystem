@@ -11,6 +11,7 @@ export interface User {
   status: 'Office' | 'WFH' | 'Offline';
   xp?: number;
   points?: number;
+  level?: number;
   badges?: string[];
   school?: string;
   course?: string;

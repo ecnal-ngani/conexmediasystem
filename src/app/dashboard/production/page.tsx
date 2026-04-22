@@ -183,26 +183,46 @@ export default function ProductionPage() {
     });
   }, [projects, searchQuery, statusFilter, priorityFilter, typeFilter]);
 
-  const handleUpdateStatus = (projectId: string, newStatus: string) => {
+  const handleUpdateStatus = async (projectId: string, newStatus: string) => {
     if (!firestore) return;
     const projectRef = doc(firestore, 'projects', projectId);
-    const updateData = { 
+    const updateData: any = { 
       status: newStatus, 
       updatedAt: serverTimestamp(),
       lastUpdatedBy: user?.name || 'Unknown'
     };
 
-    updateDoc(projectRef, updateData)
-      .then(() => {
-        toast({ title: "Status Synchronized", description: `Asset status updated to ${newStatus}.` });
-      })
-      .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: projectRef.path,
-          operation: 'update',
-          requestResourceData: updateData
-        } satisfies SecurityRuleContext));
-      });
+    try {
+      await updateDoc(projectRef, updateData);
+      toast({ title: "Status Synchronized", description: `Asset status updated to ${newStatus}.` });
+
+      // GAMIFICATION: Award XP/Points on Approval
+      if (newStatus === 'Approved') {
+        const project = projects?.find((p: any) => p.id === projectId);
+        if (project && project.artistIds) {
+          // Award to all involved artists
+          for (const artistId of project.artistIds) {
+            const artistRef = doc(firestore, 'users', artistId);
+            const xpReward = project.priority === 'RUSH' || project.priority === 'URGENT' ? 200 : 100;
+            const pointsReward = project.priority === 'RUSH' || project.priority === 'URGENT' ? 50 : 20;
+
+            // Use increment for atomic updates
+            const { increment } = await import('firebase/firestore');
+            await updateDoc(artistRef, {
+              xp: increment(xpReward),
+              points: increment(pointsReward),
+              updatedAt: serverTimestamp()
+            }).catch(console.error);
+          }
+        }
+      }
+    } catch (err: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: projectRef.path,
+        operation: 'update',
+        requestResourceData: updateData
+      } satisfies SecurityRuleContext));
+    }
   };
 
   const handleUpdatePriority = (projectId: string, newPriority: string) => {

@@ -346,6 +346,58 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="border shadow-none rounded-none bg-white overflow-hidden flex flex-col h-full mt-6">
+            <CardHeader className="bg-slate-50 border-b p-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-orange-500" />
+                  Squad Ranking
+                </CardTitle>
+                <Badge variant="outline" className="text-[9px] font-black uppercase bg-orange-50 text-orange-600 border-orange-200">
+                  TOP PERFORMERS
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 flex-1">
+              <div className="divide-y divide-slate-50">
+                {sLoading ? (
+                  <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
+                ) : !staff || staff.length === 0 ? (
+                  <div className="p-10 text-center text-xs text-slate-400">No data available.</div>
+                ) : (
+                  staff
+                    .sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0))
+                    .slice(0, 5)
+                    .map((emp: any, index: number) => (
+                      <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-all group">
+                        <div className="flex items-center gap-3">
+                          <span className={cn(
+                            "text-xs font-black w-5",
+                            index === 0 ? "text-orange-500" : index === 1 ? "text-slate-400" : index === 2 ? "text-amber-700" : "text-slate-300"
+                          )}>
+                            #{index + 1}
+                          </span>
+                          <Avatar className="w-8 h-8 rounded-lg border shadow-sm">
+                            <AvatarImage src={emp.avatarUrl} />
+                            <AvatarFallback className="bg-slate-100 text-slate-500 text-[9px] font-bold">
+                              {emp.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-slate-900">{emp.name}</span>
+                            <span className="text-[8px] uppercase font-black text-slate-400 tracking-tight">LVL {emp.level || 1}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] font-black text-primary">{emp.xp || 0} XP</span>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
