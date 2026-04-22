@@ -221,6 +221,12 @@ export default function AdminPage() {
   }, [firestore, currentUser]);
   const { data: payrollTransactions, isLoading: payrollLoading } = useCollection<any>(payrollTransactionsQuery);
 
+  const projectsLogQuery = useMemoFirebase(() => {
+    if (!firestore || !currentUser) return null;
+    return query(collection(firestore, 'projects'), orderBy('updatedAt', 'desc'));
+  }, [firestore, currentUser]);
+  const { data: allProjects, isLoading: projectsLoading } = useCollection<any>(projectsLogQuery);
+
   const taxConfig = useMemo(() => {
     const defaultTaxConfig = {
       sssRate: 5, sssCeiling: 35000,
@@ -652,6 +658,7 @@ export default function AdminPage() {
         <TabsList className="bg-white border rounded-xl p-1">
           <TabsTrigger value="staff">Staff Directory</TabsTrigger>
           <TabsTrigger value="attendance">Biometric Logs</TabsTrigger>
+          <TabsTrigger value="projects">Project Intelligence</TabsTrigger>
           <TabsTrigger value="payroll">Payroll Node</TabsTrigger>
         </TabsList>
 
@@ -1108,6 +1115,54 @@ export default function AdminPage() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="projects" className="space-y-4">
+          <div className="bg-white border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+            <Table>
+              <TableHeader className="bg-slate-50/50">
+                <TableRow>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Project Code</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Brand</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Assigner</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Assignee (Artists)</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Status</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Last Action By</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Updated</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {projectsLoading ? (
+                  <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : !allProjects || allProjects.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No projects found in the registry.</TableCell></TableRow>
+                ) : (
+                  allProjects.map((project: any) => (
+                    <TableRow key={project.id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="font-mono font-black text-[11px] text-primary">{project.fileCode}</TableCell>
+                      <TableCell className="font-black text-[11px] text-slate-700">{project.brand}</TableCell>
+                      <TableCell className="text-slate-500 font-bold text-[10px] uppercase">{project.assignedByName || 'System'}</TableCell>
+                      <TableCell className="font-black text-[11px] text-slate-900">{project.artist || 'Unassigned'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn(
+                          "text-[9px] font-black uppercase px-2 py-0.5 border-2",
+                          project.status === 'Approved' ? "bg-green-50 text-green-600 border-green-200" :
+                          project.status === 'In Production' ? "bg-blue-50 text-blue-600 border-blue-200" :
+                          project.status === 'For QA' ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-slate-50 text-slate-400 border-slate-200"
+                        )}>
+                          {project.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-slate-400 font-black text-[9px] uppercase italic">{project.lastUpdatedBy || '—'}</TableCell>
+                      <TableCell className="text-[10px] font-bold text-slate-500 font-mono">
+                        {project.updatedAt?.toDate ? format(project.updatedAt.toDate(), 'MMM dd, HH:mm') : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Hourly Rate Dialog */}
@@ -1298,6 +1353,36 @@ export default function AdminPage() {
                    <p className="text-sm font-mono mt-1 text-primary font-bold">₱{selectedEmployeeProfile?.hourlyRate || DEFAULT_RATES[selectedEmployeeProfile?.role || 'EDITOR']}/hr</p>
                 </div>
              </div>
+             
+             <div className="border rounded-xl p-4 bg-slate-50">
+                <h4 className="font-bold text-sm mb-2 text-slate-700">Recent Projects</h4>
+                <div className="space-y-2">
+                  {projectsLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
+                  ) : (
+                    allProjects?.filter((p: any) => p.artistIds?.includes(selectedEmployeeProfile.id) || p.assignedById === selectedEmployeeProfile.id)
+                      .slice(0, 5)
+                      .map((p: any) => (
+                        <div key={p.id} className="bg-white p-3 border rounded-xl flex items-center justify-between gap-4">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-primary font-mono">{p.fileCode}</span>
+                            <span className="text-xs font-bold text-slate-900">{p.brand}</span>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <Badge className="text-[8px] font-black h-4 px-1.5">{p.status}</Badge>
+                            <span className="text-[9px] text-slate-400 mt-1 uppercase font-bold">
+                              {p.assignedById === selectedEmployeeProfile.id ? 'Assigner' : 'Assignee'}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                  {allProjects?.filter((p: any) => p.artistIds?.includes(selectedEmployeeProfile.id) || p.assignedById === selectedEmployeeProfile.id).length === 0 && (
+                    <p className="text-xs text-slate-400 italic">No project history found.</p>
+                  )}
+                </div>
+              </div>
+
              <div className="border rounded-xl p-4 bg-slate-50">
                <h4 className="font-bold text-sm mb-2 text-slate-700">Manual Adjustments ({selectedPayrollPeriod})</h4>
                {(!selectedEmployeeProfile?.manualAdjustments?.[selectedPayrollPeriod] || selectedEmployeeProfile.manualAdjustments[selectedPayrollPeriod].length === 0) ? (
