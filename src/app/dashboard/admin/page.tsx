@@ -834,10 +834,9 @@ export default function AdminPage() {
                     <SelectTrigger className="w-full sm:w-40"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ALL">All Outcomes</SelectItem>
-                      <SelectItem value="Clocked In">Clocked In</SelectItem>
-                      <SelectItem value="Clocked Out">Clocked Out</SelectItem>
-                      <SelectItem value="Logged (WFH)">Legacy WFH</SelectItem>
-                      <SelectItem value="Logged (Office)">Legacy Office</SelectItem>
+                      <SelectItem value="Logged (WFH)">Logged (WFH)</SelectItem>
+                      <SelectItem value="Logged (Office)">Logged (Office)</SelectItem>
+                      <SelectItem value="Logged (Offline)">Logged (Offline)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -874,16 +873,15 @@ export default function AdminPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                          {log.status === 'Clocked Out' ? 'Logout' : 'Login'} - {log.method || 'Facial Recognition'}
+                          {log.status === 'Logged (Offline)' ? 'Logout' : 'Login'} - {log.method || 'Facial Recognition'}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
                          <Badge className={cn(
                            "text-[10px] font-black uppercase shadow-none",
-                           log.status === 'Clocked In' ? "bg-green-100 text-green-700 border-green-200" :
-                           log.status === 'Clocked Out' ? "bg-red-100 text-red-700 border-red-200" :
-                           log.status === 'Logged (WFH)' ? "bg-green-50 text-green-600 border-green-100" :
-                           log.status === 'Logged (Office)' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                           log.status === 'Logged (WFH)' ? "bg-green-100 text-green-700 border-green-200" :
+                           log.status === 'Logged (Office)' ? "bg-blue-100 text-blue-700 border-blue-200" :
+                           log.status === 'Logged (Offline)' ? "bg-red-100 text-red-700 border-red-200" :
                            "bg-slate-100 text-slate-700 border-slate-200"
                          )} variant="outline">
                            {log.status || 'UNKNWN'}

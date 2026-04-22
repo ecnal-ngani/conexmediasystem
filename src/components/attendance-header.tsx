@@ -45,7 +45,7 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
     const weekLogs = verifications.filter(log => {
       if (!log.timestamp?.toDate) return false;
       const logDate = log.timestamp.toDate();
-      return isWithinInterval(logDate, { start, end }) && log.userId === user.id && log.status !== 'Clocked Out';
+      return isWithinInterval(logDate, { start, end }) && log.userId === user.id && log.status !== 'Logged (Offline)';
     });
 
     const totalMinutes = weekLogs.length * 8 * 60; 
@@ -63,7 +63,8 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
     }).sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
     
     if (!logsToday || logsToday.length === 0) return 'Not Clocked In';
-    return logsToday[0].status === 'Clocked Out' ? 'Not Clocked In' : 'Clocked In';
+    const latest = logsToday[0].status;
+    return latest === 'Logged (Offline)' ? 'Not Clocked In' : 'Clocked In';
   }, [verifications, user.id]);
 
   return (

@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           timestamp: serverTimestamp(),
           isVerified: true,
           method: wfhStatus ? 'Biometric WFH' : 'Office Terminal',
-          status: 'Clocked In',
+          status: wfhStatus ? 'Logged (WFH)' : 'Logged (Office)',
           devicePlatform: navigator.userAgent
         };
         addDoc(verificationsRef, checkInData).catch(console.error);
@@ -244,7 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           timestamp: serverTimestamp(),
           isVerified: true,
           method: 'System Logout',
-          status: 'Clocked Out',
+          status: 'Logged (Offline)',
           devicePlatform: navigator.userAgent
         });
 
