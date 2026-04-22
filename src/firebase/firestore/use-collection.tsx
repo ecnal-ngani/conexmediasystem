@@ -39,6 +39,7 @@ export interface InternalQuery extends Query<DocumentData> {
 
 export function useCollection<T = any>(
     memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined,
+    options?: { silent?: boolean }
 ): UseCollectionResult<T> {
   type ResultItemType = WithId<T>;
   type StateDataType = ResultItemType[] | null;
@@ -84,12 +85,14 @@ export function useCollection<T = any>(
         setData(null)
         setIsLoading(false)
 
-        errorEmitter.emit('permission-error', contextualError);
+        if (!options?.silent) {
+          errorEmitter.emit('permission-error', contextualError);
+        }
       }
     );
 
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]);
+  }, [memoizedTargetRefOrQuery, options?.silent]);
 
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
     throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');

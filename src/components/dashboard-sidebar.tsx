@@ -90,17 +90,32 @@ export function DashboardSidebar() {
   const [reason, setReason] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [pendingLeavesCount, setPendingLeavesCount] = React.useState(0);
+  const [userLeaves, setUserLeaves] = React.useState<any[]>([]);
 
-  // Notify Admin of pending leaves
+  // Notify Admin of pending leaves OR Fetch user's own leaves
   React.useEffect(() => {
-    if (!firestore || !user || user.role !== 'ADMIN') return;
+    if (!firestore || !user) return;
     
-    const q = query(collection(firestore, 'leave_requests'), where('status', '==', 'PENDING'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setPendingLeavesCount(snapshot.size);
-    });
-    
-    return () => unsubscribe();
+    // If Admin, watch all pending
+    if (user.role === 'ADMIN') {
+      const qAdmin = query(collection(firestore, 'leave_requests'), where('status', '==', 'PENDING'));
+      const unsubAdmin = onSnapshot(qAdmin, (snapshot) => {
+        setPendingLeavesCount(snapshot.size);
+      }, (err) => console.warn("Admin Leave Watch Error:", err));
+      
+      const qUser = query(collection(firestore, 'leave_requests'), where('userId', '==', user.id));
+      const unsubUser = onSnapshot(qUser, (snapshot) => {
+        setUserLeaves(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (err) => console.warn("User Leave Watch Error:", err));
+
+      return () => { unsubAdmin(); unsubUser(); };
+    } else {
+      const qUser = query(collection(firestore, 'leave_requests'), where('userId', '==', user.id));
+      const unsubUser = onSnapshot(qUser, (snapshot) => {
+        setUserLeaves(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (err) => console.warn("User Leave Watch Error:", err));
+      return () => unsubUser();
+    }
   }, [firestore, user]);
 
   const handleRequestLeave = async () => {
@@ -246,14 +261,6 @@ export function DashboardSidebar() {
                       {item.title}
                     </span>
                   )}
-                  {item.title === 'Administration' && pendingLeavesCount > 0 && !isCollapsed && (
-                    <Badge variant="destructive" className="ml-auto h-5 min-w-5 flex items-center justify-center p-0 text-[10px] font-bold rounded-full animate-pulse">
-                      {pendingLeavesCount}
-                    </Badge>
-                  )}
-                  {item.title === 'Administration' && pendingLeavesCount > 0 && isCollapsed && (
-                    <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
-                  )}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -278,47 +285,77 @@ export function DashboardSidebar() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Request Leave</DialogTitle>
-              <DialogDescription>Submit your leave request for management review.</DialogDescription>
+              <DialogDescription>Submit your leave request or check your status history.</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Leave Type</Label>
-                <Select value={leaveType} onValueChange={setLeaveType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="VACATION">Vacation Leave</SelectItem>
-                    <SelectItem value="SICK">Sick Leave</SelectItem>
-                    <SelectItem value="EMERGENCY">Emergency Leave</SelectItem>
-                    <SelectItem value="PERSONAL">Personal/Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <Label>Leave Type</Label>
+                  <Select value={leaveType} onValueChange={setLeaveType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="VACATION">Vacation Leave</SelectItem>
+                      <SelectItem value="SICK">Sick Leave</SelectItem>
+                      <SelectItem value="EMERGENCY">Emergency Leave</SelectItem>
+                      <SelectItem value="PERSONAL">Personal/Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Start Date</Label>
+                    <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>End Date</Label>
+                    <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  <Label>Reason</Label>
+                  <textarea 
+                    className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Explain why you need leave..."
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
                 </div>
+                <Button onClick={handleRequestLeave} disabled={isSubmitting} className="w-full bg-primary text-white font-bold h-11">
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Submit Request
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label>Reason</Label>
-                <textarea 
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="Explain why you need leave..."
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                />
+
+              <div className="pt-4 border-t">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">My Request History</h4>
+                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                  {userLeaves.length === 0 ? (
+                    <p className="text-[10px] text-slate-400 italic">No history found.</p>
+                  ) : (
+                    userLeaves.sort((a,b) => b.createdAt?.seconds - a.createdAt?.seconds).map((req) => (
+                      <div key={req.id} className="bg-slate-50 border rounded-lg p-2.5 flex items-center justify-between gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-bold text-slate-900">{req.startDate} → {req.endDate}</span>
+                          <span className="text-[9px] font-medium text-slate-400 uppercase">{req.type}</span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <Badge variant="outline" className={cn(
+                            "text-[8px] font-black uppercase px-1.5 h-4 border-2",
+                            req.status === 'APPROVED' ? "bg-green-50 text-green-600 border-green-200" :
+                            req.status === 'DECLINED' ? "bg-red-50 text-red-600 border-red-200" : "bg-orange-50 text-orange-600 border-orange-200"
+                          )}>
+                            {req.status}
+                          </Badge>
+                          {req.updatedBy && <span className="text-[8px] text-slate-400 mt-1 italic">By {req.updatedBy}</span>}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button onClick={handleRequestLeave} disabled={isSubmitting} className="bg-primary text-white font-bold">
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Submit Request
-              </Button>
+              <DialogClose asChild><Button variant="ghost" className="w-full font-bold">Close</Button></DialogClose>
             </DialogFooter>
           </DialogContent>
         </Dialog>
