@@ -1,1 +1,0 @@
-import 'dotenv/config'; import {genkit} from 'genkit'; import {googleAI} from '@genkit-ai/google-genai'; const ai = genkit({plugins: [googleAI()]}); ai.generate({model: 'googleai/gemini-1.5-flash-8b', prompt: 'test'}).then(r=>console.log('SUCCESS')).catch(e=>console.error('ERROR:', e.message))

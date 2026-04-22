@@ -8,5 +8,4 @@ config();
  * - document-summarization-flow: Summarizes project documents.
  * - face-verification-flow: Handles biometric verification for remote login.
  */
-import '@/ai/flows/document-summarization-flow.ts';
 import '@/ai/flows/face-verification-flow.ts';
