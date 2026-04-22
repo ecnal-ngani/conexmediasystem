@@ -41,6 +41,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -301,49 +302,51 @@ export default function DashboardPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-0 flex-1">
-              <div className="divide-y divide-slate-50">
-                {sLoading ? (
-                  <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
-                ) : !staff || staff.length === 0 ? (
-                  <div className="p-10 text-center text-xs text-slate-400">No personnel found.</div>
-                ) : (
-                  staff.map((emp: any) => (
-                    <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-all group border-l-2 border-transparent hover:border-primary">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm ring-1 ring-slate-100">
-                            <AvatarImage src={emp.avatarUrl} />
-                            <AvatarFallback className="bg-slate-100 text-slate-500 text-[10px] font-bold">
-                              {emp.name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className={cn(
-                            "absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm",
-                            emp.status !== 'Offline' ? "bg-green-500 animate-pulse" : "bg-slate-300"
-                          )} />
+            <CardContent className="p-0">
+              <ScrollArea className="h-[400px]">
+                <div className="divide-y divide-slate-50">
+                  {sLoading ? (
+                    <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
+                  ) : !staff || staff.length === 0 ? (
+                    <div className="p-10 text-center text-xs text-slate-400">No personnel found.</div>
+                  ) : (
+                    staff.map((emp: any) => (
+                      <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-all group border-l-2 border-transparent hover:border-primary">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm ring-1 ring-slate-100">
+                              <AvatarImage src={emp.avatarUrl} />
+                              <AvatarFallback className="bg-slate-100 text-slate-500 text-[10px] font-bold">
+                                {emp.name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className={cn(
+                              "absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm",
+                              emp.status !== 'Offline' ? "bg-green-500 animate-pulse" : "bg-slate-300"
+                            )} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors">{emp.name}</span>
+                            <span className="text-[9px] uppercase font-black text-slate-400 tracking-tighter">{emp.role.replace('_', ' ')}</span>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors">{emp.name}</span>
-                          <span className="text-[9px] uppercase font-black text-slate-400 tracking-tighter">{emp.role.replace('_', ' ')}</span>
+                        <div className="text-right flex flex-col items-end gap-1">
+                           <Badge variant="outline" className={cn(
+                             "text-[8px] font-black uppercase px-1.5 py-0",
+                             emp.status === 'Office' ? "text-green-600 bg-green-50 border-green-200" :
+                             emp.status === 'WFH' ? "text-orange-600 bg-orange-50 border-orange-200" : "text-slate-400 bg-slate-50 border-slate-200"
+                           )}>
+                             {emp.status}
+                           </Badge>
+                           <span className="text-[8px] font-bold text-slate-300 font-mono tracking-tighter">
+                             {emp.systemId}
+                           </span>
                         </div>
                       </div>
-                      <div className="text-right flex flex-col items-end gap-1">
-                         <Badge variant="outline" className={cn(
-                           "text-[8px] font-black uppercase px-1.5 py-0",
-                           emp.status === 'Office' ? "text-green-600 bg-green-50 border-green-200" :
-                           emp.status === 'WFH' ? "text-orange-600 bg-orange-50 border-orange-200" : "text-slate-400 bg-slate-50 border-slate-200"
-                         )}>
-                           {emp.status}
-                         </Badge>
-                         <span className="text-[8px] font-bold text-slate-300 font-mono tracking-tighter">
-                           {emp.systemId}
-                         </span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
 
@@ -359,43 +362,45 @@ export default function DashboardPage() {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="p-0 flex-1">
-              <div className="divide-y divide-slate-50">
-                {sLoading ? (
-                  <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
-                ) : !staff || staff.length === 0 ? (
-                  <div className="p-10 text-center text-xs text-slate-400">No data available.</div>
-                ) : (
-                  staff
-                    .sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0))
-                    .slice(0, 5)
-                    .map((emp: any, index: number) => (
-                      <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-all group">
-                        <div className="flex items-center gap-3">
-                          <span className={cn(
-                            "text-xs font-black w-5",
-                            index === 0 ? "text-orange-500" : index === 1 ? "text-slate-400" : index === 2 ? "text-amber-700" : "text-slate-300"
-                          )}>
-                            #{index + 1}
-                          </span>
-                          <Avatar className="w-8 h-8 rounded-lg border shadow-sm">
-                            <AvatarImage src={emp.avatarUrl} />
-                            <AvatarFallback className="bg-slate-100 text-slate-500 text-[9px] font-bold">
-                              {emp.name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <span className="text-[11px] font-bold text-slate-900">{emp.name}</span>
-                            <span className="text-[8px] uppercase font-black text-slate-400 tracking-tight">LVL {emp.level || 1}</span>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[300px]">
+                <div className="divide-y divide-slate-50">
+                  {sLoading ? (
+                    <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
+                  ) : !staff || staff.length === 0 ? (
+                    <div className="p-10 text-center text-xs text-slate-400">No data available.</div>
+                  ) : (
+                    staff
+                      .sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0))
+                      .slice(0, 10) // Show more in the scrollable leaderboard
+                      .map((emp: any, index: number) => (
+                        <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-all group">
+                          <div className="flex items-center gap-3">
+                            <span className={cn(
+                              "text-xs font-black w-5",
+                              index === 0 ? "text-orange-500" : index === 1 ? "text-slate-400" : index === 2 ? "text-amber-700" : "text-slate-300"
+                            )}>
+                              #{index + 1}
+                            </span>
+                            <Avatar className="w-8 h-8 rounded-lg border shadow-sm">
+                              <AvatarImage src={emp.avatarUrl} />
+                              <AvatarFallback className="bg-slate-100 text-slate-500 text-[9px] font-bold">
+                                {emp.name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-bold text-slate-900">{emp.name}</span>
+                              <span className="text-[8px] uppercase font-black text-slate-400 tracking-tight">LVL {emp.level || 1}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] font-black text-primary">{emp.xp || 0} XP</span>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="text-[10px] font-black text-primary">{emp.xp || 0} XP</span>
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
+                      ))
+                  )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
