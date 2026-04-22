@@ -8,7 +8,9 @@ import {
   Users, 
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  CalendarPlus,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/components/auth-context';
 import { usePathname } from 'next/navigation';
@@ -29,6 +31,23 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { query, where, onSnapshot } from 'firebase/firestore';
 
 // Navigation items - Profile removed as it is now integrated into the header summary
 const navItems = [
@@ -60,6 +79,64 @@ export function DashboardSidebar() {
   const pathname = usePathname();
   const { toggleSidebar, state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  // Leave Request State
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = React.useState(false);
+  const [leaveType, setLeaveType] = React.useState('VACATION');
+  const [startDate, setStartDate] = React.useState('');
+  const [endDate, setEndDate] = React.useState('');
+  const [reason, setReason] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [pendingLeavesCount, setPendingLeavesCount] = React.useState(0);
+
+  // Notify Admin of pending leaves
+  React.useEffect(() => {
+    if (!firestore || !user || user.role !== 'ADMIN') return;
+    
+    const q = query(collection(firestore, 'leave_requests'), where('status', '==', 'PENDING'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setPendingLeavesCount(snapshot.size);
+    });
+    
+    return () => unsubscribe();
+  }, [firestore, user]);
+
+  const handleRequestLeave = async () => {
+    if (!firestore || !user || !startDate || !endDate || !reason) {
+      toast({ variant: "destructive", title: "Missing Information", description: "Please fill in all fields." });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(firestore, 'leave_requests'), {
+        userId: user.id,
+        userName: user.name,
+        userSystemId: user.systemId,
+        userRole: user.role,
+        type: leaveType,
+        startDate,
+        endDate,
+        reason,
+        status: 'PENDING',
+        createdAt: serverTimestamp(),
+      });
+
+      toast({ title: "Request Submitted", description: "Your leave request has been sent to management." });
+      setIsLeaveModalOpen(false);
+      // Reset form
+      setStartDate('');
+      setEndDate('');
+      setReason('');
+    } catch (error) {
+      console.error(error);
+      toast({ variant: "destructive", title: "Submission Failed", description: "Could not send request. Try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -169,6 +246,14 @@ export function DashboardSidebar() {
                       {item.title}
                     </span>
                   )}
+                  {item.title === 'Administration' && pendingLeavesCount > 0 && !isCollapsed && (
+                    <Badge variant="destructive" className="ml-auto h-5 min-w-5 flex items-center justify-center p-0 text-[10px] font-bold rounded-full animate-pulse">
+                      {pendingLeavesCount}
+                    </Badge>
+                  )}
+                  {item.title === 'Administration' && pendingLeavesCount > 0 && isCollapsed && (
+                    <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+                  )}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -177,6 +262,67 @@ export function DashboardSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-2 border-t">
+        <Dialog open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              variant="ghost"
+              className={cn(
+                "w-full text-slate-600 hover:text-primary hover:bg-slate-50 font-bold h-11 rounded-xl transition-all flex items-center gap-3 px-3 mb-2",
+                isCollapsed ? "justify-center p-0" : "justify-start"
+              )}
+            >
+              <CalendarPlus className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span className="text-xs font-bold">Request Leave</span>}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Request Leave</DialogTitle>
+              <DialogDescription>Submit your leave request for management review.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Leave Type</Label>
+                <Select value={leaveType} onValueChange={setLeaveType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="VACATION">Vacation Leave</SelectItem>
+                    <SelectItem value="SICK">Sick Leave</SelectItem>
+                    <SelectItem value="EMERGENCY">Emergency Leave</SelectItem>
+                    <SelectItem value="PERSONAL">Personal/Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>End Date</Label>
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Reason</Label>
+                <textarea 
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Explain why you need leave..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <Button onClick={handleRequestLeave} disabled={isSubmitting} className="bg-primary text-white font-bold">
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Submit Request
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Button 
           variant="ghost"
           onClick={logout}

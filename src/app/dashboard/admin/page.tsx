@@ -229,6 +229,12 @@ export default function AdminPage() {
   }, [firestore, currentUser]);
   const { data: allProjects, isLoading: projectsLoading } = useCollection<any>(projectsLogQuery);
 
+  const leaveRequestsQuery = useMemoFirebase(() => {
+    if (!firestore || !currentUser) return null;
+    return query(collection(firestore, 'leave_requests'), orderBy('createdAt', 'desc'));
+  }, [firestore, currentUser]);
+  const { data: leaveRequests, isLoading: leavesLoading } = useCollection<any>(leaveRequestsQuery);
+
   const taxConfig = useMemo(() => {
     const defaultTaxConfig = {
       sssRate: 5, sssCeiling: 35000,
@@ -660,6 +666,7 @@ export default function AdminPage() {
         <TabsList className="bg-white border rounded-xl p-1">
           <TabsTrigger value="staff">Staff Directory</TabsTrigger>
           <TabsTrigger value="attendance">Biometric Logs</TabsTrigger>
+          <TabsTrigger value="leaves">Leave Control</TabsTrigger>
           <TabsTrigger value="projects">Project Intelligence</TabsTrigger>
           <TabsTrigger value="payroll">Payroll Node</TabsTrigger>
         </TabsList>
@@ -1109,6 +1116,94 @@ export default function AdminPage() {
                            </span>
                            <Switch checked={tx.is_paid} onCheckedChange={() => handleTogglePaid(tx.id, tx.is_paid)} />
                         </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="leaves" className="space-y-4">
+          <div className="bg-white border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+            <Table>
+              <TableHeader className="bg-slate-50/50">
+                <TableRow>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Personnel</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Type</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Period</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Reason</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Status</TableHead>
+                  <TableHead className="text-right font-black text-[10px] uppercase tracking-widest text-slate-500">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leavesLoading ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
+                ) : !leaveRequests || leaveRequests.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No leave requests found.</TableCell></TableRow>
+                ) : (
+                  leaveRequests.map((req: any) => (
+                    <TableRow key={req.id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-slate-900">{req.userName}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{req.userSystemId}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-[9px] font-black">{req.type}</Badge>
+                      </TableCell>
+                      <TableCell className="text-[10px] font-bold text-slate-600">
+                        {req.startDate} → {req.endDate}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate text-[10px] font-medium text-slate-500 italic">
+                        "{req.reason}"
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn(
+                          "text-[9px] font-black uppercase border-2",
+                          req.status === 'APPROVED' ? "bg-green-50 text-green-600 border-green-200" :
+                          req.status === 'DECLINED' ? "bg-red-50 text-red-600 border-red-200" : "bg-orange-50 text-orange-600 border-orange-200"
+                        )}>
+                          {req.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {req.status === 'PENDING' && (
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 text-[10px] font-black uppercase text-green-600 hover:bg-green-50"
+                              onClick={async () => {
+                                const reqRef = doc(firestore, 'leave_requests', req.id);
+                                await setDoc(reqRef, { status: 'APPROVED', updatedBy: currentUser.name, updatedAt: serverTimestamp() }, { merge: true });
+                                toast({ title: "Request Approved", description: `Leave for ${req.userName} is authorized.` });
+                              }}
+                            >
+                              Approve
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 text-[10px] font-black uppercase text-red-600 hover:bg-red-50"
+                              onClick={async () => {
+                                const reqRef = doc(firestore, 'leave_requests', req.id);
+                                await setDoc(reqRef, { status: 'DECLINED', updatedBy: currentUser.name, updatedAt: serverTimestamp() }, { merge: true });
+                                toast({ title: "Request Declined", description: "The leave request has been denied." });
+                              }}
+                            >
+                              Decline
+                            </Button>
+                          </div>
+                        )}
+                        {req.status !== 'PENDING' && (
+                          <span className="text-[9px] font-black text-slate-400 uppercase italic">
+                            Handled by {req.updatedBy || 'System'}
+                          </span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
