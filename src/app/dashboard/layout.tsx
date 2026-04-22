@@ -58,9 +58,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </div>
             </div>
-            <Link href="/dashboard/settings" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 hover:text-primary transition-colors">
-              <Settings className="w-5 h-5" />
-            </Link>
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-black uppercase text-slate-400">LVL {user.level || 1}</span>
+                  <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-1000" 
+                      style={{ width: `${Math.min(100, ((user.xp || 0) % 1000) / 10)}%` }} 
+                    />
+                  </div>
+                </div>
+                <span className="text-[7px] font-black text-primary uppercase tracking-tighter">{user.xp || 0} XP</span>
+              </div>
+              <Link href="/dashboard/settings" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-500 hover:text-primary transition-colors">
+                <Settings className="w-5 h-5" />
+              </Link>
+            </div>
           </header>
 
           <div className="w-full p-4 md:p-6 lg:p-10 pb-24 lg:pb-12">
