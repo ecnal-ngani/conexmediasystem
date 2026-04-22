@@ -873,12 +873,8 @@ export default function AdminPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className={cn(
-                          "text-xs font-bold px-2 py-1 rounded",
-                          log.status === 'Clocked In' ? "bg-green-50 text-green-700" :
-                          log.status === 'Clocked Out' ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-600"
-                        )}>
-                          {log.status === 'Clocked In' ? 'Login' : log.status === 'Clocked Out' ? 'Logout' : 'Verification'} - {log.method || 'System'}
+                        <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                          {log.status === 'Clocked Out' ? 'Logout' : 'Login'} - {log.method || 'Facial Recognition'}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">

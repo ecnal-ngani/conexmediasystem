@@ -183,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: userData.email || '',
           timestamp: serverTimestamp(),
           isVerified: true,
-          method: wfhStatus ? 'WFH Verification' : 'Office Terminal',
+          method: wfhStatus ? 'Biometric WFH' : 'Office Terminal',
           status: 'Clocked In',
           devicePlatform: navigator.userAgent
         };
