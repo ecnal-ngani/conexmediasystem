@@ -26,12 +26,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import { useCollection } from '@/firebase';
-import { useMemoFirebase } from '@/firebase/use-memo-firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { format, differenceInMinutes, startOfDay } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useFirestore } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
 export default function ProfilePage() {
