@@ -187,81 +187,87 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-700 pb-12">
-      <div className="flex items-center gap-2 px-1">
-        <h1 className="text-xl font-bold tracking-tight text-slate-900">{roleConfig.title}</h1>
-        <ChevronRight className="w-4 h-4 text-primary" />
-      </div>
-
-      <Card className="border shadow-sm rounded-none bg-orange-50/30 overflow-hidden">
-        <CardContent className="p-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-1">Welcome back, {user?.name || 'Authorized User'}</h2>
-              <p className="text-sm text-slate-500 font-medium">{roleConfig.subtitle}</p>
-            </div>
+      {/* 1. COMMAND HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-black tracking-tighter uppercase text-slate-900">{roleConfig.title}</h1>
+            <div className="h-1 w-8 bg-primary rounded-full" />
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operational Metrics</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {roleConfig.stats.map((stat, i) => (
-            <Card key={i} className="border shadow-none rounded-none bg-white group hover:border-primary/50 transition-colors">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className={cn("p-2.5 rounded-lg transition-transform group-hover:scale-110", stat.bg)}>
-                    <stat.icon className={cn("w-4 h-4", stat.color)} />
-                  </div>
-                  <div className="h-1.5 w-12 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={cn("h-full rounded-full", stat.bg.replace('bg-', 'bg-opacity-50 bg-'))} style={{ width: '70%' }} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                  <h3 className="text-3xl font-bold text-slate-900">{stat.value}</h3>
-                  <p className={cn("text-[10px] font-bold", stat.subColor)}>{stat.sub}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{roleConfig.subtitle}</p>
+        </div>
+        <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border shadow-sm">
+          <div className="flex flex-col items-end px-2">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">Tactical Level</span>
+            <span className="text-lg font-black text-primary leading-none">LVL {user.level || 1}</span>
+          </div>
+          <div className="h-10 w-px bg-slate-100" />
+          <div className="flex flex-col items-end px-2">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">Active Credits</span>
+            <span className="text-lg font-black text-slate-900 leading-none">{user.points || 0}</span>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        <div className="xl:col-span-3 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              {user.role === 'ADMIN' ? 'Company Operational Health' : 'Multi-Player Performance Matrix'}
-            </h3>
-            <Badge variant="outline" className="text-[9px] font-black uppercase bg-primary/5 text-primary border-primary/20">
-              {user.role === 'ADMIN' ? 'Live Command Feed' : 'Live Squad Comparison'}
-            </Badge>
-          </div>
-          
-          <Card className="border shadow-none rounded-none bg-white overflow-hidden">
+      {/* 2. TACTICAL METRICS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {roleConfig.stats.map((stat, i) => (
+          <Card key={i} className="border-2 shadow-none rounded-2xl bg-white group hover:border-primary transition-all duration-300">
             <CardContent className="p-6">
-              <div className="h-[450px] w-full mt-4 flex items-center justify-center">
+              <div className="flex items-center justify-between mb-4">
+                <div className={cn("p-2 rounded-xl transition-transform group-hover:rotate-6", stat.bg)}>
+                  <stat.icon className={cn("w-5 h-5", stat.color)} />
+                </div>
+                <Badge variant="outline" className="text-[8px] font-black opacity-0 group-hover:opacity-100 transition-opacity">LIVE FEED</Badge>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{stat.label}</p>
+                <div className="flex items-baseline gap-2">
+                  <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{stat.value}</h3>
+                  <span className={cn("text-[10px] font-bold", stat.subColor)}>{stat.sub}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* 3. PRIMARY INTELLIGENCE GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* CENTER: PERFORMANCE RADAR */}
+        <div className="lg:col-span-8 space-y-6">
+          <Card className="border-2 shadow-sm rounded-3xl bg-white overflow-hidden h-full">
+            <CardHeader className="border-b bg-slate-50/50 py-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" />
+                  Performance Matrix
+                </CardTitle>
+                <Badge variant="secondary" className="text-[9px] font-bold">ALPHA-v2</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="h-[500px] w-full flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="80%" data={performanceMatrix.slice(0, 5)}>
-                    <PolarGrid stroke="#f1f5f9" />
+                    <PolarGrid stroke="#e2e8f0" strokeDasharray="3 3" />
                     <PolarAngleAxis 
                       dataKey="subject" 
-                      tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }} 
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }} 
                     />
                     <PolarRadiusAxis 
                       angle={30} 
                       domain={[0, 100]} 
-                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      tick={false}
                       axisLine={false}
                     />
                     <Radar
                       name={performanceMatrix[5]?.labelA || "Subject"}
                       dataKey="A"
-                      stroke="#E11D48"
-                      strokeWidth={3}
-                      fill="#E11D48"
-                      fillOpacity={0.5}
+                      stroke="#EB3C47"
+                      strokeWidth={4}
+                      fill="#EB3C47"
+                      fillOpacity={0.4}
                     />
                     <Radar
                       name={performanceMatrix[5]?.labelB || "Average"}
@@ -269,17 +275,17 @@ export default function DashboardPage() {
                       stroke="#0f172a"
                       strokeWidth={2}
                       fill="#0f172a"
-                      fillOpacity={0.1}
+                      fillOpacity={0.05}
                       strokeDasharray="4 4"
                     />
                     <Tooltip 
-                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 800 }}
                     />
                     <Legend 
                       verticalAlign="bottom" 
                       align="center" 
-                      iconType="diamond"
-                      wrapperStyle={{ paddingTop: '30px', fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                      iconType="circle"
+                      wrapperStyle={{ paddingTop: '40px', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
@@ -288,109 +294,46 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card className="border shadow-none rounded-none bg-white overflow-hidden flex flex-col h-full">
-            <CardHeader className="bg-slate-50 border-b p-4">
+        {/* RIGHT: SQUAD INTEL */}
+        <div className="lg:col-span-4 space-y-8">
+          {/* SQUAD RANKING */}
+          <Card className="border-2 shadow-sm rounded-3xl bg-white overflow-hidden">
+            <CardHeader className="bg-primary/5 border-b p-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  Live Presence
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-orange-500" />
+                  Squad Ranking
                 </CardTitle>
-                <div className="text-[10px] font-black bg-white border px-2 py-0.5 rounded-full text-primary flex items-center gap-1.5 shadow-sm">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  {onlineCount} / {totalCount} ONLINE
-                </div>
+                <div className="p-1 bg-white rounded-lg shadow-sm border text-[8px] font-black text-primary">TOP 10</div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[400px]">
+              <ScrollArea className="h-[320px]">
                 <div className="divide-y divide-slate-50">
-                  {sLoading ? (
-                    <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
-                  ) : !staff || staff.length === 0 ? (
-                    <div className="p-10 text-center text-xs text-slate-400">No personnel found.</div>
+                  {!staff || staff.length === 0 ? (
+                    <div className="p-10 text-center text-xs text-slate-400">No data available.</div>
                   ) : (
-                    staff.map((emp: any) => (
-                      <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-all group border-l-2 border-transparent hover:border-primary">
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <Avatar className="w-10 h-10 rounded-xl border-2 border-white shadow-sm ring-1 ring-slate-100">
+                    staff
+                      .sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0))
+                      .slice(0, 10)
+                      .map((emp: any, index: number) => (
+                        <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-all group">
+                          <div className="flex items-center gap-3">
+                            <span className={cn(
+                              "text-xs font-black w-4 text-center",
+                              index === 0 ? "text-orange-500" : "text-slate-300"
+                            )}>
+                              {index + 1}
+                            </span>
+                            <Avatar className="w-9 h-9 rounded-xl border-2 border-white shadow-sm">
                               <AvatarImage src={emp.avatarUrl} />
                               <AvatarFallback className="bg-slate-100 text-slate-500 text-[10px] font-bold">
                                 {emp.name.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
-                            <div className={cn(
-                              "absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm",
-                              emp.status !== 'Offline' ? "bg-green-500 animate-pulse" : "bg-slate-300"
-                            )} />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-slate-900 group-hover:text-primary transition-colors">{emp.name}</span>
-                            <span className="text-[9px] uppercase font-black text-slate-400 tracking-tighter">{emp.role.replace('_', ' ')}</span>
-                          </div>
-                        </div>
-                        <div className="text-right flex flex-col items-end gap-1">
-                           <Badge variant="outline" className={cn(
-                             "text-[8px] font-black uppercase px-1.5 py-0",
-                             emp.status === 'Office' ? "text-green-600 bg-green-50 border-green-200" :
-                             emp.status === 'WFH' ? "text-orange-600 bg-orange-50 border-orange-200" : "text-slate-400 bg-slate-50 border-slate-200"
-                           )}>
-                             {emp.status}
-                           </Badge>
-                           <span className="text-[8px] font-bold text-slate-300 font-mono tracking-tighter">
-                             {emp.systemId}
-                           </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-          <Card className="border shadow-none rounded-none bg-white overflow-hidden flex flex-col h-full mt-6">
-            <CardHeader className="bg-slate-50 border-b p-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-orange-500" />
-                  Squad Ranking
-                </CardTitle>
-                <Badge variant="outline" className="text-[9px] font-black uppercase bg-orange-50 text-orange-600 border-orange-200">
-                  TOP PERFORMERS
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[300px]">
-                <div className="divide-y divide-slate-50">
-                  {sLoading ? (
-                    <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
-                  ) : !staff || staff.length === 0 ? (
-                    <div className="p-10 text-center text-xs text-slate-400">No data available.</div>
-                  ) : (
-                    staff
-                      .sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0))
-                      .slice(0, 10) // Show more in the scrollable leaderboard
-                      .map((emp: any, index: number) => (
-                        <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-all group">
-                          <div className="flex items-center gap-3">
-                            <span className={cn(
-                              "text-xs font-black w-5",
-                              index === 0 ? "text-orange-500" : index === 1 ? "text-slate-400" : index === 2 ? "text-amber-700" : "text-slate-300"
-                            )}>
-                              #{index + 1}
-                            </span>
-                            <Avatar className="w-8 h-8 rounded-lg border shadow-sm">
-                              <AvatarImage src={emp.avatarUrl} />
-                              <AvatarFallback className="bg-slate-100 text-slate-500 text-[9px] font-bold">
-                                {emp.name.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
                             <div className="flex flex-col">
-                              <span className="text-[11px] font-bold text-slate-900">{emp.name}</span>
-                              <span className="text-[8px] uppercase font-black text-slate-400 tracking-tight">LVL {emp.level || 1}</span>
+                              <span className="text-[11px] font-black text-slate-900 truncate max-w-[100px]">{emp.name}</span>
+                              <span className="text-[8px] uppercase font-black text-slate-400 tracking-tighter">LVL {emp.level || 1}</span>
                             </div>
                           </div>
                           <div className="text-right">
@@ -398,6 +341,59 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       ))
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* LIVE PRESENCE */}
+          <Card className="border-2 shadow-sm rounded-3xl bg-white overflow-hidden">
+            <CardHeader className="bg-slate-50 border-b p-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Presence
+                </CardTitle>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[9px] font-black text-slate-500">{onlineCount} LIVE</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[320px]">
+                <div className="divide-y divide-slate-50 px-2">
+                  {sLoading ? (
+                    <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
+                  ) : (
+                    staff.map((emp: any) => (
+                      <div key={emp.id} className="flex items-center justify-between p-3 group">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Avatar className="w-8 h-8 rounded-lg">
+                              <AvatarImage src={emp.avatarUrl} />
+                              <AvatarFallback className="text-[10px] font-bold">{emp.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className={cn(
+                              "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white",
+                              emp.status !== 'Offline' ? "bg-green-500" : "bg-slate-200"
+                            )} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-bold text-slate-900">{emp.name}</span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{emp.role.split('_')[0]}</span>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className={cn(
+                          "text-[7px] font-black px-1.5 py-0 h-4 border-0",
+                          emp.status === 'Office' ? "bg-green-50 text-green-600" :
+                          emp.status === 'WFH' ? "bg-orange-50 text-orange-600" : "bg-slate-50 text-slate-400"
+                        )}>
+                          {emp.status}
+                        </Badge>
+                      </div>
+                    ))
                   )}
                 </div>
               </ScrollArea>
