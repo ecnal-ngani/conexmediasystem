@@ -26,6 +26,13 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { useCollection } from '@/firebase';
+import { useMemoFirebase } from '@/firebase/use-memo-firebase';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { format, differenceInMinutes, startOfDay } from 'date-fns';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useFirestore } from '@/firebase';
+import { Loader2 } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -34,6 +41,7 @@ export default function ProfilePage() {
   const [editName, setEditName] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
   const [mounted, setMounted] = useState(false);
+  const firestore = useFirestore();
 
   useEffect(() => {
     setMounted(true);
@@ -58,6 +66,70 @@ export default function ProfilePage() {
   };
 
   const isIntern = user.role === 'INTERN';
+
+  // Fetch recent logs for this specific user
+  const historyQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'verifications'), 
+      where('userId', '==', user.id),
+      orderBy('timestamp', 'desc'), 
+      limit(50)
+    );
+  }, [firestore, user?.id]);
+  
+  const { data: verifications, isLoading: historyLoading } = useCollection<any>(historyQuery);
+
+  const attendanceData = useMemo(() => {
+    if (!verifications) return [];
+
+    const grouped: Record<string, any> = {};
+
+    verifications.forEach((log: any) => {
+      if (!log.timestamp?.toDate) return;
+      const date = log.timestamp.toDate();
+      const dateStr = format(date, 'yyyy-MM-dd');
+
+      if (!grouped[dateStr]) {
+        grouped[dateStr] = {
+          date: date,
+          dateLabel: format(date, 'MMM dd, yyyy'),
+          clockIn: null,
+          clockOut: null,
+          type: log.status?.includes('WFH') ? 'WFH' : 'Office',
+          logs: []
+        };
+      }
+      grouped[dateStr].logs.push(log);
+    });
+
+    return Object.values(grouped).map((day: any) => {
+      const dayLogs = day.logs.sort((a: any, b: any) => a.timestamp.toMillis() - b.timestamp.toMillis());
+      
+      // Clock In is the first 'Logged (Office/WFH)' record
+      const inLog = dayLogs.find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
+      // Clock Out is the latest 'Logged (Offline)' record
+      const outLog = [...dayLogs].reverse().find((l: any) => l.status === 'Logged (Offline)');
+
+      const clockInTime = inLog?.timestamp.toDate();
+      const clockOutTime = outLog?.timestamp.toDate();
+
+      let duration = '—';
+      if (clockInTime && clockOutTime) {
+        const diff = differenceInMinutes(clockOutTime, clockInTime);
+        const hours = Math.floor(diff / 60);
+        const mins = diff % 60;
+        duration = `${hours}h ${mins}m`;
+      }
+
+      return {
+        ...day,
+        clockIn: clockInTime ? format(clockInTime, 'hh:mm a') : '—',
+        clockOut: clockOutTime ? format(clockOutTime, 'hh:mm a') : '—',
+        duration
+      };
+    }).sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [verifications]);
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-700">
@@ -188,6 +260,73 @@ export default function ProfilePage() {
               </Card>
             </div>
           )}
+
+          {/* Recent Attendance Section */}
+          <Card className="border shadow-none rounded-[32px] bg-white overflow-hidden">
+            <CardHeader className="border-b bg-slate-50/50">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Clock className="w-5 h-5 text-primary" />
+                Recent Attendance
+              </CardTitle>
+              <CardDescription>Visual history of your session logs and rendered hours.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow>
+                    <TableHead className="font-bold text-slate-400 text-xs pl-8">Date</TableHead>
+                    <TableHead className="font-bold text-slate-400 text-xs">Clock In</TableHead>
+                    <TableHead className="font-bold text-slate-400 text-xs">Clock Out</TableHead>
+                    <TableHead className="font-bold text-slate-400 text-xs">Duration</TableHead>
+                    <TableHead className="font-bold text-slate-400 text-xs text-right pr-8">Type</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historyLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-200" />
+                      </TableCell>
+                    </TableRow>
+                  ) : attendanceData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-20 text-slate-400 font-medium italic">
+                        No recent attendance records detected.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    attendanceData.map((row: any, idx) => (
+                      <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                        <TableCell className="pl-8 py-5">
+                          <span className="font-bold text-slate-700">{row.dateLabel}</span>
+                        </TableCell>
+                        <TableCell className="py-5">
+                          <span className="font-medium text-slate-600">{row.clockIn}</span>
+                        </TableCell>
+                        <TableCell className="py-5">
+                          <span className="font-medium text-slate-600">{row.clockOut}</span>
+                        </TableCell>
+                        <TableCell className="py-5">
+                          <span className="font-black text-slate-900">{row.duration}</span>
+                        </TableCell>
+                        <TableCell className="text-right pr-8 py-5">
+                          <Badge 
+                            variant="outline" 
+                            className={cn(
+                              "font-black text-[10px] uppercase px-3 py-1 border-none",
+                              row.type === 'WFH' ? "bg-orange-50 text-orange-600" : "bg-green-50 text-green-600"
+                            )}
+                          >
+                            {row.type}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
           {isIntern && (
             <Card className="border shadow-none rounded-[32px] bg-white overflow-hidden">
