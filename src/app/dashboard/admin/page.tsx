@@ -225,13 +225,13 @@ export default function AdminPage() {
 
   const projectsLogQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
-    return query(collection(firestore, 'projects'), orderBy('updatedAt', 'desc'));
+    return query(collection(firestore, 'projects'));
   }, [firestore, currentUser]);
   const { data: allProjects, isLoading: projectsLoading } = useCollection<any>(projectsLogQuery);
 
   const leaveRequestsQuery = useMemoFirebase(() => {
     if (!firestore || !currentUser) return null;
-    return query(collection(firestore, 'leave_requests'), orderBy('createdAt', 'desc'));
+    return query(collection(firestore, 'leave_requests'));
   }, [firestore, currentUser]);
   const { data: leaveRequests, isLoading: leavesLoading } = useCollection<any>(leaveRequestsQuery);
 
@@ -667,7 +667,6 @@ export default function AdminPage() {
           <TabsTrigger value="staff">Staff Directory</TabsTrigger>
           <TabsTrigger value="attendance">Biometric Logs</TabsTrigger>
           <TabsTrigger value="leaves">Leave Control</TabsTrigger>
-          <TabsTrigger value="projects">Project Intelligence</TabsTrigger>
           <TabsTrigger value="payroll">Payroll Node</TabsTrigger>
         </TabsList>
 
@@ -1204,54 +1203,6 @@ export default function AdminPage() {
                             Handled by {req.updatedBy || 'System'}
                           </span>
                         )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="projects" className="space-y-4">
-          <div className="bg-white border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Project Code</TableHead>
-                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Brand</TableHead>
-                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Assigner</TableHead>
-                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Assignee (Artists)</TableHead>
-                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Status</TableHead>
-                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Last Action By</TableHead>
-                  <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {projectsLoading ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /></TableCell></TableRow>
-                ) : !allProjects || allProjects.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-10 text-slate-400 font-bold uppercase text-[10px]">No projects found in the registry.</TableCell></TableRow>
-                ) : (
-                  allProjects.map((project: any) => (
-                    <TableRow key={project.id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="font-mono font-black text-[11px] text-primary">{project.fileCode}</TableCell>
-                      <TableCell className="font-black text-[11px] text-slate-700">{project.brand}</TableCell>
-                      <TableCell className="text-slate-500 font-bold text-[10px] uppercase">{project.assignedByName || 'System'}</TableCell>
-                      <TableCell className="font-black text-[11px] text-slate-900">{project.artist || 'Unassigned'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn(
-                          "text-[9px] font-black uppercase px-2 py-0.5 border-2",
-                          project.status === 'Approved' ? "bg-green-50 text-green-600 border-green-200" :
-                          project.status === 'In Production' ? "bg-blue-50 text-blue-600 border-blue-200" :
-                          project.status === 'For QA' ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-slate-50 text-slate-400 border-slate-200"
-                        )}>
-                          {project.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-slate-400 font-black text-[9px] uppercase italic">{project.lastUpdatedBy || '—'}</TableCell>
-                      <TableCell className="text-[10px] font-bold text-slate-500 font-mono">
-                        {project.updatedAt?.toDate ? format(project.updatedAt.toDate(), 'MMM dd, HH:mm') : '—'}
                       </TableCell>
                     </TableRow>
                   ))
