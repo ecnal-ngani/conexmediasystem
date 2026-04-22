@@ -51,6 +51,10 @@ service cloud.firestore {
     match /payroll_transactions/{id} {
       allow read, write: if isAuthenticated();
     }
+    
+    match /leave_requests/{id} {
+      allow read, write: if isAuthenticated();
+    }
 
   }
 }
