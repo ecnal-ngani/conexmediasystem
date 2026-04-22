@@ -43,6 +43,8 @@ import {
   Printer,
   FileText,
   User,
+  Activity,
+  Trophy,
   Plus,
   Calculator
 } from 'lucide-react';
@@ -1360,7 +1362,7 @@ export default function AdminPage() {
                   {projectsLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
                   ) : (
-                    allProjects?.filter((p: any) => p.artistIds?.includes(selectedEmployeeProfile.id) || p.assignedById === selectedEmployeeProfile.id)
+                    allProjects?.filter((p: any) => p.artistIds?.includes(selectedEmployeeProfile?.id) || p.assignedById === selectedEmployeeProfile?.id)
                       .slice(0, 5)
                       .map((p: any) => (
                         <div key={p.id} className="bg-white p-3 border rounded-xl flex items-center justify-between gap-4">
@@ -1371,13 +1373,13 @@ export default function AdminPage() {
                           <div className="flex flex-col items-end">
                             <Badge className="text-[8px] font-black h-4 px-1.5">{p.status}</Badge>
                             <span className="text-[9px] text-slate-400 mt-1 uppercase font-bold">
-                              {p.assignedById === selectedEmployeeProfile.id ? 'Assigner' : 'Assignee'}
+                              {p.assignedById === selectedEmployeeProfile?.id ? 'Assigner' : 'Assignee'}
                             </span>
                           </div>
                         </div>
                       ))
                   )}
-                  {allProjects?.filter((p: any) => p.artistIds?.includes(selectedEmployeeProfile.id) || p.assignedById === selectedEmployeeProfile.id).length === 0 && (
+                  {allProjects?.filter((p: any) => p.artistIds?.includes(selectedEmployeeProfile?.id) || p.assignedById === selectedEmployeeProfile?.id).length === 0 && (
                     <p className="text-xs text-slate-400 italic">No project history found.</p>
                   )}
                 </div>
