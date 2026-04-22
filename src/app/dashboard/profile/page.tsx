@@ -49,22 +49,6 @@ export default function ProfilePage() {
     }
   }, [user]);
 
-  if (!mounted || !user) return null;
-
-  const handleSave = () => {
-    updateUser({
-      name: editName,
-      avatarUrl: editAvatar
-    });
-    setIsEditing(false);
-    toast({
-      title: "Identity Synchronized",
-      description: "Your staff credentials have been updated successfully."
-    });
-  };
-
-  const isIntern = user.role === 'INTERN';
-
   // Fetch recent logs for this specific user
   const historyQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -128,6 +112,22 @@ export default function ProfilePage() {
       };
     }).sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [verifications]);
+
+  if (!mounted || !user) return null;
+
+  const handleSave = () => {
+    updateUser({
+      name: editName,
+      avatarUrl: editAvatar
+    });
+    setIsEditing(false);
+    toast({
+      title: "Identity Synchronized",
+      description: "Your staff credentials have been updated successfully."
+    });
+  };
+
+  const isIntern = user.role === 'INTERN';
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-700">
