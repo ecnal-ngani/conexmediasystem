@@ -86,6 +86,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [firebaseAuth]);
 
+  // SESSION HEARTBEAT SYSTEM
+  // Periodically updates 'lastSeen' to handle mobile browser backgrounding/restarts
+  useEffect(() => {
+    if (!user || !firestore || !isVerified) return;
+
+    const pulseHeartbeat = async () => {
+      try {
+        const userRef = doc(firestore, 'users', user.id);
+        await setDoc(userRef, { 
+          lastSeen: serverTimestamp(),
+          // Automatically recover status if it was accidentally set to Offline
+          status: isWfh ? 'WFH' : 'Office',
+          updatedAt: serverTimestamp() 
+        }, { merge: true });
+      } catch (e) {
+        console.warn("Heartbeat pulse failed", e);
+      }
+    };
+
+    // Initial pulse on mount/verified
+    pulseHeartbeat();
+
+    // Pulse every 5 minutes (300,000 ms)
+    const heartbeatInterval = setInterval(pulseHeartbeat, 5 * 60 * 1000);
+
+    // Visibility change listener to pulse immediately when coming back from background
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        pulseHeartbeat();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user?.id, firestore, isVerified, isWfh]);
+
   /**
    * Validates credentials and automatically synchronizes operational status.
    */

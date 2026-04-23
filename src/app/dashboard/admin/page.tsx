@@ -763,14 +763,40 @@ export default function AdminPage() {
                         {emp.createdAt?.toDate ? format(emp.createdAt.toDate(), 'MMM dd, yyyy') : 'Unknown'}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className={cn(
-                            "w-2 h-2 rounded-full",
-                            emp.status === 'Office' ? "bg-green-500" : 
-                            emp.status === 'WFH' ? "bg-orange-500" : "bg-slate-300"
-                          )} />
-                          <Badge variant="outline" className="text-[9px] font-bold uppercase">{emp.status}</Badge>
-                        </div>
+                        {(() => {
+                          const isLive = emp.lastSeen?.toDate && (emp.lastSeen.toDate() > new Date(Date.now() - 10 * 60 * 1000));
+                          const isOnline = emp.status === 'Office' || emp.status === 'WFH';
+                          
+                          return (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <div className={cn(
+                                  "w-2 h-2 rounded-full",
+                                  !isOnline ? "bg-slate-300" :
+                                  isLive ? (emp.status === 'Office' ? "bg-green-500 animate-pulse" : "bg-orange-500 animate-pulse") :
+                                  "bg-slate-400"
+                                )} />
+                                <Badge variant="outline" className={cn(
+                                  "text-[9px] font-bold uppercase",
+                                  !isOnline ? "text-slate-400 border-slate-200" :
+                                  isLive ? (emp.status === 'Office' ? "text-green-600 border-green-200" : "text-orange-600 border-orange-200") :
+                                  "text-slate-500 border-slate-200 bg-slate-50"
+                                )}>
+                                  {emp.status}
+                                  {isOnline && !isLive && " (Disc.)"}
+                                </Badge>
+                              </div>
+                              {isOnline && isLive && (
+                                <span className="text-[8px] font-black text-primary uppercase tracking-tighter ml-4">● Live Now</span>
+                              )}
+                              {!isLive && emp.lastSeen?.toDate && (
+                                <span className="text-[8px] text-slate-400 font-medium ml-4 italic">
+                                  Seen {format(emp.lastSeen.toDate(), 'HH:mm')}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
