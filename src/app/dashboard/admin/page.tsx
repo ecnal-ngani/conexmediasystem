@@ -583,16 +583,16 @@ export default function AdminPage() {
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Staff Management</h1>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Staff Management</h1>
           {staffLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-300" />}
         </div>
         
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <Dialog open={isEnrollModalOpen} onOpenChange={setIsEnrollModalOpen}>
             <DialogTrigger asChild>
-              <Button className="flex-1 md:flex-none font-bold bg-primary text-white">
+              <Button className="w-full sm:w-auto font-bold bg-primary text-white">
                 <UserPlus className="w-4 h-4 mr-2" />
                 Enroll New Staff
               </Button>
@@ -664,13 +664,15 @@ export default function AdminPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-white border rounded-xl p-1">
-          <TabsTrigger value="staff">Staff Directory</TabsTrigger>
-          <TabsTrigger value="attendance">Biometric Logs</TabsTrigger>
-          <TabsTrigger value="leaves">Leave Control</TabsTrigger>
-          <TabsTrigger value="projects">Project Intelligence</TabsTrigger>
-          <TabsTrigger value="payroll">Payroll Node</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+          <TabsList className="bg-white border rounded-xl p-1 flex w-fit sm:w-full min-w-max sm:min-w-0">
+            <TabsTrigger value="staff" className="flex-1">Staff Directory</TabsTrigger>
+            <TabsTrigger value="attendance" className="flex-1">Biometric Logs</TabsTrigger>
+            <TabsTrigger value="leaves" className="flex-1">Leave Control</TabsTrigger>
+            <TabsTrigger value="projects" className="flex-1">Project Intelligence</TabsTrigger>
+            <TabsTrigger value="payroll" className="flex-1">Payroll Node</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="staff" className="space-y-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -685,7 +687,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
+          <div className="border rounded-xl bg-white overflow-hidden shadow-sm overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50">
                 <TableRow>
@@ -843,7 +845,7 @@ export default function AdminPage() {
               </div>
            </div>
 
-           <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
+           <div className="border rounded-xl bg-white overflow-hidden shadow-sm overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50">
                 <TableRow>
@@ -1048,7 +1050,7 @@ export default function AdminPage() {
              </Button>
           </div>
 
-          <div className="border rounded-xl bg-white overflow-hidden shadow-sm">
+          <div className="border rounded-xl bg-white overflow-hidden shadow-sm overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50">
                 <TableRow>
@@ -1129,7 +1131,7 @@ export default function AdminPage() {
         </TabsContent>
 
         <TabsContent value="leaves" className="space-y-4">
-          <div className="bg-white border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-white border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
@@ -1217,7 +1219,7 @@ export default function AdminPage() {
         </TabsContent>
  
         <TabsContent value="projects" className="space-y-4">
-          <div className="bg-white border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-white border-2 border-slate-100 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
