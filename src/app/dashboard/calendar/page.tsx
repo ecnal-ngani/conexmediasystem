@@ -185,16 +185,16 @@ export default function CalendarPage() {
     const activeTasks = filteredTasks?.filter(t => t.status !== 'completed') || [];
     const activeScheds = filteredSchedules || [];
 
-    const urgent = (activeScheds.filter(s => s.priority === 'RUSH' || s.priority === 'URGENT').length || 0) + 
+    const rush = (activeScheds.filter(s => s.priority === 'RUSH' || s.priority === 'URGENT').length || 0) + 
                    (activeTasks.filter(t => t.priority === 'RUSH' || t.priority === 'URGENT').length) + 
-                   (activeProjects.filter(p => p.priority === 'RUSH').length);
+                   (activeProjects.filter(p => p.priority === 'RUSH' || p.priority === 'URGENT').length || 0);
     const high = (activeScheds.filter(s => s.priority === 'HIGH').length || 0) + 
                  (activeTasks.filter(t => t.priority === 'HIGH').length);
     const normal = (activeScheds.filter(s => s.priority === 'NORMAL').length || 0) + 
                    (activeTasks.filter(t => t.priority === 'NORMAL').length) +
                    (activeProjects.filter(p => p.priority === 'REGULAR').length);
     
-    return { urgent, high, normal, total: activeScheds.length + activeProjects.length + activeTasks.length };
+    return { rush, high, normal, total: activeScheds.length + activeProjects.length + activeTasks.length };
   }, [schedules, projects, tasks]);
 
   const handleCreateEvent = () => {
@@ -394,7 +394,7 @@ export default function CalendarPage() {
               </button>
             ))}
             {dayTasks.sort((a,b) => (a.status === 'completed' ? 1 : 0) - (b.status === 'completed' ? 1 : 0)).map((t, idx) => (
-              <button key={`t-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...t, source: 'task'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", t.status === 'completed' ? 'bg-green-600' : ((t.priority === 'RUSH' || t.priority === 'URGENT') ? 'bg-red-600' : 'bg-slate-700'))}>TASK: {t.title}</button>
+              <button key={`t-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...t, source: 'task'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", t.status === 'completed' ? 'bg-green-600' : ((t.priority === 'RUSH' || t.priority === 'URGENT') ? 'bg-red-600' : 'bg-slate-700'))}>{t.title}</button>
             ))}
           </div>
 
@@ -672,7 +672,7 @@ export default function CalendarPage() {
           <CardHeader className="border-b bg-slate-50/30"><CardTitle className="text-base font-bold text-slate-800">Command-Wide Matrix</CardTitle></CardHeader>
           <CardContent className="p-4 space-y-6">
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-red-50 p-2 rounded-lg text-center"><p className="text-xl font-bold text-red-600">{matrixData.urgent}</p><p className="text-[9px] font-medium text-red-400 uppercase">Urgent</p></div>
+              <div className="bg-red-50 p-2 rounded-lg text-center"><p className="text-xl font-bold text-red-600">{matrixData.rush}</p><p className="text-[9px] font-medium text-red-400 uppercase">Rush</p></div>
               <div className="bg-orange-50 p-2 rounded-lg text-center"><p className="text-xl font-bold text-orange-600">{matrixData.high}</p><p className="text-[9px] font-medium text-orange-400 uppercase">High</p></div>
               <div className="bg-blue-50 p-2 rounded-lg text-center"><p className="text-xl font-bold text-blue-600">{matrixData.normal}</p><p className="text-[9px] font-medium text-blue-400 uppercase">Normal</p></div>
             </div>
@@ -682,7 +682,7 @@ export default function CalendarPage() {
                   <div key={task.id} onClick={() => setSelectedEvent({...task, source: 'task'})} className={cn("p-4 border rounded-xl shadow-sm transition-all cursor-pointer group", task.status === 'completed' ? "bg-green-50 border-green-200" : "bg-white border-slate-100 hover:border-primary/20")}>
                     <div className="flex justify-between mb-2">
                       <h4 className={cn("text-xs font-bold truncate max-w-[70%] transition-colors", task.status === 'completed' ? "text-green-800" : "text-slate-800 group-hover:text-primary")}>{task.title}</h4>
-                      <Badge variant="outline" className={cn("text-[8px]", task.status === 'completed' ? "bg-green-600 text-white border-none" : ((task.priority === 'RUSH' || task.priority === 'URGENT') ? "text-red-600" : "text-blue-600"))}>{task.status === 'completed' ? 'DONE' : task.priority}</Badge>
+                      <Badge variant="outline" className={cn("text-[8px]", task.status === 'completed' ? "bg-green-600 text-white border-none" : ((task.priority === 'RUSH' || task.priority === 'URGENT') ? "bg-red-600 text-white border-none" : task.priority === 'HIGH' ? "bg-orange-500 text-white border-none" : "bg-blue-600 text-white border-none"))}>{task.status === 'completed' ? 'DONE' : (task.priority === 'URGENT' ? 'RUSH' : task.priority)}</Badge>
                     </div>
                     <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span className={task.status === 'completed' ? "text-green-600 font-bold" : ""}>{task.status === 'completed' ? '✓ SYNCHRONIZED' : 'TASK'}</span><span>{task.dueDate}</span></div>
                   </div>
@@ -711,7 +711,7 @@ export default function CalendarPage() {
                         p.priority === 'HIGH' ? "bg-orange-500 text-white" :
                         "bg-blue-600 text-white"
                       )}>
-                        {p.priority === 'RUSH' || p.priority === 'URGENT' ? 'RUSH' : p.priority === 'HIGH' ? 'HIGH' : 'NORMAL'}
+                        {p.priority === 'RUSH' || p.priority === 'URGENT' ? 'RUSH' : p.priority === 'HIGH' ? 'HIGH' : (p.priority || 'NORMAL')}
                       </Badge>
                     </div>
                     <div className="flex justify-between mt-4 text-[10px] text-slate-400">
@@ -745,7 +745,7 @@ export default function CalendarPage() {
                 </div>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-6 pt-4 border-t">
-                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Priority</p><Badge className={cn("text-[10px] font-black px-2 py-1 rounded", selectedEvent.status === 'completed' ? "bg-green-50 text-green-600 border-green-100" : (selectedEvent.priority === 'RUSH' || selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" : "bg-blue-50 text-blue-500 border-blue-100"))} variant="outline">{selectedEvent.status === 'completed' ? 'DONE' : (selectedEvent.priority || 'NORMAL')}</Badge></div>
+                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Priority</p><Badge className={cn("text-[10px] font-black px-2 py-1 rounded", selectedEvent.status === 'completed' ? "bg-green-50 text-green-600 border-green-100" : (selectedEvent.priority === 'RUSH' || selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" : "bg-blue-50 text-blue-500 border-blue-100"))} variant="outline">{selectedEvent.status === 'completed' ? 'DONE' : (selectedEvent.priority === 'URGENT' ? 'RUSH' : (selectedEvent.priority || 'NORMAL'))}</Badge></div>
                 <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Date</p>{user?.role === 'ADMIN' ? (<Input type="date" value={editingDate} onChange={(e) => setEditingDate(e.target.value)} className="h-8 text-xs font-bold border-slate-200 mt-1" />) : (<p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p>)}</div>
                 {selectedEvent.location && (<div className="space-y-1 col-span-2"><p className="text-[10px] uppercase font-black text-slate-400">Location</p><p className="text-xs font-bold text-slate-700">{selectedEvent.location}</p></div>)}
                 <div className="space-y-1 col-span-2">

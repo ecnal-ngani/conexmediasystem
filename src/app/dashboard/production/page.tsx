@@ -766,7 +766,7 @@ export default function ProductionPage() {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge variant="outline" className={cn("text-[8px] font-bold", item.priority === 'RUSH' ? 'text-red-600 bg-red-50' : 'text-slate-500')}>{item.priority}</Badge>
+                    <Badge variant="outline" className={cn("text-[8px] font-bold", (item.priority === 'RUSH' || item.priority === 'URGENT') ? 'text-red-600 bg-red-50' : 'text-slate-500')}>{item.priority === 'URGENT' ? 'RUSH' : item.priority}</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-[10px] font-medium text-slate-700">{item.artist}</TableCell>
