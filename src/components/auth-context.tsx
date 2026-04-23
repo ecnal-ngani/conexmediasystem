@@ -19,7 +19,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/mock-data';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
-import { collection, query, where, getDocs, limit, doc, setDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, setDoc, serverTimestamp, addDoc, onSnapshot } from 'firebase/firestore';
+import { checkAndAwardBadges } from '@/lib/badges';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -228,6 +229,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         addDoc(verificationsRef, checkInData).catch(console.error);
 
+        // Check for Early Bird badge
+        const newBadges = await checkAndAwardBadges({ id: userId, ...userData } as User, firestore, 'clock-in');
+        if (newBadges) {
+          userData.badges = newBadges;
+        }
+
         if (wfhStatus) {
           router.push('/verify');
         } else {
@@ -286,6 +293,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           status: 'Logged (Offline)',
           devicePlatform: navigator.userAgent
         });
+
+        // Check for Night Owl badge
+        await checkAndAwardBadges(user, firestore, 'clock-out');
 
         // 2. Sync Offline status
         await setDoc(userRef, { 

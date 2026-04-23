@@ -31,6 +31,7 @@ import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { format, differenceInMinutes, startOfDay } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2 } from 'lucide-react';
+import { ALL_BADGES } from '@/lib/badges';
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -363,9 +364,9 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Tactical Metrics (Intern Only) */}
-        {isIntern && (
-          <div className="space-y-6">
+        {/* Tactical Metrics & Badges */}
+        <div className="space-y-6">
+          {isIntern && (
             <Card className="border shadow-none rounded-[32px] bg-slate-900 text-white overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center justify-between">
@@ -389,20 +390,59 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="border shadow-none rounded-[32px] bg-white text-center p-6">
-                <Star className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-                <p className="text-[10px] font-black uppercase text-slate-400">Tactical Points</p>
-                <p className="text-2xl font-black text-slate-900">{user.points || 0}</p>
-              </Card>
-              <Card className="border shadow-none rounded-[32px] bg-white text-center p-6">
-                <Trophy className="w-6 h-6 text-primary mx-auto mb-2" />
-                <p className="text-[10px] font-black uppercase text-slate-400">Merit Badges</p>
-                <p className="text-2xl font-black text-slate-900">{user.badges?.length || 0}</p>
-              </Card>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="border shadow-none rounded-[32px] bg-white text-center p-6">
+              <Star className="w-6 h-6 text-orange-500 mx-auto mb-2" />
+              <p className="text-[10px] font-black uppercase text-slate-400">Tactical Points</p>
+              <p className="text-2xl font-black text-slate-900">{user.points || 0}</p>
+            </Card>
+            <Card className="border shadow-none rounded-[32px] bg-white text-center p-6">
+              <Trophy className="w-6 h-6 text-primary mx-auto mb-2" />
+              <p className="text-[10px] font-black uppercase text-slate-400">Merit Badges</p>
+              <p className="text-2xl font-black text-slate-900">{user.badges?.length || 0}</p>
+            </Card>
+          </div>
 
+          {/* Badge Collection Gallery */}
+          <Card className="border shadow-none rounded-[32px] bg-white overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b">
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Tactical Collection
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-3 gap-4">
+                {ALL_BADGES.map((badge) => {
+                  const hasBadge = user.badges?.includes(badge.id);
+                  return (
+                    <div key={badge.id} className="group relative flex flex-col items-center">
+                      <div className={cn(
+                        "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500",
+                        hasBadge ? "bg-slate-50 shadow-sm" : "bg-slate-50/50 grayscale opacity-40 scale-90 border-2 border-dashed border-slate-100"
+                      )}>
+                        <img 
+                          src={badge.imageUrl} 
+                          alt={badge.name} 
+                          className={cn(
+                            "w-12 h-12 object-contain",
+                            !hasBadge && "opacity-20"
+                          )} 
+                        />
+                      </div>
+                      <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-32 bg-slate-900 text-white p-2 rounded-xl text-[8px] font-bold opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none text-center shadow-xl">
+                        <p className="text-primary uppercase mb-1">{badge.name}</p>
+                        <p className="text-slate-400 leading-tight">{badge.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {isIntern && (
             <Card className="border shadow-none rounded-[32px] bg-white p-6">
               <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-primary" />
@@ -416,8 +456,8 @@ export default function ProfilePage() {
                 <Progress value={47} className="h-1.5" />
               </div>
             </Card>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
