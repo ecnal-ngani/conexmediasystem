@@ -98,7 +98,7 @@ export default function ProductionPage() {
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [contentIdea, setContentIdea] = useState('');
   const [status, setStatus] = useState('In Production');
-  const [priority, setPriority] = useState('REGULAR');
+  const [priority, setPriority] = useState('NORMAL');
   const [artist, setArtist] = useState('');
   const [artistId, setArtistId] = useState('');
   const [selectedArtists, setSelectedArtists] = useState<{id: string, name: string}[]>([]);
@@ -438,8 +438,9 @@ export default function ProductionPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="REGULAR">REGULAR</SelectItem>
               <SelectItem value="RUSH">RUSH</SelectItem>
+              <SelectItem value="HIGH">HIGH</SelectItem>
+              <SelectItem value="NORMAL">NORMAL</SelectItem>
             </SelectContent>
           </Select>
 
@@ -626,7 +627,7 @@ export default function ProductionPage() {
                               <SelectContent>
                                 <SelectItem value="RUSH">RUSH</SelectItem>
                                 <SelectItem value="HIGH">HIGH</SelectItem>
-                                <SelectItem value="REGULAR">REGULAR</SelectItem>
+                                <SelectItem value="NORMAL">NORMAL</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -760,9 +761,9 @@ export default function ProductionPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="REGULAR">REGULAR</SelectItem>
-                          <SelectItem value="HIGH">HIGH</SelectItem>
                           <SelectItem value="RUSH">RUSH</SelectItem>
+                          <SelectItem value="HIGH">HIGH</SelectItem>
+                          <SelectItem value="NORMAL">NORMAL</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (

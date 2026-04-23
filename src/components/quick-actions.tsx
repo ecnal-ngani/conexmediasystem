@@ -180,7 +180,7 @@ export function QuickActions() {
   const [projectBrandId, setProjectBrandId] = useState('');
   const [contentIdea, setContentIdea] = useState('');
   const [projectStatus, setProjectStatus] = useState('Pending');
-  const [projectPriority, setProjectPriority] = useState('REGULAR');
+  const [projectPriority, setProjectPriority] = useState('NORMAL');
   const [artist, setArtist] = useState('');
   const [artistId, setArtistId] = useState('');
   const [projectType, setProjectType] = useState('Video');
@@ -469,7 +469,7 @@ export function QuickActions() {
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Status</Label><Select value={projectStatus} onValueChange={setProjectStatus}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="In Production">In Production</SelectItem><SelectItem value="For QA">For QA</SelectItem><SelectItem value="Approved">Approved</SelectItem><SelectItem value="Client Revision">Client Revision</SelectItem></SelectContent></Select></div>
-                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority</Label><Select value={projectPriority} onValueChange={setProjectPriority}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="REGULAR">REGULAR</SelectItem><SelectItem value="RUSH">RUSH</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900">Priority</Label><Select value={projectPriority} onValueChange={setProjectPriority}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="RUSH">RUSH</SelectItem><SelectItem value="HIGH">HIGH</SelectItem><SelectItem value="NORMAL">NORMAL</SelectItem></SelectContent></Select></div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
