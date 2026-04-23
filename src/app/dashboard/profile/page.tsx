@@ -406,14 +406,14 @@ export default function ProfilePage() {
           </div>
 
           {/* Badge Collection Gallery */}
-          <Card className="border shadow-none rounded-[32px] bg-white overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b">
+          <Card className="border shadow-none rounded-[32px] bg-white">
+            <CardHeader className="bg-slate-50/50 border-b rounded-t-[32px]">
               <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 Tactical Collection
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-y-8 gap-x-4">
                 {ALL_BADGES.map((badge) => {
                   const hasBadge = user.badges?.includes(badge.id);
                   return (
@@ -431,9 +431,21 @@ export default function ProfilePage() {
                           )} 
                         />
                       </div>
-                      <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-32 bg-slate-900 text-white p-2 rounded-xl text-[8px] font-bold opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none text-center shadow-xl">
+                      
+                      {/* Badge Name Label (Always Visible) */}
+                      <span className={cn(
+                        "mt-2 text-[8px] font-black uppercase tracking-tighter text-center leading-none",
+                        hasBadge ? "text-slate-900" : "text-slate-400"
+                      )}>
+                        {badge.name}
+                      </span>
+
+                      {/* Tactical Description Tooltip (Pop-up) */}
+                      <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-32 bg-slate-900 text-white p-2 rounded-xl text-[8px] font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none text-center shadow-2xl border border-slate-800 translate-y-2 group-hover:translate-y-0">
                         <p className="text-primary uppercase mb-1">{badge.name}</p>
-                        <p className="text-slate-400 leading-tight">{badge.description}</p>
+                        <p className="text-slate-400 leading-tight font-medium">{badge.description}</p>
+                        {/* Tooltip Arrow */}
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45 border-b border-r border-slate-800" />
                       </div>
                     </div>
                   );
