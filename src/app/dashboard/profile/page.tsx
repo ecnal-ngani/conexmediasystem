@@ -420,14 +420,14 @@ export default function ProfilePage() {
                     <div key={badge.id} className="group relative flex flex-col items-center">
                       <div className={cn(
                         "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500",
-                        hasBadge ? "bg-slate-50 shadow-sm" : "bg-slate-50/50 grayscale opacity-40 scale-90 border-2 border-dashed border-slate-100"
+                        hasBadge ? "bg-slate-50 shadow-sm" : "bg-slate-50/30 grayscale-[80%] opacity-60 scale-90 border-2 border-dashed border-slate-200"
                       )}>
                         <img 
                           src={badge.imageUrl} 
                           alt={badge.name} 
                           className={cn(
                             "w-12 h-12 object-contain",
-                            !hasBadge && "opacity-20"
+                            !hasBadge && "opacity-40"
                           )} 
                         />
                       </div>

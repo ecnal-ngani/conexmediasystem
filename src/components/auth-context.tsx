@@ -110,7 +110,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     pulseHeartbeat();
 
     // Pulse every 5 minutes (300,000 ms)
-    const heartbeatInterval = setInterval(pulseHeartbeat, 5 * 60 * 1000);
+    const heartbeatInterval = setInterval(async () => {
+      await pulseHeartbeat();
+      // Periodically check for badges too (e.g., if they stay logged in past 8 PM or start early)
+      const newBadges = await checkAndAwardBadges(user, firestore, isWfh ? 'clock-in' : 'clock-in'); 
+      if (newBadges && newBadges.length > (user.badges?.length || 0)) {
+        setUser({ ...user, badges: newBadges });
+      }
+    }, 5 * 60 * 1000);
 
     // Visibility change listener to pulse immediately when coming back from background
     const handleVisibilityChange = () => {
