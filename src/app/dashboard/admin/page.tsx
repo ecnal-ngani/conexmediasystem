@@ -1184,7 +1184,10 @@ export default function AdminPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="text-[9px] font-black">{req.type}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-[9px] font-black">{req.type}</Badge>
+                          <Badge variant="outline" className="text-[9px] font-black border-primary/30 text-primary">{req.dutyType || 'OFFICE'}</Badge>
+                        </div>
                       </TableCell>
                       <TableCell className="text-[10px] font-bold text-slate-600">
                         {req.startDate} → {req.endDate}

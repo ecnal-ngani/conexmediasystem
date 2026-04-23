@@ -21,7 +21,8 @@ import {
   Zap,
   Star,
   Building2,
-  Clock
+  Clock,
+  Wifi
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -61,6 +62,12 @@ export default function ProfilePage() {
   }, [firestore, user?.id]);
   
   const { data: allVerifications, isLoading: historyLoading } = useCollection<any>(historyQuery);
+  
+  const leaveQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'leave_requests'), where('userId', '==', user.id));
+  }, [firestore, user?.id]);
+  const { data: userLeaves } = useCollection<any>(leaveQuery);
 
   const attendanceData = useMemo(() => {
     if (!allVerifications) return [];
@@ -115,6 +122,18 @@ export default function ProfilePage() {
       };
     }).sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [allVerifications]);
+
+  const leaveBalance = useMemo(() => {
+    if (!userLeaves) return { office: 0, wfh: 0 };
+    return userLeaves.reduce((acc: any, curr: any) => {
+      if (curr.status !== 'DECLINED') {
+        const d = curr.duration || 0;
+        if (curr.dutyType === 'WFH') acc.wfh += d;
+        else acc.office += d;
+      }
+      return acc;
+    }, { office: 0, wfh: 0 });
+  }, [userLeaves]);
 
   if (!mounted || !user) return null;
 
@@ -453,6 +472,37 @@ export default function ProfilePage() {
               </div>
             </CardContent>
           </Card>
+
+          {isIntern && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="border shadow-none rounded-[32px] bg-white p-6">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-primary" />
+                  Office Leave Balance
+                </CardTitle>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600">Days Used</span>
+                    <span className="text-xs font-black text-slate-900">{leaveBalance.office} / 8</span>
+                  </div>
+                  <Progress value={(leaveBalance.office / 8) * 100} className="h-1.5" />
+                </div>
+              </Card>
+              <Card className="border shadow-none rounded-[32px] bg-white p-6">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                  <Wifi className="w-4 h-4 text-orange-500" />
+                  WFH Leave Balance
+                </CardTitle>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600">Days Used</span>
+                    <span className="text-xs font-black text-slate-900">{leaveBalance.wfh} / 5</span>
+                  </div>
+                  <Progress value={(leaveBalance.wfh / 5) * 100} className="h-1.5" />
+                </div>
+              </Card>
+            </div>
+          )}
 
           {isIntern && (
             <Card className="border shadow-none rounded-[32px] bg-white p-6">

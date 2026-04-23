@@ -85,6 +85,7 @@ export function DashboardSidebar() {
   // Leave Request State
   const [isLeaveModalOpen, setIsLeaveModalOpen] = React.useState(false);
   const [leaveType, setLeaveType] = React.useState('VACATION');
+  const [dutyType, setDutyType] = React.useState('OFFICE'); // OFFICE or WFH
   const [startDate, setStartDate] = React.useState('');
   const [endDate, setEndDate] = React.useState('');
   const [reason, setReason] = React.useState('');
@@ -124,6 +125,41 @@ export function DashboardSidebar() {
       return;
     }
 
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (end < start) {
+      toast({ variant: "destructive", title: "Invalid Dates", description: "End date cannot be before start date." });
+      return;
+    }
+
+    // Calculate duration (inclusive of start and end date)
+    const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Calculate current usage from userLeaves (Approved or Pending)
+    const currentUsage = userLeaves.reduce((acc, curr) => {
+      if (curr.status !== 'DECLINED') {
+        const s = new Date(curr.startDate);
+        const e = new Date(curr.endDate);
+        const d = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        if (curr.dutyType === 'WFH') acc.wfh += d;
+        else acc.office += d;
+      }
+      return acc;
+    }, { office: 0, wfh: 0 });
+
+    const limit = dutyType === 'WFH' ? 5 : 8;
+    const used = dutyType === 'WFH' ? currentUsage.wfh : currentUsage.office;
+
+    if (used + durationDays > limit) {
+      toast({ 
+        variant: "destructive", 
+        title: "Limit Exceeded", 
+        description: `You have ${limit - used} days remaining for ${dutyType} leave. This request is ${durationDays} days.` 
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await addDoc(collection(firestore, 'leave_requests'), {
@@ -132,8 +168,10 @@ export function DashboardSidebar() {
         userSystemId: user.systemId,
         userRole: user.role,
         type: leaveType,
+        dutyType,
         startDate,
         endDate,
+        duration: durationDays,
         reason,
         status: 'PENDING',
         createdAt: serverTimestamp(),
@@ -145,6 +183,7 @@ export function DashboardSidebar() {
       setStartDate('');
       setEndDate('');
       setReason('');
+      setDutyType('OFFICE');
     } catch (error) {
       console.error(error);
       toast({ variant: "destructive", title: "Submission Failed", description: "Could not send request. Try again." });
@@ -289,17 +328,29 @@ export function DashboardSidebar() {
             </DialogHeader>
             <div className="space-y-6 py-4">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Leave Type</Label>
-                  <Select value={leaveType} onValueChange={setLeaveType}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="VACATION">Vacation Leave</SelectItem>
-                      <SelectItem value="SICK">Sick Leave</SelectItem>
-                      <SelectItem value="EMERGENCY">Emergency Leave</SelectItem>
-                      <SelectItem value="PERSONAL">Personal/Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Leave Type</Label>
+                    <Select value={leaveType} onValueChange={setLeaveType}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="VACATION">Vacation Leave</SelectItem>
+                        <SelectItem value="SICK">Sick Leave</SelectItem>
+                        <SelectItem value="EMERGENCY">Emergency Leave</SelectItem>
+                        <SelectItem value="PERSONAL">Personal/Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Duty Type</Label>
+                    <Select value={dutyType} onValueChange={setDutyType}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OFFICE">Office (8 Days Limit)</SelectItem>
+                        <SelectItem value="WFH">WFH (5 Days Limit)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -336,7 +387,10 @@ export function DashboardSidebar() {
                       <div key={req.id} className="bg-slate-50 border rounded-lg p-2.5 flex items-center justify-between gap-3">
                         <div className="flex flex-col">
                           <span className="text-[10px] font-bold text-slate-900">{req.startDate} → {req.endDate}</span>
-                          <span className="text-[9px] font-medium text-slate-400 uppercase">{req.type}</span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[8px] font-black text-primary uppercase">{req.dutyType || 'OFFICE'}</span>
+                            <span className="text-[8px] font-medium text-slate-400 uppercase">{req.type}</span>
+                          </div>
                         </div>
                         <div className="flex flex-col items-end">
                           <Badge variant="outline" className={cn(
