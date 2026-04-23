@@ -160,7 +160,7 @@ export function QuickActions() {
   // States for Schedule
   const [eventType, setEventType] = useState<string>('Shoot');
   const [customEventType, setCustomEventType] = useState('');
-  const [schedulePriority, setSchedulePriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
+  const [schedulePriority, setSchedulePriority] = useState<'RUSH' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('');
@@ -173,7 +173,7 @@ export function QuickActions() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDueDate, setTaskDueDate] = useState('');
   const [assignedToId, setAssignedToId] = useState('');
-  const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
+  const [taskPriority, setTaskPriority] = useState<'RUSH' | 'HIGH' | 'NORMAL'>('NORMAL');
 
   // States for Project
   const [fileCode, setFileCode] = useState('');
@@ -514,7 +514,7 @@ export function QuickActions() {
                 {eventType === 'Custom' && <Input autoFocus placeholder="e.g. BTS..." value={customEventType} onChange={e => setCustomEventType(e.target.value)} className="mt-2 h-10 rounded-xl border-primary border-2 font-medium px-4" />}
               </div>
               <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2"><Zap className="w-3.5 h-3.5 text-primary" />PRIORITY</Label>
-                <Select value={schedulePriority} onValueChange={(v: any) => setSchedulePriority(v)}><SelectTrigger className="h-12 border-slate-200 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NORMAL">NORMAL</SelectItem><SelectItem value="HIGH">HIGH</SelectItem><SelectItem value="URGENT" className="text-red-600 font-bold">URGENT</SelectItem></SelectContent></Select>
+                <Select value={schedulePriority} onValueChange={(v: any) => setSchedulePriority(v)}><SelectTrigger className="h-12 border-slate-200 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NORMAL">NORMAL</SelectItem><SelectItem value="HIGH">HIGH</SelectItem><SelectItem value="RUSH" className="text-red-600 font-bold">RUSH</SelectItem></SelectContent></Select>
               </div>
             </div>
             <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest text-slate-900 flex items-center gap-2"><Building2 className="w-3.5 h-3.5 text-primary" />BRAND</Label>
@@ -545,7 +545,7 @@ export function QuickActions() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-500">Timeline</Label><Input type="date" value={taskDueDate} onChange={e => setTaskDueDate(e.target.value)} className="h-12 rounded-xl" /></div>
               <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-500">Priority</Label>
-                <Select value={taskPriority} onValueChange={(v: any) => setTaskPriority(v)}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="URGENT">URGENT</SelectItem><SelectItem value="HIGH">HIGH</SelectItem><SelectItem value="NORMAL">NORMAL</SelectItem></SelectContent></Select>
+                <Select value={taskPriority} onValueChange={(v: any) => setTaskPriority(v)}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="RUSH">RUSH</SelectItem><SelectItem value="HIGH">HIGH</SelectItem><SelectItem value="NORMAL">NORMAL</SelectItem></SelectContent></Select>
               </div>
             </div>
             <div className="space-y-1.5"><Label className="text-[10px] font-black uppercase text-slate-500">Assignee</Label>
@@ -589,7 +589,7 @@ export function QuickActions() {
               <div className="grid grid-cols-2 gap-x-6 gap-y-6 py-6 border-y border-slate-50">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Priority</p>
-                  <p className={cn("text-xs font-bold", (selectedNotif.priority === 'URGENT' || selectedNotif.priority === 'RUSH') ? 'text-red-600' : 'text-slate-900')}>
+                  <p className={cn("text-xs font-bold", (selectedNotif.priority === 'RUSH') ? 'text-red-600' : 'text-slate-900')}>
                     {selectedNotif.priority || 'NORMAL'}
                   </p>
                 </div>

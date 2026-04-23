@@ -71,7 +71,7 @@ export default function CalendarPage() {
 
   const [eventType, setEventType] = useState<string>('Shoot');
   const [customEventType, setCustomEventType] = useState('');
-  const [eventPriority, setEventPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
+  const [eventPriority, setEventPriority] = useState<'RUSH' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [selectedBrandId, setSelectedBrandId] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('');
@@ -185,8 +185,8 @@ export default function CalendarPage() {
     const activeTasks = filteredTasks?.filter(t => t.status !== 'completed') || [];
     const activeScheds = filteredSchedules || [];
 
-    const urgent = (activeScheds.filter(s => s.priority === 'URGENT').length || 0) + 
-                   (activeTasks.filter(t => t.priority === 'URGENT').length) + 
+    const urgent = (activeScheds.filter(s => s.priority === 'RUSH' || s.priority === 'URGENT').length || 0) + 
+                   (activeTasks.filter(t => t.priority === 'RUSH' || t.priority === 'URGENT').length) + 
                    (activeProjects.filter(p => p.priority === 'RUSH').length);
     const high = (activeScheds.filter(s => s.priority === 'HIGH').length || 0) + 
                  (activeTasks.filter(t => t.priority === 'HIGH').length);
@@ -376,7 +376,7 @@ export default function CalendarPage() {
           {/* Desktop: Full Labels */}
           <div className="hidden md:flex flex-col gap-1 w-full flex-1 overflow-y-auto custom-scrollbar">
             {dayScheds.map((s, idx) => (
-              <button key={`s-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...s, source: 'schedule'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')}>{s.title}</button>
+              <button key={`s-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...s, source: 'schedule'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", (s.priority === 'RUSH' || s.priority === 'URGENT') ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')}>{s.title}</button>
             ))}
             {dayProjs.sort((a,b) => (a.status === 'Approved' || a.status === 'Done' ? 1 : 0) - (b.status === 'Approved' || b.status === 'Done' ? 1 : 0)).map((p, idx) => (
               <button 
@@ -394,14 +394,14 @@ export default function CalendarPage() {
               </button>
             ))}
             {dayTasks.sort((a,b) => (a.status === 'completed' ? 1 : 0) - (b.status === 'completed' ? 1 : 0)).map((t, idx) => (
-              <button key={`t-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...t, source: 'task'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))}>TASK: {t.title}</button>
+              <button key={`t-${idx}`} onClick={(e) => { e.stopPropagation(); setSelectedEvent({...t, source: 'task'}); }} className={cn("w-full text-left truncate text-[8px] font-black uppercase py-0.5 px-1 rounded text-white", t.status === 'completed' ? 'bg-green-600' : ((t.priority === 'RUSH' || t.priority === 'URGENT') ? 'bg-red-600' : 'bg-slate-700'))}>TASK: {t.title}</button>
             ))}
           </div>
 
           {/* Mobile: Status Dots */}
           <div className="flex md:hidden flex-wrap gap-0.5 mt-auto">
             {dayScheds.map((s, idx) => (
-              <div key={`sd-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", s.priority === 'URGENT' ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')} />
+              <div key={`sd-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", (s.priority === 'RUSH' || s.priority === 'URGENT') ? 'bg-red-600' : s.priority === 'HIGH' ? 'bg-orange-500' : 'bg-primary')} />
             ))}
             {dayProjs.sort((a,b) => (a.status === 'Approved' || a.status === 'Done' ? 1 : 0) - (b.status === 'Approved' || b.status === 'Done' ? 1 : 0)).map((p, idx) => (
               <div 
@@ -416,7 +416,7 @@ export default function CalendarPage() {
               />
             ))}
             {dayTasks.sort((a,b) => (a.status === 'completed' ? 1 : 0) - (b.status === 'completed' ? 1 : 0)).map((t, idx) => (
-              <div key={`td-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", t.status === 'completed' ? 'bg-green-600' : (t.priority === 'URGENT' ? 'bg-red-600' : 'bg-slate-700'))} />
+              <div key={`td-${idx}`} className={cn("w-1.5 h-1.5 rounded-full", t.status === 'completed' ? 'bg-green-600' : ((t.priority === 'RUSH' || t.priority === 'URGENT') ? 'bg-red-600' : 'bg-slate-700'))} />
             ))}
           </div>
         </div>
@@ -488,7 +488,7 @@ export default function CalendarPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="URGENT">URGENT</SelectItem>
+                            <SelectItem value="RUSH">RUSH</SelectItem>
                             <SelectItem value="HIGH">HIGH</SelectItem>
                             <SelectItem value="NORMAL">NORMAL</SelectItem>
                           </SelectContent>
@@ -650,7 +650,7 @@ export default function CalendarPage() {
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "w-2 h-2 rounded-full",
-                            evt.source === 'schedule' ? (evt.priority === 'URGENT' ? 'bg-red-600' : 'bg-primary') :
+                            evt.source === 'schedule' ? ((evt.priority === 'RUSH' || evt.priority === 'URGENT') ? 'bg-red-600' : 'bg-primary') :
                             evt.source === 'production' ? 'bg-blue-600' : 'bg-slate-700'
                           )} />
                           <div className="flex flex-col">
@@ -682,7 +682,7 @@ export default function CalendarPage() {
                   <div key={task.id} onClick={() => setSelectedEvent({...task, source: 'task'})} className={cn("p-4 border rounded-xl shadow-sm transition-all cursor-pointer group", task.status === 'completed' ? "bg-green-50 border-green-200" : "bg-white border-slate-100 hover:border-primary/20")}>
                     <div className="flex justify-between mb-2">
                       <h4 className={cn("text-xs font-bold truncate max-w-[70%] transition-colors", task.status === 'completed' ? "text-green-800" : "text-slate-800 group-hover:text-primary")}>{task.title}</h4>
-                      <Badge variant="outline" className={cn("text-[8px]", task.status === 'completed' ? "bg-green-600 text-white border-none" : (task.priority === 'URGENT' ? "text-red-600" : "text-blue-600"))}>{task.status === 'completed' ? 'DONE' : task.priority}</Badge>
+                      <Badge variant="outline" className={cn("text-[8px]", task.status === 'completed' ? "bg-green-600 text-white border-none" : ((task.priority === 'RUSH' || task.priority === 'URGENT') ? "text-red-600" : "text-blue-600"))}>{task.status === 'completed' ? 'DONE' : task.priority}</Badge>
                     </div>
                     <div className="flex justify-between mt-4 text-[10px] text-slate-400"><span className={task.status === 'completed' ? "text-green-600 font-bold" : ""}>{task.status === 'completed' ? '✓ SYNCHRONIZED' : 'TASK'}</span><span>{task.dueDate}</span></div>
                   </div>
@@ -711,7 +711,7 @@ export default function CalendarPage() {
                         p.priority === 'HIGH' ? "bg-orange-500 text-white" :
                         "bg-blue-600 text-white"
                       )}>
-                        {p.priority === 'RUSH' || p.priority === 'URGENT' ? 'URGENT' : p.priority === 'HIGH' ? 'HIGH' : 'NORMAL'}
+                        {p.priority === 'RUSH' || p.priority === 'URGENT' ? 'RUSH' : p.priority === 'HIGH' ? 'HIGH' : 'NORMAL'}
                       </Badge>
                     </div>
                     <div className="flex justify-between mt-4 text-[10px] text-slate-400">
@@ -745,7 +745,7 @@ export default function CalendarPage() {
                 </div>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-6 pt-4 border-t">
-                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Priority</p><Badge className={cn("text-[10px] font-black px-2 py-1 rounded", selectedEvent.status === 'completed' ? "bg-green-50 text-green-600 border-green-100" : (selectedEvent.priority === 'URGENT' || selectedEvent.priority === 'RUSH' ? "bg-red-50 text-red-500 border-red-100" : "bg-blue-50 text-blue-500 border-blue-100"))} variant="outline">{selectedEvent.status === 'completed' ? 'DONE' : (selectedEvent.priority || 'NORMAL')}</Badge></div>
+                <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Priority</p><Badge className={cn("text-[10px] font-black px-2 py-1 rounded", selectedEvent.status === 'completed' ? "bg-green-50 text-green-600 border-green-100" : (selectedEvent.priority === 'RUSH' || selectedEvent.priority === 'URGENT' ? "bg-red-50 text-red-500 border-red-100" : "bg-blue-50 text-blue-500 border-blue-100"))} variant="outline">{selectedEvent.status === 'completed' ? 'DONE' : (selectedEvent.priority || 'NORMAL')}</Badge></div>
                 <div className="space-y-1"><p className="text-[10px] uppercase font-black text-slate-400">Date</p>{user?.role === 'ADMIN' ? (<Input type="date" value={editingDate} onChange={(e) => setEditingDate(e.target.value)} className="h-8 text-xs font-bold border-slate-200 mt-1" />) : (<p className="text-xs font-bold text-slate-700">{selectedEvent.date || selectedEvent.dueDate}</p>)}</div>
                 {selectedEvent.location && (<div className="space-y-1 col-span-2"><p className="text-[10px] uppercase font-black text-slate-400">Location</p><p className="text-xs font-bold text-slate-700">{selectedEvent.location}</p></div>)}
                 <div className="space-y-1 col-span-2">

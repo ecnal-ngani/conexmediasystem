@@ -138,7 +138,7 @@ export default function AdminPage() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskTargetUser, setTaskTargetUser] = useState<any>(null);
   const [taskTitle, setTaskTitle] = useState('');
-  const [taskPriority, setTaskPriority] = useState<'URGENT' | 'HIGH' | 'NORMAL'>('NORMAL');
+  const [taskPriority, setTaskPriority] = useState<'RUSH' | 'HIGH' | 'NORMAL'>('NORMAL');
   const [taskCategory, setTaskCategory] = useState('Operations');
   const [taskDueDate, setTaskDueDate] = useState('');
 
@@ -1375,7 +1375,7 @@ export default function AdminPage() {
                 <Select value={taskPriority} onValueChange={(v: any) => setTaskPriority(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="URGENT">URGENT</SelectItem>
+                    <SelectItem value="RUSH">RUSH</SelectItem>
                     <SelectItem value="HIGH">HIGH</SelectItem>
                     <SelectItem value="NORMAL">NORMAL</SelectItem>
                   </SelectContent>

@@ -203,8 +203,8 @@ export default function ProductionPage() {
           // Award to all involved artists
           for (const artistId of project.artistIds) {
             const artistRef = doc(firestore, 'users', artistId);
-            const xpReward = project.priority === 'RUSH' || project.priority === 'URGENT' ? 200 : 100;
-            const pointsReward = project.priority === 'RUSH' || project.priority === 'URGENT' ? 50 : 20;
+            const xpReward = project.priority === 'RUSH' ? 200 : 100;
+            const pointsReward = project.priority === 'RUSH' ? 50 : 20;
 
             // Use increment for atomic updates
             const { increment } = await import('firebase/firestore');
@@ -624,7 +624,6 @@ export default function ProductionPage() {
                             <Select value={priority} onValueChange={setPriority}>
                               <SelectTrigger className="h-12 rounded-xl border-slate-200"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="URGENT">URGENT</SelectItem>
                                 <SelectItem value="RUSH">RUSH</SelectItem>
                                 <SelectItem value="HIGH">HIGH</SelectItem>
                                 <SelectItem value="REGULAR">REGULAR</SelectItem>
@@ -698,7 +697,7 @@ export default function ProductionPage() {
                   className={cn(
                     "border-0 group transition-colors", 
                     (item.status === 'Approved' || item.status === 'Done') ? "bg-green-50/80 hover:bg-green-100/80" :
-                    (item.priority === 'RUSH' || item.priority === 'URGENT') ? "bg-red-50/50 hover:bg-red-100/50" :
+                    (item.priority === 'RUSH') ? "bg-red-50/50 hover:bg-red-100/50" :
                     item.priority === 'HIGH' ? "bg-orange-50/50 hover:bg-orange-100/50" :
                     "bg-blue-50/30 hover:bg-blue-100/30"
                   )}
@@ -763,12 +762,11 @@ export default function ProductionPage() {
                         <SelectContent>
                           <SelectItem value="REGULAR">REGULAR</SelectItem>
                           <SelectItem value="HIGH">HIGH</SelectItem>
-                          <SelectItem value="URGENT">URGENT</SelectItem>
                           <SelectItem value="RUSH">RUSH</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge variant="outline" className={cn("text-[8px] font-bold", item.priority === 'RUSH' || item.priority === 'URGENT' ? 'text-red-600 bg-red-50' : 'text-slate-500')}>{item.priority}</Badge>
+                      <Badge variant="outline" className={cn("text-[8px] font-bold", item.priority === 'RUSH' ? 'text-red-600 bg-red-50' : 'text-slate-500')}>{item.priority}</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-[10px] font-medium text-slate-700">{item.artist}</TableCell>
