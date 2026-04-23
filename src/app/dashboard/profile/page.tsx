@@ -49,25 +49,27 @@ export default function ProfilePage() {
     }
   }, [user]);
 
-  // Fetch recent logs for this specific user
+  // Fetch recent logs globally and filter client-side to avoid composite index requirement
   const historyQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'verifications'), 
-      where('userId', '==', user.id),
       orderBy('timestamp', 'desc'), 
-      limit(50)
+      limit(200) // Increased limit to ensure we find enough user-specific logs
     );
   }, [firestore, user?.id]);
   
-  const { data: verifications, isLoading: historyLoading } = useCollection<any>(historyQuery);
+  const { data: allVerifications, isLoading: historyLoading } = useCollection<any>(historyQuery);
 
   const attendanceData = useMemo(() => {
-    if (!verifications) return [];
+    if (!allVerifications) return [];
+
+    // Filter for current user's logs
+    const userLogs = allVerifications.filter((l: any) => l.userId === user.id);
 
     const grouped: Record<string, any> = {};
 
-    verifications.forEach((log: any) => {
+    userLogs.forEach((log: any) => {
       if (!log.timestamp?.toDate) return;
       const date = log.timestamp.toDate();
       const dateStr = format(date, 'yyyy-MM-dd');
@@ -111,7 +113,7 @@ export default function ProfilePage() {
         duration
       };
     }).sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [verifications]);
+  }, [allVerifications]);
 
   if (!mounted || !user) return null;
 
