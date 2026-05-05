@@ -8,7 +8,8 @@ import {
   CheckCircle2, 
   LogOut,
   Timer,
-  AlertTriangle
+  AlertTriangle,
+  Camera
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
