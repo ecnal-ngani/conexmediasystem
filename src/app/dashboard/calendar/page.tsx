@@ -221,8 +221,8 @@ export default function CalendarPage() {
       date: eventDate,
       location: eventLocation,
       notes: eventNotes,
-      assignedById: user.id,
-      assignedByName: user.name,
+      assignedById: user?.id || '',
+      assignedByName: user?.name || '',
       createdAt: serverTimestamp()
     };
 
@@ -343,7 +343,7 @@ export default function CalendarPage() {
       }));
     });
     toast({ title: "Status Updated", description: `Record updated to ${newStatus}.` });
-    setSelectedEvent(prev => prev ? { ...prev, status: newStatus } : null);
+    setSelectedEvent((prev: any) => prev ? { ...prev, status: newStatus } : null);
   };
 
   const renderCalendarDays = () => {

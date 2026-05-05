@@ -287,24 +287,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user && firestore) {
       const userRef = doc(firestore, 'users', user.id);
       try {
-        // 1. Log Clock Out for attendance
-        const verificationsRef = collection(firestore, 'verifications');
-        await addDoc(verificationsRef, {
-          userId: user.id,
-          userName: user.name,
-          userSystemId: user.systemId,
-          email: user.email || '',
-          timestamp: serverTimestamp(),
-          isVerified: true,
-          method: 'System Logout',
-          status: 'Logged (Offline)',
-          devicePlatform: navigator.userAgent
-        });
+        // Clock Out is now handled explicitly via the Clock Out button with camera.
+        // Logout only syncs the user status to Offline.
 
         // Check for Night Owl badge
         await checkAndAwardBadges(user, firestore, 'clock-out');
 
-        // 2. Sync Offline status
+        // Sync Offline status
         await setDoc(userRef, { 
           status: 'Offline',
           updatedAt: serverTimestamp() 

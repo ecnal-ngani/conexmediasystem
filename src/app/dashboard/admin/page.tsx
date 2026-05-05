@@ -93,7 +93,7 @@ import { collection, query, orderBy, addDoc, serverTimestamp, doc, deleteDoc, se
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, differenceInMinutes } from 'date-fns';
 import { useAuth } from '@/components/auth-context';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import staffRegistry from '@/app/lib/initial-staff.json';
@@ -258,23 +258,43 @@ export default function AdminPage() {
     );
   }, [staff, searchQuery]);
 
-  // Payroll Calculation Logic (Memoized)
+  // Payroll Calculation Logic (Memoized) — Uses actual clock-in/clock-out hours
   const payrollData = useMemo(() => {
     if (!staff || !verifications) return [];
 
     return staff.map(emp => {
       const empLogs = verifications.filter(log => log.userId === emp.id);
       
-      const uniqueDays = new Set();
+      // Group logs by date to compute actual hours from clock-in/out pairs
+      const grouped: Record<string, any[]> = {};
       empLogs.forEach(log => {
         if (log.timestamp?.toDate) {
-          uniqueDays.add(format(log.timestamp.toDate(), 'yyyy-MM-dd'));
+          const dateStr = format(log.timestamp.toDate(), 'yyyy-MM-dd');
+          if (!grouped[dateStr]) grouped[dateStr] = [];
+          grouped[dateStr].push(log);
         }
       });
 
-      const daysActive = uniqueDays.size;
-      const hoursPerDay = 8;
-      const totalHours = daysActive * hoursPerDay;
+      let totalMinutesWorked = 0;
+      let regularMinutes = 0;
+      let overtimeMinutes = 0;
+      const daysActive = Object.keys(grouped).length;
+
+      Object.values(grouped).forEach(dayLogs => {
+        const sorted = dayLogs.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
+        const inLog = sorted.find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
+        const outLog = [...sorted].reverse().find((l: any) => l.status === 'Logged (Offline)');
+        if (inLog && outLog) {
+          const dayMinutes = differenceInMinutes(outLog.timestamp.toDate(), inLog.timestamp.toDate());
+          totalMinutesWorked += dayMinutes;
+          regularMinutes += Math.min(dayMinutes, 480); // 8 hours = 480 min
+          overtimeMinutes += Math.max(0, dayMinutes - 480);
+        }
+      });
+
+      const totalHours = Math.round((totalMinutesWorked / 60) * 100) / 100;
+      const regularHours = Math.round((regularMinutes / 60) * 100) / 100;
+      const otHours = Math.round((overtimeMinutes / 60) * 100) / 100;
       const rate = emp.hourlyRate || DEFAULT_RATES[emp.role] || 0;
       
       const grossSalary = totalHours * rate;
@@ -327,6 +347,8 @@ export default function AdminPage() {
         ...emp,
         daysActive,
         totalHours,
+        regularHours,
+        otHours,
         rate,
         grossSalary,
         sssDeduction,
@@ -1213,7 +1235,7 @@ export default function AdminPage() {
                               className="h-8 text-[10px] font-black uppercase text-green-600 hover:bg-green-50"
                               onClick={async () => {
                                 const reqRef = doc(firestore, 'leave_requests', req.id);
-                                await setDoc(reqRef, { status: 'APPROVED', updatedBy: currentUser.name, updatedAt: serverTimestamp() }, { merge: true });
+                                await setDoc(reqRef, { status: 'APPROVED', updatedBy: currentUser?.name || 'System', updatedAt: serverTimestamp() }, { merge: true });
                                 toast({ title: "Request Approved", description: `Leave for ${req.userName} is authorized.` });
                               }}
                             >
@@ -1225,7 +1247,7 @@ export default function AdminPage() {
                               className="h-8 text-[10px] font-black uppercase text-red-600 hover:bg-red-50"
                               onClick={async () => {
                                 const reqRef = doc(firestore, 'leave_requests', req.id);
-                                await setDoc(reqRef, { status: 'DECLINED', updatedBy: currentUser.name, updatedAt: serverTimestamp() }, { merge: true });
+                                await setDoc(reqRef, { status: 'DECLINED', updatedBy: currentUser?.name || 'System', updatedAt: serverTimestamp() }, { merge: true });
                                 toast({ title: "Request Declined", description: "The leave request has been denied." });
                               }}
                             >

@@ -241,7 +241,7 @@ export default function DashboardPage() {
                     <PolarGrid stroke="#e2e8f0" strokeDasharray="3 3" />
                     <PolarAngleAxis 
                       dataKey="subject" 
-                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 900, textTransform: 'uppercase' }} 
+                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 900 }} 
                     />
                     <PolarRadiusAxis 
                       angle={30} 
@@ -355,7 +355,7 @@ export default function DashboardPage() {
                   {sLoading ? (
                     <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" /></div>
                   ) : (
-                    staff.map((emp: any) => (
+                    staff?.map((emp: any) => (
                       <div key={emp.id} className="flex items-center justify-between p-3 group">
                         <div className="flex items-center gap-3">
                           <div className="relative">

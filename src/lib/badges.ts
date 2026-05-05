@@ -1,4 +1,4 @@
-import { User } from "@/components/auth-context";
+import { User } from "@/lib/mock-data";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { Firestore } from "firebase/firestore";
 

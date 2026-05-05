@@ -70,7 +70,7 @@ export default function ProfilePage() {
   const { data: userLeaves } = useCollection<any>(leaveQuery);
 
   const attendanceData = useMemo(() => {
-    if (!allVerifications) return [];
+    if (!allVerifications || !user) return [];
 
     // Filter for current user's logs
     const userLogs = allVerifications.filter((l: any) => l.userId === user.id);
@@ -107,18 +107,33 @@ export default function ProfilePage() {
       const clockOutTime = outLog?.timestamp.toDate();
 
       let duration = '—';
+      let regularHours = '—';
+      let overtimeHours = '—';
+      let totalMinutes = 0;
       if (clockInTime && clockOutTime) {
         const diff = differenceInMinutes(clockOutTime, clockInTime);
+        totalMinutes = diff;
         const hours = Math.floor(diff / 60);
         const mins = diff % 60;
         duration = `${hours}h ${mins}m`;
+
+        // Regular = capped at 8 hours (480 min)
+        const regMins = Math.min(diff, 480);
+        regularHours = `${Math.floor(regMins / 60)}h ${regMins % 60}m`;
+
+        // OT = anything beyond 8 hours
+        const otMins = Math.max(0, diff - 480);
+        overtimeHours = otMins > 0 ? `${Math.floor(otMins / 60)}h ${otMins % 60}m` : '—';
       }
 
       return {
         ...day,
         clockIn: clockInTime ? format(clockInTime, 'hh:mm a') : '—',
         clockOut: clockOutTime ? format(clockOutTime, 'hh:mm a') : '—',
-        duration
+        duration,
+        regularHours,
+        overtimeHours,
+        totalMinutes
       };
     }).sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [allVerifications]);
@@ -297,20 +312,22 @@ export default function ProfilePage() {
                     <TableHead className="font-bold text-slate-400 text-xs pl-8">Date</TableHead>
                     <TableHead className="font-bold text-slate-400 text-xs">Clock In</TableHead>
                     <TableHead className="font-bold text-slate-400 text-xs">Clock Out</TableHead>
-                    <TableHead className="font-bold text-slate-400 text-xs">Duration</TableHead>
+                    <TableHead className="font-bold text-slate-400 text-xs">Regular</TableHead>
+                    <TableHead className="font-bold text-slate-400 text-xs">OT</TableHead>
+                    <TableHead className="font-bold text-slate-400 text-xs">Total</TableHead>
                     <TableHead className="font-bold text-slate-400 text-xs text-right pr-8">Type</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {historyLoading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-20">
+                      <TableCell colSpan={7} className="text-center py-20">
                         <Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-200" />
                       </TableCell>
                     </TableRow>
                   ) : attendanceData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-20 text-slate-400 font-medium italic">
+                      <TableCell colSpan={7} className="text-center py-20 text-slate-400 font-medium italic">
                         No recent attendance records detected.
                       </TableCell>
                     </TableRow>
@@ -325,6 +342,12 @@ export default function ProfilePage() {
                         </TableCell>
                         <TableCell className="py-5">
                           <span className="font-medium text-slate-600">{row.clockOut}</span>
+                        </TableCell>
+                        <TableCell className="py-5">
+                          <span className="font-black text-green-700">{row.regularHours}</span>
+                        </TableCell>
+                        <TableCell className="py-5">
+                          <span className={cn("font-black", row.overtimeHours !== '—' ? "text-orange-600" : "text-slate-300")}>{row.overtimeHours}</span>
                         </TableCell>
                         <TableCell className="py-5">
                           <span className="font-black text-slate-900">{row.duration}</span>
