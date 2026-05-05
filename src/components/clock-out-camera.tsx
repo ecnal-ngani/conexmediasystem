@@ -27,9 +27,10 @@ interface ClockOutCameraProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCaptureComplete: (photoData: string) => void;
+  mode?: 'in' | 'out';
 }
 
-export function ClockOutCamera({ open, onOpenChange, onCaptureComplete }: ClockOutCameraProps) {
+export function ClockOutCamera({ open, onOpenChange, onCaptureComplete, mode = 'out' }: ClockOutCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -197,8 +198,8 @@ export function ClockOutCamera({ open, onOpenChange, onCaptureComplete }: ClockO
               <Camera className="w-7 h-7 text-white" />
             </div>
             <div className="pt-1">
-              <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Clock Out Verification</DialogTitle>
-              <DialogDescription className="text-slate-400 font-medium">Capture a photo to confirm your session logout.</DialogDescription>
+              <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Clock {mode === 'in' ? 'In' : 'Out'} Verification</DialogTitle>
+              <DialogDescription className="text-slate-400 font-medium">Capture a photo to confirm your session {mode === 'in' ? 'login' : 'logout'}.</DialogDescription>
             </div>
           </DialogHeader>
 
@@ -218,7 +219,7 @@ export function ClockOutCamera({ open, onOpenChange, onCaptureComplete }: ClockO
 
             {/* Captured preview */}
             {capturedImage && (
-              <img src={capturedImage} alt="Clock Out Capture" className="w-full h-full object-cover" />
+              <img src={capturedImage} alt={`Clock ${mode === 'in' ? 'In' : 'Out'} Capture`} className="w-full h-full object-cover" />
             )}
 
             {/* Loading */}
@@ -277,8 +278,8 @@ export function ClockOutCamera({ open, onOpenChange, onCaptureComplete }: ClockO
             {stage === 'success' && (
               <div className="absolute inset-0 bg-green-950/70 backdrop-blur-sm flex flex-col items-center justify-center text-white space-y-3 z-20">
                 <CheckCircle2 className="w-16 h-16 text-green-400 animate-in zoom-in duration-300" />
-                <p className="font-bold text-lg">Clock Out Verified</p>
-                <p className="text-sm text-green-300/80">Session ended successfully.</p>
+                <p className="font-bold text-lg">Clock {mode === 'in' ? 'In' : 'Out'} Verified</p>
+                <p className="text-sm text-green-300/80">Session {mode === 'in' ? 'started' : 'ended'} successfully.</p>
               </div>
             )}
 
@@ -302,7 +303,7 @@ export function ClockOutCamera({ open, onOpenChange, onCaptureComplete }: ClockO
                 className="w-full h-14 rounded-2xl font-bold bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-100 gap-2 text-base"
               >
                 <Camera className="w-5 h-5" />
-                Capture & Clock Out
+                Capture & Clock {mode === 'in' ? 'In' : 'Out'}
               </Button>
             )}
 

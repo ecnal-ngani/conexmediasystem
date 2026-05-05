@@ -29,7 +29,8 @@ interface AttendanceHeaderProps {
 
 export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [isClockOutOpen, setIsClockOutOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraMode, setCameraMode] = useState<'in' | 'out'>('out');
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -114,6 +115,51 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
   }, [todayData, currentTime]);
 
   // Handle clock out
+  const handleClockInCapture = useCallback(async (photoData: string) => {
+    if (!firestore || !user) return;
+    
+    const verificationsRef = collection(firestore, 'verifications');
+    const clockInData = {
+      userId: user.id,
+      userName: user.name,
+      userSystemId: user.systemId,
+      email: user.email || '',
+      timestamp: serverTimestamp(),
+      isVerified: true,
+      method: 'Camera Clock In',
+      status: 'Logged (WFH)',
+      photoData,
+      devicePlatform: navigator.userAgent
+    };
+
+    try {
+      await addDoc(verificationsRef, clockInData);
+    } catch (err) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: verificationsRef.path,
+        operation: 'create',
+        requestResourceData: clockInData
+      }));
+    }
+
+    try {
+      const userRef = doc(firestore, 'users', user.id);
+      await setDoc(userRef, { 
+        status: 'WFH',
+        updatedAt: serverTimestamp() 
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Status sync failed', e);
+    }
+
+    setIsCameraOpen(false);
+    
+    toast({
+      title: "⏱ Clocked In Successfully",
+      description: "Your session has started with photo verification.",
+    });
+  }, [firestore, user, toast]);
+
   const handleClockOutCapture = useCallback(async (photoData: string) => {
     if (!firestore || !user) return;
     
@@ -152,7 +198,7 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
       console.warn('Status sync failed', e);
     }
 
-    setIsClockOutOpen(false);
+    setIsCameraOpen(false);
     
     toast({
       title: "⏱ Clocked Out Successfully",
@@ -184,14 +230,22 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
               <p className="text-[10px] font-bold text-white/40 uppercase">Asia/Manila (GMT+8)</p>
             </div>
 
-            {/* Clock Out Button */}
-            {isClockedIn && (
+            {/* Clock Buttons */}
+            {isClockedIn ? (
               <Button
-                onClick={() => setIsClockOutOpen(true)}
+                onClick={() => { setCameraMode('out'); setIsCameraOpen(true); }}
                 className="bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white font-black h-12 px-6 rounded-2xl border border-white/20 shadow-lg gap-2 transition-all hover:scale-[1.02]"
               >
                 <LogOut className="w-5 h-5" />
                 Clock Out
+              </Button>
+            ) : (
+              <Button
+                onClick={() => { setCameraMode('in'); setIsCameraOpen(true); }}
+                className="bg-green-500 hover:bg-green-400 text-white font-black h-12 px-6 rounded-2xl border border-white/20 shadow-lg gap-2 transition-all hover:scale-[1.02]"
+              >
+                <Camera className="w-5 h-5" />
+                Clock In
               </Button>
             )}
           </div>
@@ -330,11 +384,12 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
         </Card>
       </div>
 
-      {/* Clock Out Camera Dialog */}
-      <ClockOutCamera
-        open={isClockOutOpen}
-        onOpenChange={setIsClockOutOpen}
-        onCaptureComplete={handleClockOutCapture}
+      {/* Camera Modal */}
+      <ClockOutCamera 
+        open={isCameraOpen} 
+        onOpenChange={setIsCameraOpen}
+        onCaptureComplete={cameraMode === 'in' ? handleClockInCapture : handleClockOutCapture}
+        mode={cameraMode}
       />
     </div>
   );
