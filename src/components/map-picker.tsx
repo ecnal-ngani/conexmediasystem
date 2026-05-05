@@ -159,8 +159,14 @@ export default function MapPicker({ onLocationSelect, onCancel }: MapPickerProps
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const latlng = new L.LatLng(pos.coords.latitude, pos.coords.longitude);
-          map.setView(latlng, 15);
+          // Guard: map may have been destroyed before geolocation resolves
+          if (!mapInstanceRef.current) return;
+          try {
+            const latlng = new L.LatLng(pos.coords.latitude, pos.coords.longitude);
+            mapInstanceRef.current.setView(latlng, 15);
+          } catch (e) {
+            console.warn('[MapPicker] Could not set geolocation view:', e);
+          }
         },
         () => {},
         { timeout: 5000 }
