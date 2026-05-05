@@ -87,7 +87,7 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
     }).sort((a: any, b: any) => a.timestamp.toMillis() - b.timestamp.toMillis()) || [];
     
     if (logsToday.length === 0) {
-      return { status: 'Not Clocked In', clockInTime: null, isClockedOut: false };
+      return { status: 'Not Clocked In', clockInTime: null, isClockedOut: false, clockInLog: null, clockOutLog: null };
     }
 
     const inLog = logsToday.find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
@@ -97,7 +97,9 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
     return {
       status: isClockedOut ? 'Clocked Out' : (inLog ? 'Clocked In' : 'Not Clocked In'),
       clockInTime: inLog?.timestamp?.toDate() || null,
-      isClockedOut
+      isClockedOut,
+      clockInLog: inLog || null,
+      clockOutLog: isClockedOut ? lastLog : null
     };
   }, [verifications, user.id, currentTime]);
 
@@ -195,24 +197,80 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
           </div>
         </div>
         
-        {/* Live Shift Timer */}
-        {isClockedIn && elapsedData && (
-          <div className="relative z-10 mt-6 flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/10">
-            <Timer className="w-5 h-5 text-white/80" />
-            <div className="flex-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Active Shift Duration</p>
-              <p className="text-2xl font-black tabular-nums tracking-tight">{elapsedData.display}</p>
-            </div>
-            {elapsedData.isOT && (
-              <Badge className="bg-orange-500 text-white font-black text-[10px] px-3 py-1 rounded-full border-none animate-pulse gap-1.5">
-                <AlertTriangle className="w-3 h-3" />
-                OVERTIME
-              </Badge>
+        {/* Today's Logs & Live Shift Timer */}
+        {(todayData.clockInLog || todayData.clockOutLog || (isClockedIn && elapsedData)) && (
+          <div className="relative z-10 mt-6 flex flex-col md:flex-row md:items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/10">
+            
+            {/* Clock In Info */}
+            {todayData.clockInLog && (
+              <div className="flex items-center gap-4">
+                {(todayData.clockInLog.photoData || todayData.clockInLog.photoUrl) ? (
+                  <img 
+                    src={todayData.clockInLog.photoData || todayData.clockInLog.photoUrl} 
+                    alt="Clock In" 
+                    className="w-12 h-12 rounded-xl object-cover border-2 border-white/20 shadow-sm" 
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center border-2 border-white/20">
+                    <Clock className="w-5 h-5 text-white/50" />
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Clocked In</p>
+                  <p className="text-xl font-black tabular-nums tracking-tight text-white">
+                    {format(todayData.clockInLog.timestamp.toDate(), 'hh:mm a')}
+                  </p>
+                </div>
+              </div>
             )}
-            {!elapsedData.isOT && (
-              <div className="text-right">
-                <p className="text-[9px] font-black text-white/40 uppercase">Remaining</p>
-                <p className="text-sm font-black tabular-nums text-white/80">{Math.max(0, 8 - elapsedData.hours)}h {Math.max(0, 60 - elapsedData.minutes) % 60}m</p>
+
+            {/* Divider */}
+            {(todayData.clockInLog && (todayData.clockOutLog || isClockedIn)) && (
+              <div className="hidden md:block w-px h-10 bg-white/20 mx-2" />
+            )}
+
+            {/* Clock Out Info */}
+            {todayData.clockOutLog && (
+              <div className="flex items-center gap-4">
+                {(todayData.clockOutLog.photoData || todayData.clockOutLog.photoUrl) ? (
+                  <img 
+                    src={todayData.clockOutLog.photoData || todayData.clockOutLog.photoUrl} 
+                    alt="Clock Out" 
+                    className="w-12 h-12 rounded-xl object-cover border-2 border-white/20 shadow-sm" 
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center border-2 border-white/20">
+                    <Clock className="w-5 h-5 text-white/50" />
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Clocked Out</p>
+                  <p className="text-xl font-black tabular-nums tracking-tight text-white">
+                    {format(todayData.clockOutLog.timestamp.toDate(), 'hh:mm a')}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Shift Timer */}
+            {isClockedIn && elapsedData && (
+              <div className="flex-1 flex items-center justify-end gap-4 mt-4 md:mt-0 pt-4 md:pt-0 border-t border-white/10 md:border-t-0">
+                <Timer className="w-5 h-5 text-white/80 hidden md:block" />
+                <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/60">Active Shift</p>
+                  <p className="text-2xl font-black tabular-nums tracking-tight">{elapsedData.display}</p>
+                </div>
+                {elapsedData.isOT ? (
+                  <Badge className="bg-orange-500 text-white font-black text-[10px] px-3 py-1 rounded-full border-none animate-pulse gap-1.5 ml-2">
+                    <AlertTriangle className="w-3 h-3" />
+                    OVERTIME
+                  </Badge>
+                ) : (
+                  <div className="text-right ml-4 pl-4 border-l border-white/20">
+                    <p className="text-[9px] font-black text-white/40 uppercase">Remaining</p>
+                    <p className="text-sm font-black tabular-nums text-white/80">{Math.max(0, 8 - elapsedData.hours)}h {Math.max(0, 60 - elapsedData.minutes) % 60}m</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
