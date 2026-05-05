@@ -43,6 +43,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AttendanceHeader } from '@/components/attendance-header';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format } from 'date-fns';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -186,6 +188,48 @@ export default function DashboardPage() {
         };
     }
   }, [user, staff, projects, tasks, performanceMatrix, deliveredProjectsCount]);
+
+  const attendanceData = useMemo(() => {
+    if (!verifications || !user) return [];
+
+    const userLogs = verifications.filter((l: any) => l.userId === user.id);
+    const grouped: Record<string, any> = {};
+
+    userLogs.forEach((log: any) => {
+      if (!log.timestamp?.toDate) return;
+      const date = log.timestamp.toDate();
+      const dateStr = format(date, 'yyyy-MM-dd');
+
+      if (!grouped[dateStr]) {
+        grouped[dateStr] = {
+          date: date,
+          dateLabel: format(date, 'MMM dd, yyyy'),
+          clockIn: null,
+          clockOut: null,
+          type: log.status?.includes('WFH') ? 'WFH' : 'Office',
+          logs: []
+        };
+      }
+      grouped[dateStr].logs.push(log);
+    });
+
+    return Object.values(grouped).map((day: any) => {
+      const dayLogs = day.logs.sort((a: any, b: any) => a.timestamp.toMillis() - b.timestamp.toMillis());
+      const inLog = dayLogs.find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
+      const outLog = [...dayLogs].reverse().find((l: any) => l.status === 'Logged (Offline)');
+
+      const clockInTime = inLog?.timestamp.toDate();
+      const clockOutTime = outLog?.timestamp.toDate();
+
+      return {
+        ...day,
+        clockIn: clockInTime ? format(clockInTime, 'hh:mm a') : '—',
+        clockOut: clockOutTime ? format(clockOutTime, 'hh:mm a') : '—',
+        clockInPhoto: inLog?.photoData || inLog?.photoUrl || null,
+        clockOutPhoto: outLog?.photoData || outLog?.photoUrl || null
+      };
+    }).sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5); // Show last 5 entries
+  }, [verifications, user]);
 
   const onlineCount = useMemo(() => staff?.filter((s: any) => s.status !== 'Offline').length || 0, [staff]);
   const totalCount = useMemo(() => staff?.length || 0, [staff]);
@@ -389,6 +433,88 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* 4. RECENT ATTENDANCE TABLE */}
+      <Card className="border-2 shadow-sm rounded-3xl bg-white overflow-hidden mt-8">
+        <CardHeader className="border-b bg-slate-50/50">
+          <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            Recent Attendance
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow>
+                <TableHead className="font-bold text-slate-400 text-xs pl-8">Date</TableHead>
+                <TableHead className="font-bold text-slate-400 text-xs">Clock In</TableHead>
+                <TableHead className="font-bold text-slate-400 text-xs">Clock Out</TableHead>
+                <TableHead className="font-bold text-slate-400 text-xs text-right pr-8">Type</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {attendanceData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-10 text-slate-400 font-medium italic">
+                    No recent attendance records found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                attendanceData.map((row: any, idx) => (
+                  <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                    <TableCell className="pl-8 py-4">
+                      <span className="font-bold text-slate-700">{row.dateLabel}</span>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      {row.clockIn !== '—' ? (
+                        <div className="flex items-center gap-3">
+                          {row.clockInPhoto ? (
+                            <img src={row.clockInPhoto} className="w-10 h-10 rounded-xl object-cover border-2 shadow-sm" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center border">
+                              <Camera className="w-4 h-4 text-slate-300" />
+                            </div>
+                          )}
+                          <span className="font-medium text-slate-600">{row.clockIn}</span>
+                        </div>
+                      ) : (
+                        <span className="font-medium text-slate-400">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-4">
+                      {row.clockOut !== '—' ? (
+                        <div className="flex items-center gap-3">
+                          {row.clockOutPhoto ? (
+                            <img src={row.clockOutPhoto} className="w-10 h-10 rounded-xl object-cover border-2 shadow-sm" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center border">
+                              <Camera className="w-4 h-4 text-slate-300" />
+                            </div>
+                          )}
+                          <span className="font-medium text-slate-600">{row.clockOut}</span>
+                        </div>
+                      ) : (
+                        <span className="font-medium text-slate-400 pl-2">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right pr-8 py-4">
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "font-black text-[10px] uppercase px-3 py-1 border-none",
+                          row.type === 'WFH' ? "bg-orange-50 text-orange-600" : "bg-green-50 text-green-600"
+                        )}
+                      >
+                        {row.type}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
