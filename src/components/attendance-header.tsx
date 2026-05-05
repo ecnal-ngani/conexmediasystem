@@ -92,15 +92,15 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
       return { status: 'Not Clocked In', clockInTime: null, isClockedOut: false, clockInLog: null, clockOutLog: null };
     }
 
-    const inLog = logsToday.find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
+    const lastClockInLog = [...logsToday].reverse().find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
     const lastLog = [...logsToday].reverse()[0];
     const isClockedOut = lastLog?.status === 'Logged (Offline)';
     
     return {
-      status: isClockedOut ? 'Clocked Out' : (inLog ? 'Clocked In' : 'Not Clocked In'),
-      clockInTime: inLog?.timestamp?.toDate() || null,
+      status: isClockedOut ? 'Clocked Out' : (lastClockInLog ? 'Clocked In' : 'Not Clocked In'),
+      clockInTime: lastClockInLog?.timestamp?.toDate() || null,
       isClockedOut,
-      clockInLog: inLog || null,
+      clockInLog: lastClockInLog || null,
       clockOutLog: isClockedOut ? lastLog : null
     };
   }, [verifications, user.id, currentTime]);

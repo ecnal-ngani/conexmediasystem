@@ -216,6 +216,7 @@ export default function DashboardPage() {
     return Object.values(grouped).map((day: any) => {
       const dayLogs = day.logs.sort((a: any, b: any) => a.timestamp.toMillis() - b.timestamp.toMillis());
       const inLog = dayLogs.find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
+      const lastInLog = [...dayLogs].reverse().find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
       const outLog = [...dayLogs].reverse().find((l: any) => l.status === 'Logged (Offline)');
 
       const clockInTime = inLog?.timestamp.toDate();
@@ -225,7 +226,7 @@ export default function DashboardPage() {
         ...day,
         clockIn: clockInTime ? format(clockInTime, 'hh:mm a') : '—',
         clockOut: clockOutTime ? format(clockOutTime, 'hh:mm a') : '—',
-        clockInPhoto: inLog?.photoData || inLog?.photoUrl || null,
+        clockInPhoto: inLog?.photoData || inLog?.photoUrl || lastInLog?.photoData || lastInLog?.photoUrl || null,
         clockOutPhoto: outLog?.photoData || outLog?.photoUrl || null
       };
     }).sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5); // Show last 5 entries

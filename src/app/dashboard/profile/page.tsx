@@ -100,6 +100,7 @@ export default function ProfilePage() {
       
       // Clock In is the first 'Logged (Office/WFH)' record
       const inLog = dayLogs.find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
+      const lastInLog = [...dayLogs].reverse().find((l: any) => l.status?.includes('Logged (Office)') || l.status?.includes('Logged (WFH)'));
       // Clock Out is the latest 'Logged (Offline)' record
       const outLog = [...dayLogs].reverse().find((l: any) => l.status === 'Logged (Offline)');
 
@@ -130,6 +131,8 @@ export default function ProfilePage() {
         ...day,
         clockIn: clockInTime ? format(clockInTime, 'hh:mm a') : '—',
         clockOut: clockOutTime ? format(clockOutTime, 'hh:mm a') : '—',
+        clockInPhoto: inLog?.photoData || inLog?.photoUrl || lastInLog?.photoData || lastInLog?.photoUrl || null,
+        clockOutPhoto: outLog?.photoData || outLog?.photoUrl || null,
         duration,
         regularHours,
         overtimeHours,
