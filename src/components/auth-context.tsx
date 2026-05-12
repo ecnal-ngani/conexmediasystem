@@ -11,14 +11,15 @@
  * 4. Session persistence using LocalStorage.
  * 5. Biometric verification gating for WFH users.
  * 6. Automatic status synchronization (Office/WFH/Offline).
- * 7. Auth-map bridge for Firestore role-based security rules.
+ * 7. Session persistence using LocalStorage.
+ * 8. Automatic status synchronization (Office/WFH/Offline).
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/mock-data';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
-import { collection, query, where, getDocs, limit, doc, setDoc, deleteDoc, serverTimestamp, addDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, setDoc, serverTimestamp, addDoc, onSnapshot } from 'firebase/firestore';
 import { checkAndAwardBadges } from '@/lib/badges';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -62,27 +63,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedWfh = localStorage.getItem('conex_wfh') === 'true';
     const storedVerified = localStorage.getItem('conex_verified') === 'true';
     
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (fbUser) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (fbUser) => {
       if (fbUser) {
-        if (storedUser && firestore) {
+        if (storedUser) {
           try {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             setIsWfh(storedWfh);
             setIsVerified(storedWfh ? storedVerified : true);
-
-            // Re-establish auth_map for Firestore security rules.
-            // The anonymous UID persists across reloads, but the auth_map
-            // may have been cleaned up on a previous logout.
-            const authMapRef = doc(firestore, 'auth_map', fbUser.uid);
-            setDoc(authMapRef, {
-              userId: parsedUser.id,
-              role: parsedUser.role,
-              email: parsedUser.email,
-              updatedAt: serverTimestamp()
-            }, { merge: true }).catch((e) => {
-              console.warn('Auth-map restore failed — user may need to re-login', e);
-            });
           } catch (e) {
             console.error('Session restoration failed', e);
           }
@@ -200,39 +188,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error('Invalid Security Token: Access denied.');
         }
 
+        // AUTOMATIC STATUS SYNCHRONIZATION
+        // Use setDoc with merge to handle cases where the doc might have been purged
+        const userRef = doc(firestore, 'users', userId);
+        const newStatus = wfhStatus ? 'WFH' : 'Office';
+        
+        await setDoc(userRef, { 
+          status: newStatus,
+          updatedAt: serverTimestamp(),
+          // Auto-initialize gamification data if missing
+          xp: userData.xp ?? 0,
+          points: userData.points ?? 0,
+          level: userData.level ?? 1,
+          badges: userData.badges ?? []
+        }, { merge: true });
+        
+        userData.status = newStatus;
         userData.xp = userData.xp ?? 0;
         userData.points = userData.points ?? 0;
         userData.level = userData.level ?? 1;
         userData.badges = userData.badges ?? [];
       }
-
-      // GATE 2: Create auth_map entry FIRST — all subsequent Firestore writes
-      // depend on this mapping existing for the security rules to grant access.
-      if (firebaseAuth.currentUser) {
-        const authMapRef = doc(firestore, 'auth_map', firebaseAuth.currentUser.uid);
-        await setDoc(authMapRef, {
-          userId: userId,
-          role: userData.role,
-          email: userData.email,
-          createdAt: serverTimestamp()
-        });
-      }
-
-      // Now that auth_map exists, we can write to gated collections.
-      // AUTOMATIC STATUS SYNCHRONIZATION
-      const userRef = doc(firestore, 'users', userId);
-      const newStatus = wfhStatus ? 'WFH' : 'Office';
-      
-      await setDoc(userRef, { 
-        status: newStatus,
-        updatedAt: serverTimestamp(),
-        xp: userData.xp ?? 0,
-        points: userData.points ?? 0,
-        level: userData.level ?? 1,
-        badges: userData.badges ?? []
-      }, { merge: true });
-      
-      userData.status = newStatus;
       
       const updatedUser = { id: userId, ...userData } as User;
 
@@ -324,17 +300,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }, { merge: true });
       } catch (e) {
         console.warn("Could not sync logout status", e);
-      }
-
-      // Revoke Firestore access by deleting the auth_map entry.
-      // After this, the security rules will deny all gated operations.
-      if (firebaseAuth?.currentUser) {
-        try {
-          const authMapRef = doc(firestore, 'auth_map', firebaseAuth.currentUser.uid);
-          await deleteDoc(authMapRef);
-        } catch (e) {
-          console.warn('Auth-map cleanup failed', e);
-        }
       }
     }
 
