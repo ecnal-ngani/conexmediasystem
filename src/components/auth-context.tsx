@@ -11,15 +11,14 @@
  * 4. Session persistence using LocalStorage.
  * 5. Biometric verification gating for WFH users.
  * 6. Automatic status synchronization (Office/WFH/Offline).
- * 7. Session persistence using LocalStorage.
- * 8. Automatic status synchronization (Office/WFH/Offline).
+ * 7. Auth-map bridge for Firestore role-based security rules.
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/mock-data';
 import { useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
-import { collection, query, where, getDocs, limit, doc, setDoc, serverTimestamp, addDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, setDoc, deleteDoc, serverTimestamp, addDoc, onSnapshot } from 'firebase/firestore';
 import { checkAndAwardBadges } from '@/lib/badges';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -63,14 +62,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedWfh = localStorage.getItem('conex_wfh') === 'true';
     const storedVerified = localStorage.getItem('conex_verified') === 'true';
     
-    const unsubscribe = onAuthStateChanged(firebaseAuth, (fbUser) => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (fbUser) => {
       if (fbUser) {
-        if (storedUser) {
+        if (storedUser && firestore) {
           try {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             setIsWfh(storedWfh);
             setIsVerified(storedWfh ? storedVerified : true);
+
+            // Re-establish auth_map for Firestore security rules.
+            // The anonymous UID persists across reloads, but the auth_map
+            // may have been cleaned up on a previous logout.
+            const authMapRef = doc(firestore, 'auth_map', fbUser.uid);
+            setDoc(authMapRef, {
+              userId: parsedUser.id,
+              role: parsedUser.role,
+              email: parsedUser.email,
+              updatedAt: serverTimestamp()
+            }, { merge: true }).catch((e) => {
+              console.warn('Auth-map restore failed — user may need to re-login', e);
+            });
           } catch (e) {
             console.error('Session restoration failed', e);
           }
@@ -212,6 +224,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const updatedUser = { id: userId, ...userData } as User;
 
+      // GATE 2: Create auth_map entry for Firestore role-based security rules.
+      // This bridges the Firebase anonymous UID to the application user's role,
+      // allowing Firestore rules to enforce per-collection permissions.
+      if (firebaseAuth.currentUser) {
+        const authMapRef = doc(firestore, 'auth_map', firebaseAuth.currentUser.uid);
+        await setDoc(authMapRef, {
+          userId: userId,
+          role: userData.role,
+          email: userData.email,
+          createdAt: serverTimestamp()
+        });
+      }
+
       setUser(updatedUser);
       setIsWfh(wfhStatus);
       const verifiedStatus = !wfhStatus;
@@ -300,6 +325,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }, { merge: true });
       } catch (e) {
         console.warn("Could not sync logout status", e);
+      }
+
+      // Revoke Firestore access by deleting the auth_map entry.
+      // After this, the security rules will deny all gated operations.
+      if (firebaseAuth?.currentUser) {
+        try {
+          const authMapRef = doc(firestore, 'auth_map', firebaseAuth.currentUser.uid);
+          await deleteDoc(authMapRef);
+        } catch (e) {
+          console.warn('Auth-map cleanup failed', e);
+        }
       }
     }
 
