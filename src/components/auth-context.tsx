@@ -200,33 +200,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error('Invalid Security Token: Access denied.');
         }
 
-        // AUTOMATIC STATUS SYNCHRONIZATION
-        // Use setDoc with merge to handle cases where the doc might have been purged
-        const userRef = doc(firestore, 'users', userId);
-        const newStatus = wfhStatus ? 'WFH' : 'Office';
-        
-        await setDoc(userRef, { 
-          status: newStatus,
-          updatedAt: serverTimestamp(),
-          // Auto-initialize gamification data if missing
-          xp: userData.xp ?? 0,
-          points: userData.points ?? 0,
-          level: userData.level ?? 1,
-          badges: userData.badges ?? []
-        }, { merge: true });
-        
-        userData.status = newStatus;
         userData.xp = userData.xp ?? 0;
         userData.points = userData.points ?? 0;
         userData.level = userData.level ?? 1;
         userData.badges = userData.badges ?? [];
       }
-      
-      const updatedUser = { id: userId, ...userData } as User;
 
-      // GATE 2: Create auth_map entry for Firestore role-based security rules.
-      // This bridges the Firebase anonymous UID to the application user's role,
-      // allowing Firestore rules to enforce per-collection permissions.
+      // GATE 2: Create auth_map entry FIRST — all subsequent Firestore writes
+      // depend on this mapping existing for the security rules to grant access.
       if (firebaseAuth.currentUser) {
         const authMapRef = doc(firestore, 'auth_map', firebaseAuth.currentUser.uid);
         await setDoc(authMapRef, {
@@ -236,6 +217,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: serverTimestamp()
         });
       }
+
+      // Now that auth_map exists, we can write to gated collections.
+      // AUTOMATIC STATUS SYNCHRONIZATION
+      const userRef = doc(firestore, 'users', userId);
+      const newStatus = wfhStatus ? 'WFH' : 'Office';
+      
+      await setDoc(userRef, { 
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+        xp: userData.xp ?? 0,
+        points: userData.points ?? 0,
+        level: userData.level ?? 1,
+        badges: userData.badges ?? []
+      }, { merge: true });
+      
+      userData.status = newStatus;
+      
+      const updatedUser = { id: userId, ...userData } as User;
 
       setUser(updatedUser);
       setIsWfh(wfhStatus);
