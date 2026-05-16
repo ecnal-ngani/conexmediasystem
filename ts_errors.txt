@@ -1,0 +1,19 @@
+﻿
+> nextn@0.1.0 typecheck
+> tsc --noEmit
+
+src/app/dashboard/admin/page.tsx(1216,87): error TS18047: 'currentUser' is possibly 'null'.
+src/app/dashboard/admin/page.tsx(1228,87): error TS18047: 'currentUser' is possibly 'null'.
+src/app/dashboard/calendar/page.tsx(224,21): error TS18047: 'user' is possibly 'null'.
+src/app/dashboard/calendar/page.tsx(225,23): error TS18047: 'user' is possibly 'null'.
+src/app/dashboard/calendar/page.tsx(346,22): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/app/dashboard/page.tsx(244,79): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: Props): PolarAngleAxis', gave the following error.
+    Object literal may only specify known properties, and 'textTransform' does not exist in type 'SVGProps<SVGTextElement> | ReactElement<SVGElement, string | JSXElementConstructor<any>> | ((props: any) => ReactElement<...>)'.
+  Overload 2 of 2, '(props: Props, context: any): PolarAngleAxis', gave the following error.
+    Object literal may only specify known properties, and 'textTransform' does not exist in type 'SVGProps<SVGTextElement> | ReactElement<SVGElement, string | JSXElementConstructor<any>> | ((props: any) => ReactElement<...>)'.
+src/app/dashboard/page.tsx(358,21): error TS18047: 'staff' is possibly 'null'.
+src/app/dashboard/production/page.tsx(267,21): error TS18047: 'user' is possibly 'null'.
+src/app/dashboard/production/page.tsx(268,23): error TS18047: 'user' is possibly 'null'.
+src/app/dashboard/profile/page.tsx(76,71): error TS18047: 'user' is possibly 'null'.
+src/lib/badges.ts(1,10): error TS2459: Module '"@/components/auth-context"' declares 'User' locally, but it is not exported.

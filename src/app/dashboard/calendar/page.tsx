@@ -139,6 +139,7 @@ export default function CalendarPage() {
   const { data: brands } = useCollection<any>(brandsQuery);
 
   const isAdmin = user?.role === 'ADMIN';
+  const isClockedIn = isAdmin || user?.status === 'Office' || user?.status === 'WFH';
 
   const filteredProjects = useMemo(() => {
     if (!projects) return [];
@@ -198,6 +199,7 @@ export default function CalendarPage() {
   }, [schedules, projects, tasks]);
 
   const handleCreateEvent = () => {
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     const resolvedType = eventType === 'Custom' ? customEventType.trim() : eventType;
     if (!firestore || !selectedBrandId || !eventDate || !resolvedType) {
       toast({
@@ -246,6 +248,7 @@ export default function CalendarPage() {
 
   const handleDeleteEvent = () => {
     if (!firestore || !selectedEvent || !selectedEvent.id) return;
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
 
     let collectionName = '';
     switch (selectedEvent.source) {
@@ -267,44 +270,105 @@ export default function CalendarPage() {
     setSelectedEvent(null);
   };
 
-  const handleCompleteTask = (taskId: string, title: string) => {
+  const handleCompleteTask = async (taskId: string, title: string) => {
     if (!firestore) return;
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     const taskRef = doc(firestore, 'tasks', taskId);
     const updateData = { 
       status: 'completed',
       updatedAt: serverTimestamp()
     };
-    updateDoc(taskRef, updateData).catch(async (err) => {
+    try {
+      await updateDoc(taskRef, updateData);
+
+      // GAMIFICATION: Award XP based on task priority
+      const task = filteredTasks?.find((t: any) => t.id === taskId);
+      if (task && task.assignedToId) {
+        const xpReward = task.priority === 'RUSH' ? 300 : task.priority === 'HIGH' ? 200 : 100;
+        const pointsReward = task.priority === 'RUSH' ? 75 : task.priority === 'HIGH' ? 50 : 25;
+        const artistRef = doc(firestore, 'users', task.assignedToId);
+        const { increment } = await import('firebase/firestore');
+        await updateDoc(artistRef, {
+          xp: increment(xpReward),
+          points: increment(pointsReward),
+          updatedAt: serverTimestamp()
+        }).catch(console.error);
+        
+        if (user?.role === 'BRAND_MANAGER' && user?.id) {
+          const bmRef = doc(firestore, 'users', user.id);
+          await updateDoc(bmRef, {
+            xp: increment(xpReward),
+            points: increment(pointsReward),
+            updatedAt: serverTimestamp()
+          }).catch(console.error);
+        }
+        
+        toast({ title: `+${xpReward} XP Awarded`, description: `${title} completed — XP granted.` });
+      } else {
+        toast({ title: "Task Synchronized", description: `${title} marked as completed.` });
+      }
+    } catch (err: any) {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: taskRef.path,
         operation: 'update',
         requestResourceData: updateData
       }));
-    });
-    toast({ title: "Task Synchronized", description: `${title} marked as completed.` });
+    }
     setSelectedEvent(null);
   };
 
-  const handleCompleteProject = (projectId: string, brand: string) => {
+  const handleCompleteProject = async (projectId: string, brand: string) => {
     if (!firestore) return;
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     const projectRef = doc(firestore, 'projects', projectId);
     const updateData = { 
       status: 'Approved',
       updatedAt: serverTimestamp()
     };
-    updateDoc(projectRef, updateData).catch(async (err) => {
+    try {
+      await updateDoc(projectRef, updateData);
+
+      // GAMIFICATION: Award XP based on project priority
+      const project = filteredProjects?.find((p: any) => p.id === projectId);
+      if (project && project.artistIds) {
+        const xpReward = project.priority === 'RUSH' ? 300 : project.priority === 'HIGH' ? 200 : 100;
+        const pointsReward = project.priority === 'RUSH' ? 75 : project.priority === 'HIGH' ? 50 : 25;
+        const { increment } = await import('firebase/firestore');
+        for (const artistId of project.artistIds) {
+          const artistRef = doc(firestore, 'users', artistId);
+          await updateDoc(artistRef, {
+            xp: increment(xpReward),
+            points: increment(pointsReward),
+            updatedAt: serverTimestamp()
+          }).catch(console.error);
+        }
+        
+        if (user?.role === 'BRAND_MANAGER' && user?.id) {
+          const bmRef = doc(firestore, 'users', user.id);
+          await updateDoc(bmRef, {
+            xp: increment(xpReward),
+            points: increment(pointsReward),
+            updatedAt: serverTimestamp()
+          }).catch(console.error);
+        }
+        
+        toast({ title: `+${xpReward} XP Awarded`, description: `${brand} project approved — XP distributed.` });
+      } else {
+        toast({ title: "Mission Accomplished", description: `${brand} project marked as Approved.` });
+      }
+    } catch (err: any) {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: projectRef.path,
         operation: 'update',
         requestResourceData: updateData
       }));
-    });
-    toast({ title: "Mission Accomplished", description: `${brand} project marked as Approved.` });
+    }
     setSelectedEvent(null);
   };
 
   const handleCompleteSchedule = (scheduleId: string, title: string) => {
     if (!firestore) return;
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     const scheduleRef = doc(firestore, 'schedules', scheduleId);
     const updateData = { 
       status: 'Completed',
@@ -323,6 +387,7 @@ export default function CalendarPage() {
 
   const handleUpdateEventStatus = (id: string, source: string, newStatus: string) => {
     if (!firestore) return;
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     let collectionName = '';
     switch (source) {
       case 'schedule': collectionName = 'schedules'; break;
@@ -433,7 +498,13 @@ export default function CalendarPage() {
         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Operations Command</h1>
         
         {user?.role !== 'INTERN' && (
-          <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
+          <Dialog open={isAddEventOpen} onOpenChange={(open) => {
+              if (open && user?.role !== 'ADMIN' && user?.status !== 'Office' && user?.status !== 'WFH') {
+                toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first before scheduling events." });
+                return;
+              }
+              setIsAddEventOpen(open);
+            }}>
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-primary/90 font-bold h-10 px-6 rounded-xl shadow-lg shadow-red-100 text-white gap-2">
                 <Plus className="w-4 h-4" />

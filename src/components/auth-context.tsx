@@ -25,6 +25,7 @@ import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import staffData from '@/app/lib/initial-staff.json';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -55,6 +56,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const firestore = useFirestore();
   const firebaseAuth = useFirebaseAuth();
+  const { toast } = useToast();
+
+  const userRef = React.useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  // Real-time listener for XP & Level Up
+  useEffect(() => {
+    if (!user?.id || !firestore) return;
+    
+    const unsubscribe = onSnapshot(doc(firestore, 'users', user.id), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Partial<User>;
+        const currentUser = userRef.current;
+        
+        if (data.xp !== undefined && currentUser) {
+          const currentLevel = data.level || 1;
+          const calculatedLevel = Math.floor(data.xp / 1000) + 1;
+          
+          if (data.xp > (currentUser.xp || 0) && calculatedLevel > currentLevel) {
+            // Level Up!
+            setDoc(doc(firestore, 'users', user.id), { 
+              level: calculatedLevel,
+            }, { merge: true });
+            
+            toast({
+              title: "Level Up! 🚀",
+              description: `Congratulations! You've reached Level ${calculatedLevel}.`,
+            });
+          }
+        }
+
+        let hasChanges = false;
+        if (currentUser) {
+          if (data.xp !== currentUser.xp) hasChanges = true;
+          if (data.points !== currentUser.points) hasChanges = true;
+          if (data.level !== currentUser.level) hasChanges = true;
+          if (data.status !== currentUser.status) hasChanges = true;
+          if (data.badges?.length !== currentUser.badges?.length) hasChanges = true;
+        }
+
+        if (hasChanges && currentUser) {
+          const updatedUser = { ...currentUser, ...data } as User;
+          setUser(updatedUser);
+          localStorage.setItem('conex_session', JSON.stringify(updatedUser));
+        }
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [user?.id, firestore, toast]);
 
   useEffect(() => {
     if (!firebaseAuth) return;
@@ -97,8 +150,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userRef = doc(firestore, 'users', user.id);
         await setDoc(userRef, { 
           lastSeen: serverTimestamp(),
-          // Automatically recover status if it was accidentally set to Offline
-          status: isWfh ? 'WFH' : 'Office',
           updatedAt: serverTimestamp() 
         }, { merge: true });
       } catch (e) {
@@ -167,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             securityToken: MASTER_TOKEN,
             role: 'ADMIN',
             hourlyRate: adminRoleInfo?.rate || 500,
-            status: wfhStatus ? 'WFH' : 'Office',
+            status: 'Offline',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             avatarUrl: 'https://picsum.photos/seed/admin/200/200'
@@ -188,22 +239,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error('Invalid Security Token: Access denied.');
         }
 
-        // AUTOMATIC STATUS SYNCHRONIZATION
-        // Use setDoc with merge to handle cases where the doc might have been purged
+        // Auto-initialize gamification data if missing (status set on manual clock-in)
         const userRef = doc(firestore, 'users', userId);
-        const newStatus = wfhStatus ? 'WFH' : 'Office';
         
         await setDoc(userRef, { 
-          status: newStatus,
           updatedAt: serverTimestamp(),
-          // Auto-initialize gamification data if missing
           xp: userData.xp ?? 0,
           points: userData.points ?? 0,
           level: userData.level ?? 1,
           badges: userData.badges ?? []
         }, { merge: true });
         
-        userData.status = newStatus;
         userData.xp = userData.xp ?? 0;
         userData.points = userData.points ?? 0;
         userData.level = userData.level ?? 1;
@@ -214,39 +260,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(updatedUser);
       setIsWfh(wfhStatus);
-      const verifiedStatus = !wfhStatus;
-      setIsVerified(verifiedStatus);
+      setIsVerified(true);
       
       localStorage.setItem('conex_session', JSON.stringify(updatedUser));
       localStorage.setItem('conex_wfh', wfhStatus.toString());
-      localStorage.setItem('conex_verified', verifiedStatus.toString());
+      localStorage.setItem('conex_verified', 'true');
       
-        // Log check-in for attendance records
-        const verificationsRef = collection(firestore, 'verifications');
-        const checkInData = {
-          userId: userId,
-          userName: userData.name,
-          userSystemId: userData.systemId,
-          email: userData.email || '',
-          timestamp: serverTimestamp(),
-          isVerified: true,
-          method: wfhStatus ? 'Biometric WFH' : 'Office Terminal',
-          status: wfhStatus ? 'Logged (WFH)' : 'Logged (Office)',
-          devicePlatform: navigator.userAgent
-        };
-        addDoc(verificationsRef, checkInData).catch(console.error);
-
-        // Check for Early Bird badge
-        const newBadges = await checkAndAwardBadges({ id: userId, ...userData } as User, firestore, 'clock-in');
-        if (newBadges) {
-          userData.badges = newBadges;
-        }
-
-        if (wfhStatus) {
-          router.push('/verify');
-        } else {
-          router.push('/dashboard');
-        }
+      router.push('/dashboard');
     } catch (err: any) {
       setIsLoading(false);
       throw err;

@@ -329,15 +329,15 @@ export default function DashboardPage() {
 
         {/* RIGHT: SQUAD INTEL */}
         <div className="lg:col-span-4 space-y-8">
-          {/* SQUAD RANKING */}
+          {/* XP LEADERBOARD */}
           <Card className="border-2 shadow-sm rounded-3xl bg-white overflow-hidden">
             <CardHeader className="bg-primary/5 border-b p-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-2">
                   <Trophy className="w-4 h-4 text-orange-500" />
-                  Squad Ranking
+                  XP Leaderboard
                 </CardTitle>
-                <div className="p-1 bg-white rounded-lg shadow-sm border text-[8px] font-black text-primary">TOP 10</div>
+                <div className="p-1 bg-white rounded-lg shadow-sm border text-[8px] font-black text-primary">ALL STAFF</div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -348,7 +348,6 @@ export default function DashboardPage() {
                   ) : (
                     staff
                       .sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0))
-                      .slice(0, 10)
                       .map((emp: any, index: number) => (
                         <div key={emp.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-all group">
                           <div className="flex items-center gap-3">

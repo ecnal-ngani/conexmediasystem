@@ -627,7 +627,7 @@ export default function AdminPage() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Full Name</Label>
-                  <Input placeholder="John Doe" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} />
+                  <Input placeholder="JOHN DOE" value={newUserName} onChange={(e) => setNewUserName(e.target.value.toUpperCase())} className="uppercase" />
                 </div>
                 <div className="space-y-2">
                   <Label>Work Email</Label>
@@ -1236,7 +1236,18 @@ export default function AdminPage() {
                               onClick={async () => {
                                 const reqRef = doc(firestore, 'leave_requests', req.id);
                                 await setDoc(reqRef, { status: 'APPROVED', updatedBy: currentUser?.name || 'System', updatedAt: serverTimestamp() }, { merge: true });
-                                toast({ title: "Request Approved", description: `Leave for ${req.userName} is authorized.` });
+                                
+                                // Deduct leave balance from the user's record
+                                if (req.userId && req.duration) {
+                                  const userRef = doc(firestore, 'users', req.userId);
+                                  // Get the staff member to read current balance
+                                  const staffMember = staff?.find((s: any) => s.id === req.userId);
+                                  const currentBalance = staffMember?.leaveBalance ?? 8;
+                                  const newBalance = Math.max(0, currentBalance - (req.duration || 0));
+                                  await setDoc(userRef, { leaveBalance: newBalance, updatedAt: serverTimestamp() }, { merge: true });
+                                }
+                                
+                                toast({ title: "Request Approved", description: `Leave for ${req.userName} is authorized. Balance deducted by ${req.duration || 0} day(s).` });
                               }}
                             >
                               Approve

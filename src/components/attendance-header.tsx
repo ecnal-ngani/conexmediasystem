@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/components/auth-context';
 
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
@@ -22,6 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { ClockOutCamera } from '@/components/clock-out-camera';
+import { checkAndAwardBadges } from '@/lib/badges';
+import { PersonalPayrollSheet } from '@/components/personal-payroll-sheet';
 
 interface AttendanceHeaderProps {
   user: any;
@@ -34,6 +37,7 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
   const [cameraMode, setCameraMode] = useState<'in' | 'out'>('out');
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { isWfh, updateUser } = useAuth();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -127,8 +131,8 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
       email: user.email || '',
       timestamp: serverTimestamp(),
       isVerified: true,
-      method: 'Camera Clock In',
-      status: 'Logged (WFH)',
+      method: isWfh ? 'Biometric WFH' : 'Office Terminal',
+      status: isWfh ? 'Logged (WFH)' : 'Logged (Office)',
       photoData,
       devicePlatform: navigator.userAgent
     };
@@ -146,11 +150,21 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
     try {
       const userRef = doc(firestore, 'users', user.id);
       await setDoc(userRef, { 
-        status: 'WFH',
+        status: isWfh ? 'WFH' : 'Office',
         updatedAt: serverTimestamp() 
       }, { merge: true });
     } catch (e) {
       console.warn('Status sync failed', e);
+    }
+
+    // Check for Early Bird badge
+    try {
+      const newBadges = await checkAndAwardBadges(user, firestore, 'clock-in');
+      if (newBadges) {
+        updateUser({ badges: newBadges });
+      }
+    } catch (e) {
+      console.warn('Badge check failed', e);
     }
 
     setIsCameraOpen(false);
@@ -159,7 +173,7 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
       title: "⏱ Clocked In Successfully",
       description: "Your session has started with photo verification.",
     });
-  }, [firestore, user, toast]);
+  }, [firestore, user, toast, isWfh, updateUser]);
 
   const handleClockOutCapture = useCallback(async (photoData: string) => {
     if (!firestore || !user) return;
@@ -232,23 +246,28 @@ export function AttendanceHeader({ user, verifications }: AttendanceHeaderProps)
             </div>
 
             {/* Clock Buttons */}
-            {isClockedIn ? (
-              <Button
-                onClick={() => { setCameraMode('out'); setIsCameraOpen(true); }}
-                className="bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white font-black h-12 px-6 rounded-2xl border border-white/20 shadow-lg gap-2 transition-all hover:scale-[1.02]"
-              >
-                <LogOut className="w-5 h-5" />
-                Clock Out
-              </Button>
-            ) : (
-              <Button
-                onClick={() => { setCameraMode('in'); setIsCameraOpen(true); }}
-                className="bg-green-500 hover:bg-green-400 text-white font-black h-12 px-6 rounded-2xl border border-white/20 shadow-lg gap-2 transition-all hover:scale-[1.02]"
-              >
-                <Camera className="w-5 h-5" />
-                Clock In
-              </Button>
-            )}
+            <div className="flex gap-3 items-center">
+              {user.role !== 'INTERN' && (
+                <PersonalPayrollSheet user={user} verifications={verifications} />
+              )}
+              {isClockedIn ? (
+                <Button
+                  onClick={() => { setCameraMode('out'); setIsCameraOpen(true); }}
+                  className="bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white font-black h-12 px-6 rounded-2xl border border-white/20 shadow-lg gap-2 transition-all hover:scale-[1.02]"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Clock Out
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => { setCameraMode('in'); setIsCameraOpen(true); }}
+                  className="bg-green-500 hover:bg-green-400 text-white font-black h-12 px-6 rounded-2xl border border-white/20 shadow-lg gap-2 transition-all hover:scale-[1.02]"
+                >
+                  <Camera className="w-5 h-5" />
+                  Clock In
+                </Button>
+              )}
+            </div>
           </div>
         </div>
         

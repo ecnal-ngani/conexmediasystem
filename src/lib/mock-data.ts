@@ -13,6 +13,7 @@ export interface User {
   points?: number;
   level?: number;
   badges?: string[];
+  leaveBalance?: number;
   school?: string;
   course?: string;
   startDate?: string;

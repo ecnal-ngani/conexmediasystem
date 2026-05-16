@@ -280,6 +280,10 @@ export function QuickActions() {
   };
 
   const handleCreateProject = () => {
+    if (user?.role !== 'ADMIN' && user?.status !== 'Office' && user?.status !== 'WFH') {
+      toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." });
+      return;
+    }
     if (!firestore || !fileCode || !projectBrandId || !artist || !projectDueDate || !user) {
       toast({ variant: "destructive", title: "Missing Information", description: "Brand, Artist, and Due Date are required." });
       return;
@@ -301,6 +305,10 @@ export function QuickActions() {
   };
 
   const handleCreateSchedule = () => {
+    if (user?.role !== 'ADMIN' && user?.status !== 'Office' && user?.status !== 'WFH') {
+      toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." });
+      return;
+    }
     const resolvedType = eventType === 'Custom' ? customEventType.trim() : eventType;
     if (!firestore || !resolvedType || !eventDate || !user) return;
     const ref = collection(firestore, 'schedules');
@@ -326,6 +334,10 @@ export function QuickActions() {
   };
 
   const handleCreateTask = () => {
+    if (user?.role !== 'ADMIN' && user?.status !== 'Office' && user?.status !== 'WFH') {
+      toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." });
+      return;
+    }
     if (!firestore || !taskTitle || !assignedToId || !user) return;
     const assignee = staffList?.find(s => s.id === assignedToId);
     if (!assignee) return;

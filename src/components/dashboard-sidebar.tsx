@@ -120,6 +120,10 @@ export function DashboardSidebar() {
   }, [firestore, user]);
 
   const handleRequestLeave = async () => {
+    if (user?.role !== 'ADMIN' && user?.status !== 'Office' && user?.status !== 'WFH') {
+      toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." });
+      return;
+    }
     if (!firestore || !user || !startDate || !endDate || !reason) {
       toast({ variant: "destructive", title: "Missing Information", description: "Please fill in all fields." });
       return;
@@ -136,26 +140,29 @@ export function DashboardSidebar() {
     // Calculate duration (inclusive of start and end date)
     const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    // Calculate current usage from userLeaves (Approved or Pending)
-    const currentUsage = userLeaves.reduce((acc, curr) => {
+    // Calculate total approved/pending days this year
+    const currentYear = new Date().getFullYear();
+    const totalUsed = userLeaves.reduce((acc, curr) => {
       if (curr.status !== 'DECLINED') {
-        const s = new Date(curr.startDate);
-        const e = new Date(curr.endDate);
-        const d = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        if (curr.dutyType === 'WFH') acc.wfh += d;
-        else acc.office += d;
+        // Only count leaves from the current year
+        const leaveYear = new Date(curr.startDate).getFullYear();
+        if (leaveYear === currentYear) {
+          const s = new Date(curr.startDate);
+          const e = new Date(curr.endDate);
+          acc += Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        }
       }
       return acc;
-    }, { office: 0, wfh: 0 });
+    }, 0);
 
-    const limit = dutyType === 'WFH' ? 5 : 8;
-    const used = dutyType === 'WFH' ? currentUsage.wfh : currentUsage.office;
+    const yearlyLimit = 8;
+    const remaining = Math.max(0, yearlyLimit - totalUsed);
 
-    if (used + durationDays > limit) {
+    if (durationDays > remaining) {
       toast({ 
         variant: "destructive", 
         title: "Limit Exceeded", 
-        description: `You have ${limit - used} days remaining for ${dutyType} leave. This request is ${durationDays} days.` 
+        description: `You have ${remaining} day(s) remaining this year. This request is ${durationDays} day(s).` 
       });
       return;
     }
@@ -229,6 +236,7 @@ export function DashboardSidebar() {
         {/* User Profile Summary - Now the primary gateway to the profile page */}
         <Link href="/dashboard/profile" className={cn(
           "mb-8 flex items-center gap-3 w-full p-2 rounded-xl transition-all hover:bg-slate-50 active:scale-[0.98] group",
+          pathname?.startsWith('/dashboard/profile') ? "bg-slate-100 ring-1 ring-slate-200" : "",
           isCollapsed ? "justify-center" : "px-2"
         )}>
           <div className="relative shrink-0">
@@ -276,34 +284,40 @@ export function DashboardSidebar() {
         </Link>
 
         <SidebarMenu>
-          {filteredNavItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton 
-                asChild 
-                isActive={pathname === item.url}
-                tooltip={item.title}
-                className={cn(
-                  "h-11 rounded-xl transition-all mb-1.5",
-                  pathname === item.url 
-                    ? 'bg-primary text-white font-bold hover:bg-primary/90 shadow-md' 
-                    : 'text-slate-600 hover:bg-slate-100',
-                  isCollapsed ? "px-0 justify-center" : "px-3"
-                )}
-              >
-                <Link href={item.url} className="flex items-center gap-3">
-                  <item.icon className={cn(
-                    "w-5 h-5 shrink-0",
-                    pathname === item.url ? 'text-white' : 'text-slate-400'
-                  )} />
-                  {!isCollapsed && (
-                    <span className="text-sm font-medium tracking-tight">
-                      {item.title}
-                    </span>
+          {filteredNavItems.map((item) => {
+            const isActive = item.url === '/dashboard' 
+              ? pathname === '/dashboard' 
+              : pathname?.startsWith(item.url);
+
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={isActive}
+                  tooltip={item.title}
+                  className={cn(
+                    "h-11 rounded-xl transition-all mb-1.5",
+                    isActive 
+                      ? 'bg-slate-50 text-primary font-bold' 
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-primary',
+                    isCollapsed ? "px-0 justify-center" : "px-3"
                   )}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+                >
+                  <Link href={item.url} className="flex items-center gap-3">
+                    <item.icon className={cn(
+                      "w-5 h-5 shrink-0",
+                      isActive ? 'text-primary' : 'text-slate-400'
+                    )} />
+                    {!isCollapsed && (
+                      <span className="text-sm font-medium tracking-tight">
+                        {item.title}
+                      </span>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarContent>
 
@@ -346,8 +360,8 @@ export function DashboardSidebar() {
                     <Select value={dutyType} onValueChange={setDutyType}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="OFFICE">Office (8 Days Limit)</SelectItem>
-                        <SelectItem value="WFH">WFH (5 Days Limit)</SelectItem>
+                        <SelectItem value="OFFICE">Office</SelectItem>
+                        <SelectItem value="WFH">WFH</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

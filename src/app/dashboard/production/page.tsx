@@ -183,8 +183,11 @@ export default function ProductionPage() {
     });
   }, [projects, searchQuery, statusFilter, priorityFilter, typeFilter]);
 
+  const isClockedIn = user?.role === 'ADMIN' || user?.status === 'Office' || user?.status === 'WFH';
+
   const handleUpdateStatus = async (projectId: string, newStatus: string) => {
     if (!firestore) return;
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     const projectRef = doc(firestore, 'projects', projectId);
     const updateData: any = { 
       status: newStatus, 
@@ -200,11 +203,13 @@ export default function ProductionPage() {
       if (newStatus === 'Approved') {
         const project = projects?.find((p: any) => p.id === projectId);
         if (project && project.artistIds) {
+          // XP by priority: NORMAL=100, HIGH=200, RUSH=300
+          const xpReward = project.priority === 'RUSH' ? 300 : project.priority === 'HIGH' ? 200 : 100;
+          const pointsReward = project.priority === 'RUSH' ? 75 : project.priority === 'HIGH' ? 50 : 25;
+
           // Award to all involved artists
           for (const artistId of project.artistIds) {
             const artistRef = doc(firestore, 'users', artistId);
-            const xpReward = project.priority === 'RUSH' ? 200 : 100;
-            const pointsReward = project.priority === 'RUSH' ? 50 : 20;
 
             // Use increment for atomic updates
             const { increment } = await import('firebase/firestore');
@@ -214,6 +219,18 @@ export default function ProductionPage() {
               updatedAt: serverTimestamp()
             }).catch(console.error);
           }
+          
+          if (user?.role === 'BRAND_MANAGER' && user?.id) {
+            const bmRef = doc(firestore, 'users', user.id);
+            const { increment } = await import('firebase/firestore');
+            await updateDoc(bmRef, {
+              xp: increment(xpReward),
+              points: increment(pointsReward),
+              updatedAt: serverTimestamp()
+            }).catch(console.error);
+          }
+          
+          toast({ title: `+${xpReward} XP Awarded`, description: `${project.priority} project approved — XP distributed to artists.` });
         }
       }
     } catch (err: any) {
@@ -227,6 +244,7 @@ export default function ProductionPage() {
 
   const handleUpdatePriority = (projectId: string, newPriority: string) => {
     if (!firestore) return;
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     const projectRef = doc(firestore, 'projects', projectId);
     const updateData = { 
       priority: newPriority, 
@@ -246,6 +264,7 @@ export default function ProductionPage() {
   };
 
   const handleAddProject = () => {
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     if (!firestore || !fileCode || !selectedBrandId || selectedArtists.length === 0 || !dueDate) {
       toast({ variant: "destructive", title: "Missing Information", description: "Brand, Artist, and Due Date are required." });
       return;
@@ -324,6 +343,7 @@ export default function ProductionPage() {
   };
 
   const handleUpdateLink = () => {
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     if (!firestore || !selectedProject || !editingLink) return;
     const projectRef = doc(firestore, 'projects', selectedProject.id);
     const updates = { canvasLink: editingLink, updatedAt: serverTimestamp() };
@@ -341,6 +361,7 @@ export default function ProductionPage() {
 
   const handleDeleteProject = (projectId: string, code: string) => {
     if (!firestore) return;
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     const projectRef = doc(firestore, 'projects', projectId);
     deleteDoc(projectRef).then(() => {
       toast({ title: "Project Terminated", description: `${code} purged.` });
@@ -353,6 +374,7 @@ export default function ProductionPage() {
   };
 
   const handleSubmission = () => {
+    if (!isClockedIn) { toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first." }); return; }
     if (!firestore || !submittingProject || !submissionLink) return;
     
     const projectRef = doc(firestore, 'projects', submittingProject.id);
@@ -381,10 +403,12 @@ export default function ProductionPage() {
   };
 
   const canEditStatus = (project: any) => {
-    if (user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER') return true;
+    if (user?.role === 'ADMIN') return true;
+    if (!isClockedIn) return false;
+    if (user?.role === 'BRAND_MANAGER') return true;
     return project.artistId === user?.id;
   };
-  const canTerminate = user?.role === 'ADMIN' || user?.role === 'BRAND_MANAGER';
+  const canTerminate = (user?.role === 'ADMIN') || ((user?.role === 'BRAND_MANAGER') && isClockedIn);
 
   return (
     <div className="w-full space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -519,7 +543,13 @@ export default function ProductionPage() {
             )}
 
             {user?.role !== 'INTERN' && (
-              <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
+              <Dialog open={isAddProjectOpen} onOpenChange={(open) => {
+                if (open && user?.role !== 'ADMIN' && user?.status !== 'Office' && user?.status !== 'WFH') {
+                  toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first before adding projects." });
+                  return;
+                }
+                setIsAddProjectOpen(open);
+              }}>
                 <DialogTrigger asChild>
                   <Button className="h-10 bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-red-100 text-xs text-white flex-1">
                     <Plus className="w-4 h-4 mr-1.5" />

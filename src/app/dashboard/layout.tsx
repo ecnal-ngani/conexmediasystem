@@ -15,16 +15,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        router.push('/login');
-      } else if (isWfh && !isVerified) {
-        router.push('/verify');
-      }
+    if (!isLoading && !user) {
+      router.push('/login');
     }
-  }, [user, isLoading, isWfh, isVerified, router]);
+  }, [user, isLoading, router]);
 
-  if (isLoading || !user || (isWfh && !isVerified)) {
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">

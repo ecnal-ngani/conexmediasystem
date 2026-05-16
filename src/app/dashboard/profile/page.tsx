@@ -111,6 +111,28 @@ export default function ProfilePage() {
       let regularHours = '—';
       let overtimeHours = '—';
       let totalMinutes = 0;
+      let lateDeductionStr = '—';
+      
+      if (clockInTime) {
+        const hour = clockInTime.getHours();
+        const min = clockInTime.getMinutes();
+        const totalMins = hour * 60 + min;
+        const targetMins = 9 * 60; // 9:00 AM
+        
+        // 15-minute grace period
+        if (totalMins > targetMins + 15) {
+          const lateMinutes = totalMins - targetMins; // Late from 9:00 AM
+          if (user.role !== 'INTERN') {
+            const hourlyRate = user.hourlyRate || 0;
+            const ratePerMinute = hourlyRate / 60;
+            const deductionAmount = lateMinutes * ratePerMinute;
+            lateDeductionStr = `-₱${deductionAmount.toFixed(2)} (${lateMinutes}m)`;
+          } else {
+            lateDeductionStr = `${lateMinutes}m late`;
+          }
+        }
+      }
+
       if (clockInTime && clockOutTime) {
         const diff = differenceInMinutes(clockOutTime, clockInTime);
         totalMinutes = diff;
@@ -136,26 +158,21 @@ export default function ProfilePage() {
         duration,
         regularHours,
         overtimeHours,
-        totalMinutes
+        totalMinutes,
+        lateDeduction: lateDeductionStr
       };
     }).sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [allVerifications]);
 
-  const leaveBalance = useMemo(() => {
-    if (!userLeaves) return { office: 0, wfh: 0 };
-    return userLeaves.reduce((acc: any, curr: any) => {
-      if (curr.status !== 'DECLINED') {
-        const d = curr.duration || 0;
-        if (curr.dutyType === 'WFH') acc.wfh += d;
-        else acc.office += d;
-      }
-      return acc;
-    }, { office: 0, wfh: 0 });
-  }, [userLeaves]);
+  const leaveBalance = user?.leaveBalance ?? 8;
 
   if (!mounted || !user) return null;
 
   const handleSave = () => {
+    if (user?.role !== 'ADMIN' && user?.status !== 'Office' && user?.status !== 'WFH') {
+      toast({ variant: "destructive", title: "Clock In Required", description: "You need to clock in first to edit your profile." });
+      return;
+    }
     updateUser({
       name: editName,
       avatarUrl: editAvatar
@@ -318,19 +335,20 @@ export default function ProfilePage() {
                     <TableHead className="font-bold text-slate-400 text-xs">Regular</TableHead>
                     <TableHead className="font-bold text-slate-400 text-xs">OT</TableHead>
                     <TableHead className="font-bold text-slate-400 text-xs">Total</TableHead>
+                    <TableHead className="font-bold text-slate-400 text-xs text-center">Late Deduction</TableHead>
                     <TableHead className="font-bold text-slate-400 text-xs text-right pr-8">Type</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {historyLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-20">
+                      <TableCell colSpan={8} className="text-center py-20">
                         <Loader2 className="w-8 h-8 animate-spin mx-auto text-slate-200" />
                       </TableCell>
                     </TableRow>
                   ) : attendanceData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-20 text-slate-400 font-medium italic">
+                      <TableCell colSpan={8} className="text-center py-20 text-slate-400 font-medium italic">
                         No recent attendance records detected.
                       </TableCell>
                     </TableRow>
@@ -354,6 +372,11 @@ export default function ProfilePage() {
                         </TableCell>
                         <TableCell className="py-5">
                           <span className="font-black text-slate-900">{row.duration}</span>
+                        </TableCell>
+                        <TableCell className="py-5 text-center">
+                          <span className={cn("font-bold text-xs", row.lateDeduction !== '—' ? "text-red-600 bg-red-50 px-2 py-1 rounded-md" : "text-slate-300")}>
+                            {row.lateDeduction}
+                          </span>
                         </TableCell>
                         <TableCell className="text-right pr-8 py-5">
                           <Badge 
@@ -428,10 +451,10 @@ export default function ProfilePage() {
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                    <span>Progress to Level 2</span>
-                    <span className="text-primary">{Math.min(100, (user.xp || 0) / 10)}%</span>
+                    <span>Progress to Level {(user.level || 1) + 1}</span>
+                    <span className="text-primary">{Math.min(100, ((user.xp || 0) % 1000) / 10)}%</span>
                   </div>
-                  <Progress value={Math.min(100, (user.xp || 0) / 10)} className="h-2 bg-slate-800" />
+                  <Progress value={Math.min(100, ((user.xp || 0) % 1000) / 10)} className="h-2 bg-slate-800" />
                 </div>
               </CardContent>
             </Card>
@@ -499,36 +522,20 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {isIntern && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="border shadow-none rounded-[32px] bg-white p-6">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-primary" />
-                  Office Leave Balance
-                </CardTitle>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-600">Days Used</span>
-                    <span className="text-xs font-black text-slate-900">{leaveBalance.office} / 8</span>
-                  </div>
-                  <Progress value={(leaveBalance.office / 8) * 100} className="h-1.5" />
-                </div>
-              </Card>
-              <Card className="border shadow-none rounded-[32px] bg-white p-6">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                  <Wifi className="w-4 h-4 text-orange-500" />
-                  WFH Leave Balance
-                </CardTitle>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-600">Days Used</span>
-                    <span className="text-xs font-black text-slate-900">{leaveBalance.wfh} / 5</span>
-                  </div>
-                  <Progress value={(leaveBalance.wfh / 5) * 100} className="h-1.5" />
-                </div>
-              </Card>
+          <Card className="border shadow-none rounded-[32px] bg-white p-6">
+            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-primary" />
+              Annual Leave Balance
+            </CardTitle>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-600">Remaining</span>
+                <span className="text-xs font-black text-slate-900">{leaveBalance} / 8 days</span>
+              </div>
+              <Progress value={(leaveBalance / 8) * 100} className="h-1.5" />
+              <p className="text-[9px] font-medium text-slate-400">Resets annually. Used: {8 - leaveBalance} day(s).</p>
             </div>
-          )}
+          </Card>
 
           {isIntern && (
             <Card className="border shadow-none rounded-[32px] bg-white p-6">
